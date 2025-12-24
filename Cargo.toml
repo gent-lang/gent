@@ -1,0 +1,16 @@
+[package]
+name = "gent"
+version = "0.1.0"
+edition = "2021"
+description = "A programming language for AI agents"
+license = "MIT"
+
+[dependencies]
+pest = "2.7"
+pest_derive = "2.7"
+thiserror = "1"
+clap = { version = "4", features = ["derive"] }
+
+[dev-dependencies]
+insta = "1.40"
+tempfile = "3"

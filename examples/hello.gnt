@@ -1,0 +1,2 @@
+agent Hello { prompt: "You are friendly." }
+run Hello
