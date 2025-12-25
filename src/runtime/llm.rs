@@ -157,11 +157,13 @@ pub trait LLMClient: Send + Sync {
     /// * `messages` - The conversation history
     /// * `tools` - Available tool definitions
     /// * `model` - Optional model override (uses client default if None)
+    /// * `json_mode` - Enable JSON mode (response_format: json_object)
     async fn chat(
         &self,
         messages: Vec<Message>,
         tools: Vec<ToolDefinition>,
         model: Option<&str>,
+        json_mode: bool,
     ) -> GentResult<LLMResponse>;
 }
 
@@ -218,6 +220,7 @@ impl LLMClient for MockLLMClient {
         _messages: Vec<Message>,
         _tools: Vec<ToolDefinition>,
         _model: Option<&str>,
+        _json_mode: bool,
     ) -> GentResult<LLMResponse> {
         if !self.tool_calls.is_empty() {
             Ok(LLMResponse::with_tool_calls(self.tool_calls.clone()))

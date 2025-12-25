@@ -59,7 +59,7 @@ pub async fn run_agent_with_tools(
             "agent",
             &format!("Step {}/{}", step + 1, max_steps),
         );
-        let response = llm.chat(messages.clone(), tool_defs.clone(), model).await?;
+        let response = llm.chat(messages.clone(), tool_defs.clone(), model, false).await?;
 
         // If no tool calls, return the response content
         if response.tool_calls.is_empty() {
@@ -152,5 +152,5 @@ pub async fn run_agent_full(
     messages.push(Message::user(user_input));
 
     let model = agent.model.as_deref();
-    llm.chat(messages, vec![], model).await
+    llm.chat(messages, vec![], model, false).await
 }

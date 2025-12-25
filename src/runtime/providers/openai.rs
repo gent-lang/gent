@@ -94,6 +94,7 @@ impl LLMClient for OpenAIClient {
         messages: Vec<Message>,
         tools: Vec<ToolDefinition>,
         model: Option<&str>,
+        json_mode: bool,
     ) -> GentResult<LLMResponse> {
         let url = format!("{}/v1/chat/completions", self.base_url);
 
@@ -107,6 +108,10 @@ impl LLMClient for OpenAIClient {
 
         if !tools.is_empty() {
             body["tools"] = json!(self.to_openai_tools(&tools));
+        }
+
+        if json_mode {
+            body["response_format"] = json!({"type": "json_object"});
         }
 
         let response = self
