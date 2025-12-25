@@ -1,7 +1,11 @@
-//! Runtime module for GENT agent execution
+//! Runtime components for GENT
 
 pub mod agent;
 pub mod llm;
+pub mod tools;
 
-pub use agent::*;
-pub use llm::*;
+pub use agent::{run_agent, run_agent_full};
+pub use llm::{
+    LLMClient, LLMResponse, Message, MockLLMClient, Role, ToolCall, ToolDefinition, ToolResult,
+};
+pub use tools::{Tool, ToolRegistry};
