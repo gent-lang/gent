@@ -2,6 +2,9 @@
 
 use thiserror::Error;
 
+mod reporter;
+pub use reporter::ErrorReporter;
+
 /// Source location span for error reporting
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Span {
