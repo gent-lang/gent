@@ -1,0 +1,180 @@
+// Data Analyst Example
+// Demonstrates: user-defined tools, conditionals, arithmetic,
+// arrays, objects, multiple agents, built-in tools
+
+// ============================================
+// Utility Tools
+// ============================================
+
+tool calculate_percentage(value: number, total: number) -> number {
+    if total == 0 {
+        return 0
+    } else {
+        return value * 100 / total
+    }
+}
+
+tool format_currency(amount: number, currency: string) -> string {
+    if amount < 0 {
+        return "-" + currency + (-amount)
+    } else {
+        return currency + amount
+    }
+}
+
+tool classify_risk(score: number) -> string {
+    if score >= 80 {
+        return "LOW"
+    } else {
+        if score >= 50 {
+            return "MEDIUM"
+        } else {
+            if score >= 20 {
+                return "HIGH"
+            } else {
+                return "CRITICAL"
+            }
+        }
+    }
+}
+
+// ============================================
+// Statistical Tools
+// ============================================
+
+tool calculate_growth(current: number, previous: number) -> number {
+    if previous == 0 {
+        return 0
+    } else {
+        let change = current - previous
+        let growth = change * 100 / previous
+        return growth
+    }
+}
+
+tool calculate_average(sum: number, count: number) -> number {
+    if count == 0 {
+        return 0
+    } else {
+        return sum / count
+    }
+}
+
+tool calculate_margin(revenue: number, cost: number) -> number {
+    if revenue == 0 {
+        return 0
+    } else {
+        let profit = revenue - cost
+        let margin = profit * 100 / revenue
+        return margin
+    }
+}
+
+// ============================================
+// Report Generation Tools
+// ============================================
+
+tool build_metric_report(name: string, value: number, unit: string) -> string {
+    let header = "=== " + name + " ==="
+    let body = "Value: " + value + " " + unit
+    let report = header + "\n" + body
+    return report
+}
+
+tool format_comparison(label: string, current: number, previous: number) -> string {
+    let change = current - previous
+    if change > 0 {
+        return label + ": " + current + " (+" + change + " from " + previous + ")"
+    } else {
+        if change < 0 {
+            return label + ": " + current + " (" + change + " from " + previous + ")"
+        } else {
+            return label + ": " + current + " (unchanged)"
+        }
+    }
+}
+
+tool generate_status(score: number, threshold: number) -> string {
+    if score >= threshold {
+        return "PASS"
+    } else {
+        let deficit = threshold - score
+        return "FAIL (need " + deficit + " more)"
+    }
+}
+
+// ============================================
+// Validation Tools
+// ============================================
+
+tool validate_range(value: number, min: number, max: number) -> string {
+    if value < min {
+        return "ERROR: Value " + value + " is below minimum " + min
+    } else {
+        if value > max {
+            return "ERROR: Value " + value + " exceeds maximum " + max
+        } else {
+            return "OK"
+        }
+    }
+}
+
+tool is_positive(value: number) -> string {
+    if value > 0 {
+        return "true"
+    } else {
+        return "false"
+    }
+}
+
+// ============================================
+// Agents
+// ============================================
+
+agent DataAnalyst {
+    prompt: "You are a data analyst assistant. You help analyze business metrics,
+calculate statistics, and generate reports. Use the available tools to:
+- Calculate percentages and growth rates
+- Classify risk levels based on scores
+- Format currency values
+- Build metric reports
+- Validate data ranges
+
+When given data, analyze it thoroughly and provide insights."
+    model: "gpt-4o"
+    use calculate_percentage, calculate_growth, calculate_average
+    use calculate_margin, classify_risk, format_currency
+    use build_metric_report, format_comparison, generate_status
+    use validate_range, is_positive
+    use read_file, write_file
+    max_steps: 20
+}
+
+agent ReportWriter {
+    prompt: "You are a business report writer. You take analysis results and
+create clear, professional summaries. Focus on:
+- Key findings and trends
+- Actionable recommendations
+- Risk areas that need attention
+
+Write concise but comprehensive reports."
+    model: "gpt-4o-mini"
+    use build_metric_report, format_comparison, format_currency
+    use classify_risk, generate_status
+    max_steps: 10
+}
+
+agent QuickCalculator {
+    prompt: "You are a quick calculation assistant. Perform mathematical
+operations and return results efficiently."
+    model: "gpt-4o-mini"
+    use calculate_percentage, calculate_growth, calculate_average
+    use calculate_margin, validate_range
+    max_steps: 5
+}
+
+// ============================================
+// Run Analysis
+// ============================================
+
+run DataAnalyst with "Analyze Q4 performance: Revenue $150000, Costs $95000, Previous quarter revenue $120000. Calculate margin, growth rate, and risk classification based on a profitability score of 65."
