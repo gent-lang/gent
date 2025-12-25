@@ -1,8 +1,8 @@
 //! Program evaluation for GENT
 
 use crate::errors::{GentError, GentResult};
-use crate::interpreter::{AgentValue, Environment, Value};
-use crate::parser::{AgentDecl, Expression, Program, Statement};
+use crate::interpreter::{AgentValue, Environment, UserToolValue, Value};
+use crate::parser::{AgentDecl, Expression, Program, Statement, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry};
 
 /// Evaluate a GENT program
@@ -62,8 +62,8 @@ async fn evaluate_statement(
             let output = evaluate_run_stmt(run, env, llm, tools).await?;
             println!("{}", output);
         }
-        Statement::ToolDecl(_) => {
-            // TODO: Implement tool declaration evaluation
+        Statement::ToolDecl(decl) => {
+            evaluate_tool_decl(decl, env)?;
         }
     }
     Ok(())
@@ -84,8 +84,8 @@ async fn evaluate_statement_with_output(
             let output = evaluate_run_stmt(run, env, llm, tools).await?;
             Ok(Some(output))
         }
-        Statement::ToolDecl(_) => {
-            // TODO: Implement tool declaration evaluation
+        Statement::ToolDecl(decl) => {
+            evaluate_tool_decl(decl, env)?;
             Ok(None)
         }
     }
@@ -170,6 +170,19 @@ fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()
     }
 
     env.define(&decl.name, Value::Agent(agent));
+
+    Ok(())
+}
+
+fn evaluate_tool_decl(decl: &ToolDecl, env: &mut Environment) -> GentResult<()> {
+    let tool_value = UserToolValue {
+        name: decl.name.clone(),
+        params: decl.params.clone(),
+        return_type: decl.return_type.clone(),
+        body: decl.body.clone(),
+    };
+
+    env.define(&decl.name, Value::Tool(tool_value));
 
     Ok(())
 }

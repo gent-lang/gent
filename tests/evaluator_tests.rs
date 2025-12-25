@@ -249,3 +249,57 @@ async fn test_evaluate_special_characters_in_prompt() {
     let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
 }
+
+// ============================================
+// Tool Declaration Tests
+// ============================================
+
+#[tokio::test]
+async fn test_tool_declaration_registers() {
+    let source = r#"
+        tool greet(name: string) -> string {
+            return "Hello, " + name
+        }
+
+        agent Greeter {
+            prompt: "Greet users"
+            use greet
+        }
+
+        run Greeter with "test"
+    "#;
+
+    let program = parse(source).unwrap();
+    let llm = MockLLMClient::new();
+    let tools = ToolRegistry::with_builtins();
+
+    let result = evaluate_with_output(&program, &llm, &tools).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_multiple_tool_declarations() {
+    let source = r#"
+        tool add(a: number, b: number) -> number {
+            return a + b
+        }
+
+        tool greet(name: string) -> string {
+            return "Hello, " + name
+        }
+
+        agent Calculator {
+            prompt: "Do math"
+            use add
+        }
+
+        run Calculator with "2 + 2"
+    "#;
+
+    let program = parse(source).unwrap();
+    let llm = MockLLMClient::new();
+    let tools = ToolRegistry::with_builtins();
+
+    let result = evaluate_with_output(&program, &llm, &tools).await;
+    assert!(result.is_ok());
+}
