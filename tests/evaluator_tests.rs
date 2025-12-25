@@ -92,7 +92,8 @@ async fn test_evaluate_undefined_agent() {
 }
 
 #[tokio::test]
-async fn test_evaluate_missing_prompt() {
+async fn test_evaluate_missing_model() {
+    // Prompt is now optional, but model is still required
     let source = r#"
         agent Empty { }
         Empty
@@ -103,7 +104,7 @@ async fn test_evaluate_missing_prompt() {
     let result = evaluate_with_output(&program, &llm, &mut tools).await;
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(err.to_string().contains("prompt"));
+    assert!(err.to_string().contains("model"));
 }
 
 // ============================================

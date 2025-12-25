@@ -184,6 +184,7 @@ fn evaluate_agent_decl(
     structs: &HashMap<String, Vec<StructField>>,
 ) -> GentResult<()> {
     let mut prompt: Option<String> = None;
+    let mut user_prompt: Option<String> = None;
     let mut max_steps: Option<u32> = None;
     let mut model: Option<String> = None;
     let mut output_retries: Option<u32> = None;
@@ -263,18 +264,27 @@ fn evaluate_agent_decl(
             "retry_prompt" | "retryPrompt" => {
                 // Ignore for now - will be implemented later
             }
+            "userPrompt" => {
+                let value = evaluate_expression(&field.value)?;
+                user_prompt = Some(match value {
+                    Value::String(s) => s,
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "String".to_string(),
+                            got: value.type_name().to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                });
+            }
             _ => {
                 // Ignore unknown fields for forward compatibility
             }
         }
     }
 
-    // Prompt is required
-    let prompt = prompt.ok_or_else(|| GentError::MissingAgentField {
-        agent: decl.name.clone(),
-        field: "prompt".to_string(),
-        span: decl.span.clone(),
-    })?;
+    // Prompt is now optional (default to empty string)
+    let prompt = prompt.unwrap_or_default();
 
     // Model is required
     let model = model.ok_or_else(|| GentError::MissingAgentField {
@@ -295,6 +305,11 @@ fn evaluate_agent_decl(
     // Set output_retries if present
     if let Some(retries) = output_retries {
         agent = agent.with_output_retries(retries);
+    }
+
+    // Set user_prompt if present
+    if let Some(up) = user_prompt {
+        agent = agent.with_user_prompt(up);
     }
 
     // Convert output type to schema if present

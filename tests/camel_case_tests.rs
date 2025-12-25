@@ -69,7 +69,6 @@ async fn test_agent_with_no_prompts() {
         agent Test { model: "gpt-4o-mini" }
     "#;
     let result = run_program(source).await;
-    // For now, this should fail because prompt is required
-    // After we make prompts optional, this should pass
-    assert!(result.is_err(), "Expected error for agent with no prompt");
+    // Prompts are now optional - agent with only model should work
+    assert!(result.is_ok(), "Agent with no prompts should work: {:?}", result.err());
 }

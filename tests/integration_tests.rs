@@ -145,10 +145,11 @@ async fn test_error_undefined_agent() {
 }
 
 #[tokio::test]
-async fn test_error_missing_prompt() {
+async fn test_error_missing_model() {
+    // Prompt is now optional, but model is still required
     expect_failure(
-        r#"agent NoPrompt { model: "gpt-4" } NoPrompt"#,
-        "missing",
+        r#"agent NoModel { prompt: "Hello" } NoModel"#,
+        "model",
     )
     .await;
 }
