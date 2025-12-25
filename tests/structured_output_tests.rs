@@ -1,7 +1,7 @@
 //! Integration tests for structured output feature
 
-use gent::parser::parse;
 use gent::interpreter::evaluate_with_output;
+use gent::parser::parse;
 use gent::runtime::{MockLLMClient, ToolRegistry};
 
 #[tokio::test]
@@ -19,7 +19,9 @@ async fn test_agent_with_inline_structured_output() {
     let mock = MockLLMClient::with_response(r#"{"category": "test", "confidence": 0.95}"#);
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &mock, &mut tools).await.unwrap();
+    let outputs = evaluate_with_output(&program, &mock, &mut tools)
+        .await
+        .unwrap();
     assert_eq!(outputs.len(), 1);
 
     let json: serde_json::Value = serde_json::from_str(&outputs[0]).unwrap();
@@ -47,7 +49,9 @@ async fn test_agent_with_named_struct_output() {
     let mock = MockLLMClient::with_response(r#"{"category": "billing", "confidence": 0.87}"#);
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &mock, &mut tools).await.unwrap();
+    let outputs = evaluate_with_output(&program, &mock, &mut tools)
+        .await
+        .unwrap();
     assert_eq!(outputs.len(), 1);
 
     let json: serde_json::Value = serde_json::from_str(&outputs[0]).unwrap();
@@ -70,7 +74,9 @@ async fn test_agent_without_output_schema() {
     let mock = MockLLMClient::with_response("Hello! How can I help you?");
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &mock, &mut tools).await.unwrap();
+    let outputs = evaluate_with_output(&program, &mock, &mut tools)
+        .await
+        .unwrap();
     assert_eq!(outputs.len(), 1);
     assert_eq!(outputs[0], "Hello! How can I help you?");
 }
@@ -98,11 +104,13 @@ async fn test_struct_with_nested_output() {
 
     let program = parse(source).unwrap();
     let mock = MockLLMClient::with_response(
-        r#"{"name": "test", "metadata": {"created": "2024-01-01", "updated": "2024-01-02"}}"#
+        r#"{"name": "test", "metadata": {"created": "2024-01-01", "updated": "2024-01-02"}}"#,
     );
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &mock, &mut tools).await.unwrap();
+    let outputs = evaluate_with_output(&program, &mock, &mut tools)
+        .await
+        .unwrap();
     let json: serde_json::Value = serde_json::from_str(&outputs[0]).unwrap();
 
     assert_eq!(json["name"], "test");
@@ -129,7 +137,9 @@ async fn test_struct_with_array_output() {
     let mock = MockLLMClient::with_response(r#"{"tags": ["rust", "gent", "ai"], "count": 3}"#);
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &mock, &mut tools).await.unwrap();
+    let outputs = evaluate_with_output(&program, &mock, &mut tools)
+        .await
+        .unwrap();
     let json: serde_json::Value = serde_json::from_str(&outputs[0]).unwrap();
 
     assert_eq!(json["tags"].as_array().unwrap().len(), 3);

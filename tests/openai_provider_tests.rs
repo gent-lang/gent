@@ -139,7 +139,10 @@ async fn test_openai_chat_with_model_override() {
     let client = OpenAIClient::new("test-key".to_string()).with_base_url(&mock_server.uri());
 
     let messages = vec![Message::user("Hello")];
-    let response = client.chat(messages, vec![], Some("gpt-4"), false).await.unwrap();
+    let response = client
+        .chat(messages, vec![], Some("gpt-4"), false)
+        .await
+        .unwrap();
 
     assert_eq!(response.content, Some("Response from gpt-4".to_string()));
 }

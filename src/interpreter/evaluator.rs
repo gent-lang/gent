@@ -63,7 +63,8 @@ pub async fn evaluate_with_output(
     // Second pass: evaluate statements
     for statement in &program.statements {
         if let Some(output) =
-            evaluate_statement_with_output(statement, &mut env, llm, tools, &logger, &structs).await?
+            evaluate_statement_with_output(statement, &mut env, llm, tools, &logger, &structs)
+                .await?
         {
             outputs.push(output);
         }
@@ -273,12 +274,13 @@ fn evaluate_agent_decl(
 
     // Convert output type to schema if present
     if let Some(output_type) = &decl.output {
-        let schema = OutputSchema::from_output_type(output_type, structs)
-            .map_err(|msg| GentError::TypeError {
+        let schema = OutputSchema::from_output_type(output_type, structs).map_err(|msg| {
+            GentError::TypeError {
                 expected: "valid output type".to_string(),
                 got: msg,
                 span: decl.span.clone(),
-            })?;
+            }
+        })?;
         agent = agent.with_output_schema(schema);
     }
 

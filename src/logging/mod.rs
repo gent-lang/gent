@@ -4,6 +4,7 @@
 
 use std::fmt;
 use std::io::{self, Write};
+use std::str::FromStr;
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -18,19 +19,23 @@ pub enum LogLevel {
     Off = 5,
 }
 
-impl LogLevel {
-    pub fn from_str(s: &str) -> Option<Self> {
+impl FromStr for LogLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "trace" => Some(LogLevel::Trace),
-            "debug" => Some(LogLevel::Debug),
-            "info" => Some(LogLevel::Info),
-            "warn" | "warning" => Some(LogLevel::Warn),
-            "error" => Some(LogLevel::Error),
-            "off" | "none" => Some(LogLevel::Off),
-            _ => None,
+            "trace" => Ok(LogLevel::Trace),
+            "debug" => Ok(LogLevel::Debug),
+            "info" => Ok(LogLevel::Info),
+            "warn" | "warning" => Ok(LogLevel::Warn),
+            "error" => Ok(LogLevel::Error),
+            "off" | "none" => Ok(LogLevel::Off),
+            _ => Err(format!("Invalid log level: {}", s)),
         }
     }
+}
 
+impl LogLevel {
     fn color_code(&self) -> &'static str {
         match self {
             LogLevel::Trace => "\x1b[90m", // Gray
@@ -238,12 +243,12 @@ mod tests {
 
     #[test]
     fn test_log_level_from_str() {
-        assert_eq!(LogLevel::from_str("debug"), Some(LogLevel::Debug));
-        assert_eq!(LogLevel::from_str("DEBUG"), Some(LogLevel::Debug));
-        assert_eq!(LogLevel::from_str("info"), Some(LogLevel::Info));
-        assert_eq!(LogLevel::from_str("warn"), Some(LogLevel::Warn));
-        assert_eq!(LogLevel::from_str("warning"), Some(LogLevel::Warn));
-        assert_eq!(LogLevel::from_str("invalid"), None);
+        assert_eq!("debug".parse::<LogLevel>(), Ok(LogLevel::Debug));
+        assert_eq!("DEBUG".parse::<LogLevel>(), Ok(LogLevel::Debug));
+        assert_eq!("info".parse::<LogLevel>(), Ok(LogLevel::Info));
+        assert_eq!("warn".parse::<LogLevel>(), Ok(LogLevel::Warn));
+        assert_eq!("warning".parse::<LogLevel>(), Ok(LogLevel::Warn));
+        assert!("invalid".parse::<LogLevel>().is_err());
     }
 
     #[test]

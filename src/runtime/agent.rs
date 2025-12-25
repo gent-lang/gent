@@ -94,15 +94,9 @@ pub async fn run_agent_with_tools(
             // Validate output if schema exists
             if let Some(schema) = &agent.output_schema {
                 return validate_and_retry_output(
-                    &content,
-                    schema,
-                    agent,
-                    &messages,
-                    llm,
-                    &tool_defs,
-                    model,
-                    logger,
-                ).await;
+                    &content, schema, agent, &messages, llm, &tool_defs, model, logger,
+                )
+                .await;
             }
 
             return Ok(content);
@@ -220,10 +214,16 @@ async fn validate_and_retry_output(
                         got: last_content,
                     });
                 }
-                logger.log(LogLevel::Debug, "agent", &format!("Retry {}: invalid JSON", retry + 1));
+                logger.log(
+                    LogLevel::Debug,
+                    "agent",
+                    &format!("Retry {}: invalid JSON", retry + 1),
+                );
                 retry_messages.push(Message::assistant(&last_content));
                 retry_messages.push(Message::user("Please respond with valid JSON."));
-                let response = llm.chat(retry_messages.clone(), tools.to_vec(), model, true).await?;
+                let response = llm
+                    .chat(retry_messages.clone(), tools.to_vec(), model, true)
+                    .await?;
                 last_content = response.content.unwrap_or_default();
                 continue;
             }
@@ -244,13 +244,19 @@ async fn validate_and_retry_output(
                         got: last_content,
                     });
                 }
-                logger.log(LogLevel::Debug, "agent", &format!("Retry {}: {}", retry + 1, e));
+                logger.log(
+                    LogLevel::Debug,
+                    "agent",
+                    &format!("Retry {}: {}", retry + 1, e),
+                );
                 retry_messages.push(Message::assistant(&last_content));
                 retry_messages.push(Message::user(format!(
                     "Invalid response: {}. Please respond with JSON matching the schema.",
                     e
                 )));
-                let response = llm.chat(retry_messages.clone(), tools.to_vec(), model, true).await?;
+                let response = llm
+                    .chat(retry_messages.clone(), tools.to_vec(), model, true)
+                    .await?;
                 last_content = response.content.unwrap_or_default();
             }
         }

@@ -1,6 +1,8 @@
 //! Value types for the GENT interpreter
 
-use crate::parser::ast::{Block, FieldType, OutputType, Param, StructField, TypeName as ParserTypeName};
+use crate::parser::ast::{
+    Block, FieldType, OutputType, Param, StructField, TypeName as ParserTypeName,
+};
 use std::collections::HashMap;
 use std::fmt;
 
@@ -11,21 +13,28 @@ pub struct OutputSchema {
 }
 
 impl OutputSchema {
-    pub fn from_output_type(output_type: &OutputType, structs: &HashMap<String, Vec<StructField>>) -> Result<Self, String> {
+    pub fn from_output_type(
+        output_type: &OutputType,
+        structs: &HashMap<String, Vec<StructField>>,
+    ) -> Result<Self, String> {
         match output_type {
-            OutputType::Inline(fields) => Ok(OutputSchema { fields: fields.clone() }),
-            OutputType::Named(name) => {
-                structs.get(name)
-                    .map(|fields| OutputSchema { fields: fields.clone() })
-                    .ok_or_else(|| format!("Unknown struct: {}", name))
-            }
+            OutputType::Inline(fields) => Ok(OutputSchema {
+                fields: fields.clone(),
+            }),
+            OutputType::Named(name) => structs
+                .get(name)
+                .map(|fields| OutputSchema {
+                    fields: fields.clone(),
+                })
+                .ok_or_else(|| format!("Unknown struct: {}", name)),
         }
     }
 
     pub fn to_json_schema(&self) -> serde_json::Value {
         use serde_json::json;
 
-        let properties: serde_json::Map<String, serde_json::Value> = self.fields
+        let properties: serde_json::Map<String, serde_json::Value> = self
+            .fields
             .iter()
             .map(|f| (f.name.clone(), field_type_to_json_schema(&f.field_type)))
             .collect();

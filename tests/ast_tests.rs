@@ -326,7 +326,7 @@ fn test_program_multiple_statements() {
                 name: "Hello".to_string(),
                 fields: vec![],
                 tools: vec![],
-        output: None,
+                output: None,
                 span: Span::new(0, 10),
             }),
             Statement::RunStmt(RunStmt {
@@ -377,7 +377,7 @@ fn test_hello_world_ast() {
                     span: Span::new(14, 41),
                 }],
                 tools: vec![],
-        output: None,
+                output: None,
                 span: Span::new(0, 43),
             }),
             Statement::RunStmt(RunStmt {

@@ -1,4 +1,4 @@
-use gent::parser::{parse, Statement, FieldType, OutputType};
+use gent::parser::{parse, FieldType, OutputType, Statement};
 
 #[test]
 fn test_parse_simple_struct() {
@@ -43,7 +43,9 @@ fn test_parse_nested_struct() {
             assert_eq!(decl.name, "Order");
             assert_eq!(decl.fields.len(), 3);
             // items is an array of Named("Item")
-            assert!(matches!(&decl.fields[1].field_type, FieldType::Array(inner) if matches!(inner.as_ref(), FieldType::Named(n) if n == "Item")));
+            assert!(
+                matches!(&decl.fields[1].field_type, FieldType::Array(inner) if matches!(inner.as_ref(), FieldType::Named(n) if n == "Item"))
+            );
             // metadata is an inline object
             assert!(matches!(&decl.fields[2].field_type, FieldType::Object(_)));
         }

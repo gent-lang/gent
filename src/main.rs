@@ -48,7 +48,7 @@ impl Cli {
         }
 
         match self.verbose {
-            0 => LogLevel::from_str(&self.log_level).unwrap_or(LogLevel::Info),
+            0 => self.log_level.parse().unwrap_or(LogLevel::Info),
             1 => LogLevel::Debug,
             _ => LogLevel::Trace,
         }

@@ -572,7 +572,11 @@ fn parse_struct_field(pair: pest::iterators::Pair<Rule>) -> GentResult<StructFie
     let name = inner.next().unwrap().as_str().to_string();
     let field_type = parse_field_type(inner.next().unwrap())?;
 
-    Ok(StructField { name, field_type, span })
+    Ok(StructField {
+        name,
+        field_type,
+        span,
+    })
 }
 
 fn parse_field_type(pair: pest::iterators::Pair<Rule>) -> GentResult<FieldType> {
