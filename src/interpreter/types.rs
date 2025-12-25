@@ -112,6 +112,8 @@ pub struct AgentValue {
     pub name: String,
     /// System prompt for the agent
     pub prompt: String,
+    /// User prompt for the agent (optional)
+    pub user_prompt: Option<String>,
     /// Tools available to this agent
     pub tools: Vec<String>,
     /// Maximum steps before stopping (None = default 10)
@@ -134,6 +136,7 @@ impl AgentValue {
         Self {
             name: name.into(),
             prompt: prompt.into(),
+            user_prompt: None,
             tools: Vec::new(),
             max_steps: None,
             model: None,
@@ -183,6 +186,12 @@ impl AgentValue {
     /// Set custom retry prompt
     pub fn with_retry_prompt(mut self, prompt: impl Into<String>) -> Self {
         self.retry_prompt = Some(prompt.into());
+        self
+    }
+
+    /// Set user prompt
+    pub fn with_user_prompt(mut self, prompt: impl Into<String>) -> Self {
+        self.user_prompt = Some(prompt.into());
         self
     }
 }
