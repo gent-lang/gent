@@ -89,6 +89,7 @@ pub enum Statement {
     ToolDecl(ToolDecl),
     AgentCall(AgentCall),
     StructDecl(StructDecl),
+    LetStmt(LetStmt),
 }
 
 /// An agent declaration: `agent Name { fields... }`
