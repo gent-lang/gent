@@ -162,7 +162,7 @@ fn parse_run_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<RunStmt> {
 
     let agent_name = inner.next().unwrap().as_str().to_string();
     let input = if let Some(args) = inner.next() {
-        // run_args contains the "with" expression
+        // run_args contains the expression in parentheses
         let expr_pair = args.into_inner().next().unwrap();
         Some(parse_expression(expr_pair)?)
     } else {
