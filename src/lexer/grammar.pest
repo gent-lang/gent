@@ -90,9 +90,11 @@ object_literal = { "{" ~ (object_field ~ ("," ~ object_field)*)? ~ "}" }
 object_field = { (identifier | string_literal) ~ ":" ~ expression }
 
 // === Literals ===
-string_literal = ${ "\"" ~ string_inner ~ "\"" }
-string_inner = @{ (!("\"" | "\\") ~ ANY | escape_sequence)* }
-escape_sequence = @{ "\\" ~ ("\"" | "\\" | "n" | "r" | "t") }
+string_literal = ${ "\"" ~ string_part* ~ "\"" }
+string_part = { interpolation | string_chars }
+interpolation = !{ "{" ~ expression ~ "}" }
+string_chars = @{ (!(("\"" | "\\") | "{") ~ ANY | escape_sequence)+ }
+escape_sequence = @{ "\\" ~ ("\"" | "\\" | "n" | "r" | "t" | "{" | "}") }
 
 number_literal = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
 boolean_literal = { "true" | "false" }
