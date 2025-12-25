@@ -4,6 +4,7 @@ pub mod config;
 pub mod errors;
 pub mod interpreter;
 pub mod lexer;
+pub mod logging;
 pub mod parser;
 pub mod runtime;
 

@@ -4,10 +4,12 @@ use clap::Parser;
 use std::fs;
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::sync::Arc;
 
 use gent::config::Config;
 use gent::errors::GentError;
 use gent::interpreter::evaluate;
+use gent::logging::{GentLogger, LogLevel, Logger};
 use gent::parser::parse;
 use gent::runtime::{MockLLMClient, OpenAIClient, ToolRegistry};
 
@@ -25,13 +27,41 @@ struct Cli {
     /// Custom mock response
     #[arg(long)]
     mock_response: Option<String>,
+
+    /// Log level: trace, debug, info, warn, error, off
+    #[arg(long, default_value = "info")]
+    log_level: String,
+
+    /// Verbose mode (-v = debug, -vv = trace)
+    #[arg(short, action = clap::ArgAction::Count)]
+    verbose: u8,
+
+    /// Quiet mode (errors only)
+    #[arg(short, long)]
+    quiet: bool,
+}
+
+impl Cli {
+    fn effective_log_level(&self) -> LogLevel {
+        if self.quiet {
+            return LogLevel::Error;
+        }
+
+        match self.verbose {
+            0 => LogLevel::from_str(&self.log_level).unwrap_or(LogLevel::Info),
+            1 => LogLevel::Debug,
+            _ => LogLevel::Trace,
+        }
+    }
 }
 
 #[tokio::main]
 async fn main() -> ExitCode {
     let cli = Cli::parse();
+    let log_level = cli.effective_log_level();
+    let logger: Arc<dyn Logger> = Arc::new(GentLogger::new(log_level));
 
-    if let Err(e) = run(&cli).await {
+    if let Err(e) = run(&cli, logger.as_ref()).await {
         eprintln!("Error: {}", e);
         return ExitCode::FAILURE;
     }
@@ -39,27 +69,34 @@ async fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-async fn run(cli: &Cli) -> Result<(), GentError> {
+async fn run(cli: &Cli, logger: &dyn Logger) -> Result<(), GentError> {
+    logger.log(LogLevel::Debug, "cli", &format!("Loading file: {}", cli.file.display()));
+
     let source = fs::read_to_string(&cli.file).map_err(|e| GentError::FileReadError {
         path: cli.file.display().to_string(),
         source: e,
     })?;
 
+    logger.log(LogLevel::Debug, "cli", &format!("Parsing {} bytes", source.len()));
     let program = parse(&source)?;
+    logger.log(LogLevel::Debug, "cli", &format!("Parsed {} statements", program.statements.len()));
+
     let mut tools = ToolRegistry::with_builtins();
 
     if cli.mock {
+        logger.log(LogLevel::Info, "cli", "Using mock LLM");
         let llm = if let Some(response) = &cli.mock_response {
             MockLLMClient::with_response(response)
         } else {
             MockLLMClient::new()
         };
-        evaluate(&program, &llm, &mut tools).await?;
+        evaluate(&program, &llm, &mut tools, logger).await?;
     } else {
         let config = Config::load();
         let api_key = config.require_openai_key()?;
+        logger.log(LogLevel::Debug, "cli", "Using OpenAI LLM");
         let llm = OpenAIClient::new(api_key.to_string());
-        evaluate(&program, &llm, &mut tools).await?;
+        evaluate(&program, &llm, &mut tools, logger).await?;
     }
 
     Ok(())
