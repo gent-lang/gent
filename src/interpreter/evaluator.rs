@@ -414,7 +414,70 @@ fn evaluate_expr_with_env<'a>(
             }
             Expression::Null(_) => Ok(Value::String("null".to_string())),
             Expression::Call(callee, args, span) => {
-                // Check if callee is an agent
+                // Check if this is a method call (callee is Member expression)
+                if let Expression::Member(obj, method, _) = callee.as_ref() {
+                    // Evaluate the object
+                    let obj_value = evaluate_expr_with_env(obj, env, llm, tools, logger).await?;
+
+                    match obj_value {
+                        Value::Agent(mut agent) => {
+                            match method.as_str() {
+                                "invoke" => {
+                                    // Execute the agent
+                                    let result = run_agent_with_tools(&agent, None, llm, tools, logger).await?;
+                                    return Ok(Value::String(result));
+                                }
+                                "userPrompt" => {
+                                    // Set user_prompt and return modified agent
+                                    if args.is_empty() {
+                                        return Err(GentError::SyntaxError {
+                                            message: "userPrompt() requires an argument".to_string(),
+                                            span: span.clone(),
+                                        });
+                                    }
+                                    let arg = evaluate_expr_with_env(&args[0], env, llm, tools, logger).await?;
+                                    let prompt = match arg {
+                                        Value::String(s) => s,
+                                        other => format!("{}", other),
+                                    };
+                                    agent.user_prompt = Some(prompt);
+                                    return Ok(Value::Agent(agent));
+                                }
+                                "systemPrompt" => {
+                                    // Set prompt and return modified agent
+                                    if args.is_empty() {
+                                        return Err(GentError::SyntaxError {
+                                            message: "systemPrompt() requires an argument".to_string(),
+                                            span: span.clone(),
+                                        });
+                                    }
+                                    let arg = evaluate_expr_with_env(&args[0], env, llm, tools, logger).await?;
+                                    let prompt = match arg {
+                                        Value::String(s) => s,
+                                        other => format!("{}", other),
+                                    };
+                                    agent.prompt = prompt;
+                                    return Ok(Value::Agent(agent));
+                                }
+                                _ => {
+                                    return Err(GentError::SyntaxError {
+                                        message: format!("Unknown agent method: {}", method),
+                                        span: span.clone(),
+                                    });
+                                }
+                            }
+                        }
+                        _ => {
+                            // Not an agent - method calls on non-agents not yet supported
+                            return Err(GentError::SyntaxError {
+                                message: format!("Method calls on {} not yet implemented", obj_value.type_name()),
+                                span: span.clone(),
+                            });
+                        }
+                    }
+                }
+
+                // Check if callee is an agent (direct call)
                 if let Expression::Identifier(name, _) = callee.as_ref() {
                     if let Some(Value::Agent(agent)) = env.get(name) {
                         // This is an agent call - execute it
