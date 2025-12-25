@@ -1,0 +1,27 @@
+// Example: User-defined tools in GENT
+
+tool greet(name: string) -> string {
+    return "Hello, " + name + "!"
+}
+
+tool format_temp(celsius: number) -> string {
+    if celsius > 30 {
+        return "Hot: " + celsius + "C"
+    }
+    if celsius < 10 {
+        return "Cold: " + celsius + "C"
+    }
+    return "Nice: " + celsius + "C"
+}
+
+tool add(a: number, b: number) -> number {
+    return a + b
+}
+
+agent Assistant {
+    prompt: "You are a helpful assistant that can greet users, format temperatures, and do math."
+    use greet, format_temp, add
+    max_steps: 5
+}
+
+run Assistant with "Hello! What's 25 degrees like?"

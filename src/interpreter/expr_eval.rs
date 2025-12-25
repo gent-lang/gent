@@ -272,7 +272,7 @@ fn values_equal(left: &Value, right: &Value) -> bool {
             if a.len() != b.len() {
                 return false;
             }
-            a.iter().all(|(k, v)| b.get(k).map_or(false, |v2| values_equal(v, v2)))
+            a.iter().all(|(k, v)| b.get(k).is_some_and(|v2| values_equal(v, v2)))
         }
         _ => false, // Different types are never equal
     }

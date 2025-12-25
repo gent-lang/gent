@@ -188,8 +188,7 @@ fn parse_binary_left(pair: pest::iterators::Pair<Rule>, ops: &[BinaryOp]) -> Gen
     let mut last_end = pairs[0].as_span().end() - base_pos;
 
     // Process remaining operands
-    for i in 1..pairs.len() {
-        let right_pair = &pairs[i];
+    for right_pair in pairs.iter().skip(1) {
         let right_start = right_pair.as_span().start() - base_pos;
 
         // Extract operator from the text between last operand and next operand
@@ -360,7 +359,7 @@ fn parse_object_literal(pair: pest::iterators::Pair<Rule>) -> GentResult<Express
                     unescape_string(content)
                 }
                 _ => return Err(GentError::SyntaxError {
-                    message: format!("Expected identifier or string for object key"),
+                    message: "Expected identifier or string for object key".to_string(),
                     span: Span::new(key_pair.as_span().start(), key_pair.as_span().end()),
                 }),
             };
