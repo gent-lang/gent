@@ -90,15 +90,6 @@ async fn evaluate_statement(
             );
             evaluate_agent_decl(decl, env, structs)?;
         }
-        Statement::AgentCall(call) => {
-            logger.log(
-                LogLevel::Info,
-                "eval",
-                &format!("Calling agent '{}'", call.agent_name),
-            );
-            let output = evaluate_agent_call(call, env, llm, tools, logger).await?;
-            println!("{}", output);
-        }
         Statement::ToolDecl(decl) => {
             logger.log(
                 LogLevel::Debug,
@@ -141,15 +132,6 @@ async fn evaluate_statement_with_output(
             );
             evaluate_agent_decl(decl, env, structs)?;
             Ok(None)
-        }
-        Statement::AgentCall(call) => {
-            logger.log(
-                LogLevel::Info,
-                "eval",
-                &format!("Calling agent '{}'", call.agent_name),
-            );
-            let output = evaluate_agent_call(call, env, llm, tools, logger).await?;
-            Ok(Some(output))
         }
         Statement::ToolDecl(decl) => {
             logger.log(
@@ -349,47 +331,6 @@ fn evaluate_tool_decl(
     tools.register(Box::new(wrapper));
 
     Ok(())
-}
-
-async fn evaluate_agent_call(
-    call: &crate::parser::AgentCall,
-    env: &Environment,
-    llm: &dyn LLMClient,
-    tools: &ToolRegistry,
-    logger: &dyn Logger,
-) -> GentResult<String> {
-    // Look up the agent
-    let agent_value = env
-        .get(&call.agent_name)
-        .ok_or_else(|| GentError::UndefinedAgent {
-            name: call.agent_name.clone(),
-            span: call.span.clone(),
-        })?;
-
-    let agent = match agent_value {
-        Value::Agent(a) => a,
-        other => {
-            return Err(GentError::TypeError {
-                expected: "Agent".to_string(),
-                got: other.type_name().to_string(),
-                span: call.span.clone(),
-            })
-        }
-    };
-
-    // Evaluate input expression if present (using env for variable lookups)
-    let input = if let Some(expr) = &call.input {
-        let value = evaluate_expr_with_env(expr, env, llm, tools, logger).await?;
-        match value {
-            Value::String(s) => Some(s),
-            other => Some(format!("{}", other)),
-        }
-    } else {
-        None
-    };
-
-    // Run the agent with tools
-    run_agent_with_tools(agent, input, llm, tools, logger).await
 }
 
 /// Evaluate an expression with environment access and async agent call support

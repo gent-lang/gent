@@ -1,6 +1,6 @@
 // === Program Structure ===
 program = { SOI ~ statement* ~ EOI }
-statement = { struct_decl | tool_decl | agent_decl | top_level_let | agent_call }
+statement = { struct_decl | tool_decl | agent_decl | top_level_let }
 
 // === Top-Level Let ===
 top_level_let = { "let" ~ identifier ~ "=" ~ expression }
@@ -55,10 +55,6 @@ use_stmt = { use_keyword ~ identifier ~ ("," ~ identifier)* }
 // output_field must come before agent_field since "output" would also match as identifier
 output_field = { "output" ~ ":" ~ output_type }
 agent_field = { identifier ~ ":" ~ expression }
-
-// === Agent Call ===
-agent_call = { identifier ~ call_args? }
-call_args = { "(" ~ expression ~ ")" }
 
 // === Expressions (EXPANDED) ===
 expression = { logical_or }

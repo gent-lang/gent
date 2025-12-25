@@ -87,7 +87,6 @@ pub struct Program {
 pub enum Statement {
     AgentDecl(AgentDecl),
     ToolDecl(ToolDecl),
-    AgentCall(AgentCall),
     StructDecl(StructDecl),
     LetStmt(LetStmt),
 }
@@ -125,14 +124,6 @@ pub struct ToolDecl {
 pub struct Param {
     pub name: String,
     pub type_name: TypeName,
-    pub span: Span,
-}
-
-/// An agent call: `AgentName` or `AgentName(input)`
-#[derive(Debug, Clone, PartialEq)]
-pub struct AgentCall {
-    pub agent_name: String,
-    pub input: Option<Expression>,
     pub span: Span,
 }
 
