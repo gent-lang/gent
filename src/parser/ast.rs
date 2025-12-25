@@ -41,6 +41,40 @@ pub enum TypeName {
     Any,
 }
 
+/// Field types for structured output schemas
+#[derive(Debug, Clone, PartialEq)]
+pub enum FieldType {
+    String,
+    Number,
+    Boolean,
+    Array(Box<FieldType>),
+    Object(Vec<StructField>),
+    Named(String), // reference to a struct
+}
+
+/// A field in a struct or inline object type
+#[derive(Debug, Clone, PartialEq)]
+pub struct StructField {
+    pub name: String,
+    pub field_type: FieldType,
+    pub span: Span,
+}
+
+/// Struct declaration: `struct Name { fields... }`
+#[derive(Debug, Clone, PartialEq)]
+pub struct StructDecl {
+    pub name: String,
+    pub fields: Vec<StructField>,
+    pub span: Span,
+}
+
+/// Output type specification (inline or named)
+#[derive(Debug, Clone, PartialEq)]
+pub enum OutputType {
+    Inline(Vec<StructField>),
+    Named(String),
+}
+
 /// A complete GENT program
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
@@ -54,6 +88,7 @@ pub enum Statement {
     AgentDecl(AgentDecl),
     ToolDecl(ToolDecl),
     RunStmt(RunStmt),
+    StructDecl(StructDecl),
 }
 
 /// An agent declaration: `agent Name { fields... }`

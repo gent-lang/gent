@@ -86,6 +86,10 @@ async fn evaluate_statement(
             );
             evaluate_tool_decl(decl, env, tools)?;
         }
+        Statement::StructDecl(_) => {
+            // Struct declarations are handled during parsing/validation
+            // No runtime action needed
+        }
     }
     Ok(())
 }
@@ -123,6 +127,11 @@ async fn evaluate_statement_with_output(
                 &format!("Declaring tool '{}'", decl.name),
             );
             evaluate_tool_decl(decl, env, tools)?;
+            Ok(None)
+        }
+        Statement::StructDecl(_) => {
+            // Struct declarations are handled during parsing/validation
+            // No runtime action needed
             Ok(None)
         }
     }

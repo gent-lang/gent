@@ -3,8 +3,9 @@
 pub mod ast;
 
 pub use ast::{
-    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, IfStmt, LetStmt, Param, Program,
-    ReturnStmt, RunStmt, Statement, ToolDecl, TypeName, UnaryOp,
+    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, IfStmt, LetStmt,
+    OutputType, Param, Program, ReturnStmt, RunStmt, Statement, StructDecl, StructField, ToolDecl,
+    TypeName, UnaryOp,
 };
 
 use crate::errors::{GentError, GentResult, Span};
