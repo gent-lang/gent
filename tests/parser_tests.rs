@@ -78,7 +78,7 @@ fn test_parse_run_simple() {
 
 #[test]
 fn test_parse_run_with_input() {
-    let result = parse(r#"run Hello with "Hi there!""#);
+    let result = parse(r#"run Hello("Hi there!")"#);
     assert!(result.is_ok());
     let program = result.unwrap();
     match &program.statements[0] {
