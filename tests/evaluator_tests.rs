@@ -6,48 +6,48 @@ use gent::runtime::MockLLMClient;
 // Basic Evaluation Tests
 // ============================================
 
-#[test]
-fn test_evaluate_empty_program() {
+#[tokio::test]
+async fn test_evaluate_empty_program() {
     let program = parse("").unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty());
 }
 
-#[test]
-fn test_evaluate_agent_declaration() {
+#[tokio::test]
+async fn test_evaluate_agent_declaration() {
     let program = parse(r#"agent Hello { prompt: "You are friendly." }"#).unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty()); // No output from just declaring
 }
 
-#[test]
-fn test_evaluate_run_statement() {
+#[tokio::test]
+async fn test_evaluate_run_statement() {
     let source = r#"
         agent Hello { prompt: "You are friendly." }
         run Hello
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello there!");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 1);
     assert_eq!(outputs[0], "Hello there!");
 }
 
-#[test]
-fn test_evaluate_run_with_input() {
+#[tokio::test]
+async fn test_evaluate_run_with_input() {
     let source = r#"
         agent Greeter { prompt: "You greet people." }
         run Greeter with "Hi!"
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello! Nice to meet you!");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap()[0], "Hello! Nice to meet you!");
 }
@@ -56,13 +56,13 @@ fn test_evaluate_run_with_input() {
 // Hello World Test
 // ============================================
 
-#[test]
-fn test_evaluate_hello_world() {
+#[tokio::test]
+async fn test_evaluate_hello_world() {
     let source = r#"agent Hello { prompt: "You are friendly." }
 run Hello"#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 1);
@@ -73,26 +73,26 @@ run Hello"#;
 // Error Cases
 // ============================================
 
-#[test]
-fn test_evaluate_undefined_agent() {
+#[tokio::test]
+async fn test_evaluate_undefined_agent() {
     let source = "run NonExistent";
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.to_string().contains("Undefined"));
 }
 
-#[test]
-fn test_evaluate_missing_prompt() {
+#[tokio::test]
+async fn test_evaluate_missing_prompt() {
     let source = r#"
         agent Empty { }
         run Empty
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.to_string().contains("prompt"));
@@ -102,8 +102,8 @@ fn test_evaluate_missing_prompt() {
 // Multiple Agents Tests
 // ============================================
 
-#[test]
-fn test_evaluate_multiple_agents() {
+#[tokio::test]
+async fn test_evaluate_multiple_agents() {
     let source = r#"
         agent First { prompt: "You are first." }
         agent Second { prompt: "You are second." }
@@ -112,13 +112,13 @@ fn test_evaluate_multiple_agents() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Response");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
 
-#[test]
-fn test_evaluate_same_agent_twice() {
+#[tokio::test]
+async fn test_evaluate_same_agent_twice() {
     let source = r#"
         agent Bot { prompt: "You help." }
         run Bot
@@ -126,7 +126,7 @@ fn test_evaluate_same_agent_twice() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Help!");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 2);
@@ -137,28 +137,28 @@ fn test_evaluate_same_agent_twice() {
 // Expression Tests
 // ============================================
 
-#[test]
-fn test_evaluate_number_field() {
+#[tokio::test]
+async fn test_evaluate_number_field() {
     let source = r#"
         agent Bot { prompt: "Help." timeout: 30 }
         run Bot
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     // Should succeed - extra fields are ignored
     assert!(result.is_ok());
 }
 
-#[test]
-fn test_evaluate_boolean_field() {
+#[tokio::test]
+async fn test_evaluate_boolean_field() {
     let source = r#"
         agent Bot { prompt: "Help." verbose: true }
         run Bot
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
 }
 
@@ -166,8 +166,8 @@ fn test_evaluate_boolean_field() {
 // Complex Program Tests
 // ============================================
 
-#[test]
-fn test_evaluate_complex_program() {
+#[tokio::test]
+async fn test_evaluate_complex_program() {
     let source = r#"
         agent Researcher { prompt: "You research topics." }
         agent Writer { prompt: "You write content." }
@@ -176,13 +176,13 @@ fn test_evaluate_complex_program() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Done!");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
 
-#[test]
-fn test_evaluate_with_comments() {
+#[tokio::test]
+async fn test_evaluate_with_comments() {
     let source = r#"
         // Define an agent
         agent Helper { prompt: "You help." }
@@ -191,7 +191,7 @@ fn test_evaluate_with_comments() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Helping!");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap()[0], "Helping!");
 }
@@ -200,36 +200,36 @@ fn test_evaluate_with_comments() {
 // Edge Cases
 // ============================================
 
-#[test]
-fn test_evaluate_empty_prompt() {
+#[tokio::test]
+async fn test_evaluate_empty_prompt() {
     let source = r#"
         agent Empty { prompt: "" }
         run Empty
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Response");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
 }
 
-#[test]
-fn test_evaluate_long_prompt() {
+#[tokio::test]
+async fn test_evaluate_long_prompt() {
     let long_text = "You are helpful. ".repeat(50);
     let source = format!(r#"agent Long {{ prompt: "{}" }} run Long"#, long_text);
     let program = parse(&source).unwrap();
     let llm = MockLLMClient::with_response("OK");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
 }
 
-#[test]
-fn test_evaluate_special_characters_in_prompt() {
+#[tokio::test]
+async fn test_evaluate_special_characters_in_prompt() {
     let source = r#"
         agent Special { prompt: "Say \"hello\" and use 'quotes'." }
         run Special
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
-    let result = evaluate_with_output(&program, &llm);
+    let result = evaluate_with_output(&program, &llm).await;
     assert!(result.is_ok());
 }

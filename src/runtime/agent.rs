@@ -13,7 +13,7 @@ use crate::runtime::{LLMClient, LLMResponse, Message};
 ///
 /// # Returns
 /// The LLM response content as a string
-pub fn run_agent(
+pub async fn run_agent(
     agent: &AgentValue,
     input: Option<String>,
     llm: &dyn LLMClient,
@@ -29,13 +29,13 @@ pub fn run_agent(
     messages.push(Message::user(user_input));
 
     // Call LLM
-    let response = llm.chat(messages)?;
+    let response = llm.chat(messages, vec![]).await?;
 
-    Ok(response.content)
+    Ok(response.content.unwrap_or_default())
 }
 
 /// Run an agent and return the full LLM response
-pub fn run_agent_full(
+pub async fn run_agent_full(
     agent: &AgentValue,
     input: Option<String>,
     llm: &dyn LLMClient,
@@ -46,5 +46,5 @@ pub fn run_agent_full(
     let user_input = input.unwrap_or_else(|| "Hello!".to_string());
     messages.push(Message::user(user_input));
 
-    llm.chat(messages)
+    llm.chat(messages, vec![]).await
 }

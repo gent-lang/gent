@@ -13,23 +13,26 @@ use crate::runtime::{run_agent, LLMClient};
 ///
 /// # Returns
 /// Ok(()) on success, Err on failure
-pub fn evaluate(program: &Program, llm: &dyn LLMClient) -> GentResult<()> {
+pub async fn evaluate(program: &Program, llm: &dyn LLMClient) -> GentResult<()> {
     let mut env = Environment::new();
 
     for statement in &program.statements {
-        evaluate_statement(statement, &mut env, llm)?;
+        evaluate_statement(statement, &mut env, llm).await?;
     }
 
     Ok(())
 }
 
 /// Evaluate a GENT program and capture output
-pub fn evaluate_with_output(program: &Program, llm: &dyn LLMClient) -> GentResult<Vec<String>> {
+pub async fn evaluate_with_output(
+    program: &Program,
+    llm: &dyn LLMClient,
+) -> GentResult<Vec<String>> {
     let mut env = Environment::new();
     let mut outputs = Vec::new();
 
     for statement in &program.statements {
-        if let Some(output) = evaluate_statement_with_output(statement, &mut env, llm)? {
+        if let Some(output) = evaluate_statement_with_output(statement, &mut env, llm).await? {
             outputs.push(output);
         }
     }
@@ -37,7 +40,7 @@ pub fn evaluate_with_output(program: &Program, llm: &dyn LLMClient) -> GentResul
     Ok(outputs)
 }
 
-fn evaluate_statement(
+async fn evaluate_statement(
     statement: &Statement,
     env: &mut Environment,
     llm: &dyn LLMClient,
@@ -47,14 +50,14 @@ fn evaluate_statement(
             evaluate_agent_decl(decl, env)?;
         }
         Statement::RunStmt(run) => {
-            let output = evaluate_run_stmt(run, env, llm)?;
+            let output = evaluate_run_stmt(run, env, llm).await?;
             println!("{}", output);
         }
     }
     Ok(())
 }
 
-fn evaluate_statement_with_output(
+async fn evaluate_statement_with_output(
     statement: &Statement,
     env: &mut Environment,
     llm: &dyn LLMClient,
@@ -65,7 +68,7 @@ fn evaluate_statement_with_output(
             Ok(None)
         }
         Statement::RunStmt(run) => {
-            let output = evaluate_run_stmt(run, env, llm)?;
+            let output = evaluate_run_stmt(run, env, llm).await?;
             Ok(Some(output))
         }
     }
@@ -154,7 +157,7 @@ fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()
     Ok(())
 }
 
-fn evaluate_run_stmt(
+async fn evaluate_run_stmt(
     run: &crate::parser::RunStmt,
     env: &Environment,
     llm: &dyn LLMClient,
@@ -190,7 +193,7 @@ fn evaluate_run_stmt(
     };
 
     // Run the agent
-    run_agent(agent, input, llm)
+    run_agent(agent, input, llm).await
 }
 
 fn evaluate_expression(expr: &Expression) -> GentResult<Value> {

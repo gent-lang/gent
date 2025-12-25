@@ -27,10 +27,11 @@ struct Cli {
     mock_response: Option<String>,
 }
 
-fn main() -> ExitCode {
+#[tokio::main]
+async fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    if let Err(e) = run(&cli) {
+    if let Err(e) = run(&cli).await {
         eprintln!("Error: {}", e);
         return ExitCode::FAILURE;
     }
@@ -38,7 +39,7 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn run(cli: &Cli) -> Result<(), GentError> {
+async fn run(cli: &Cli) -> Result<(), GentError> {
     // Read the source file
     let source = fs::read_to_string(&cli.file).map_err(|e| GentError::FileReadError {
         path: cli.file.display().to_string(),
@@ -56,7 +57,7 @@ fn run(cli: &Cli) -> Result<(), GentError> {
     };
 
     // Evaluate the program
-    evaluate(&program, &llm)?;
+    evaluate(&program, &llm).await?;
 
     Ok(())
 }
