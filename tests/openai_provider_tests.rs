@@ -1,0 +1,118 @@
+use gent::runtime::providers::OpenAIClient;
+use gent::runtime::llm::{LLMClient, Message, ToolDefinition};
+use serde_json::json;
+use wiremock::{MockServer, Mock, ResponseTemplate};
+use wiremock::matchers::{method, path};
+
+#[tokio::test]
+async fn test_openai_client_creation() {
+    let client = OpenAIClient::new("test-key".to_string());
+    assert!(client.model() == "gpt-4o-mini");
+}
+
+#[tokio::test]
+async fn test_openai_client_with_model() {
+    let client = OpenAIClient::new("test-key".to_string())
+        .with_model("gpt-4o");
+    assert!(client.model() == "gpt-4o");
+}
+
+#[tokio::test]
+async fn test_openai_chat_simple() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "chatcmpl-123",
+            "object": "chat.completion",
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": "Hello! How can I help?"
+                },
+                "finish_reason": "stop"
+            }]
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let client = OpenAIClient::new("test-key".to_string())
+        .with_base_url(&mock_server.uri());
+
+    let messages = vec![Message::user("Hello")];
+    let response = client.chat(messages, vec![]).await.unwrap();
+
+    assert_eq!(response.content, Some("Hello! How can I help?".to_string()));
+    assert!(response.tool_calls.is_empty());
+}
+
+#[tokio::test]
+async fn test_openai_chat_with_tool_call() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "chatcmpl-123",
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": null,
+                    "tool_calls": [{
+                        "id": "call_abc123",
+                        "type": "function",
+                        "function": {
+                            "name": "web_fetch",
+                            "arguments": "{\"url\":\"https://example.com\"}"
+                        }
+                    }]
+                },
+                "finish_reason": "tool_calls"
+            }]
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let client = OpenAIClient::new("test-key".to_string())
+        .with_base_url(&mock_server.uri());
+
+    let tools = vec![ToolDefinition {
+        name: "web_fetch".to_string(),
+        description: "Fetch a URL".to_string(),
+        parameters: json!({"type": "object", "properties": {"url": {"type": "string"}}}),
+    }];
+
+    let messages = vec![Message::user("Fetch example.com")];
+    let response = client.chat(messages, tools).await.unwrap();
+
+    assert!(response.content.is_none());
+    assert_eq!(response.tool_calls.len(), 1);
+    assert_eq!(response.tool_calls[0].name, "web_fetch");
+}
+
+#[tokio::test]
+async fn test_openai_api_error() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(401).set_body_json(json!({
+            "error": {
+                "message": "Invalid API key",
+                "type": "invalid_request_error"
+            }
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let client = OpenAIClient::new("bad-key".to_string())
+        .with_base_url(&mock_server.uri());
+
+    let messages = vec![Message::user("Hello")];
+    let result = client.chat(messages, vec![]).await;
+
+    assert!(result.is_err());
+}
