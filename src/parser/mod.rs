@@ -74,7 +74,12 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
         }
     }
 
-    Ok(AgentDecl { name, fields, span })
+    Ok(AgentDecl {
+        name,
+        fields,
+        tools: vec![],
+        span,
+    })
 }
 
 fn parse_agent_field(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentField> {
