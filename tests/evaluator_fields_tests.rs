@@ -7,6 +7,7 @@ async fn test_evaluate_agent_with_max_steps() {
     let source = r#"
         agent Bot {
             prompt: "Hello"
+            model: "gpt-4o-mini"
             max_steps: 5
         }
         run Bot
@@ -39,6 +40,7 @@ async fn test_evaluate_agent_with_tools() {
     let source = r#"
         agent Bot {
             prompt: "Hello"
+            model: "gpt-4o-mini"
             use web_fetch, read_file
         }
         run Bot

@@ -18,6 +18,7 @@ async fn test_simple_user_tool() {
 
         agent Bot {
             prompt: "You are a bot"
+            model: "gpt-4o-mini"
         }
 
         run Bot
@@ -40,6 +41,7 @@ async fn test_tool_with_arithmetic() {
 
         agent Calculator {
             prompt: "You are a calculator"
+            model: "gpt-4o-mini"
         }
 
         run Calculator
@@ -66,6 +68,7 @@ async fn test_tool_with_conditional() {
 
         agent WeatherBot {
             prompt: "You classify weather"
+            model: "gpt-4o-mini"
         }
 
         run WeatherBot
@@ -89,6 +92,7 @@ async fn test_tool_with_let_binding() {
 
         agent Formatter {
             prompt: "You format names"
+            model: "gpt-4o-mini"
         }
 
         run Formatter
@@ -119,6 +123,7 @@ async fn test_multiple_tools() {
 
         agent MultiTool {
             prompt: "You have multiple tools"
+            model: "gpt-4o-mini"
         }
 
         run MultiTool
@@ -149,6 +154,7 @@ async fn test_parse_full_expression() {
 
         agent ComplexBot {
             prompt: "You do complex calculations"
+            model: "gpt-4o-mini"
         }
 
         run ComplexBot
@@ -200,6 +206,7 @@ async fn test_tool_with_run_input() {
 
         agent Processor {
             prompt: "You process data"
+            model: "gpt-4o-mini"
         }
 
         run Processor with "test input"
@@ -234,6 +241,7 @@ async fn test_tool_nested_conditionals() {
 
         agent Grader {
             prompt: "You grade students"
+            model: "gpt-4o-mini"
         }
 
         run Grader
@@ -259,6 +267,7 @@ async fn test_tool_multiple_let_bindings() {
 
         agent MessageBuilder {
             prompt: "You build messages"
+            model: "gpt-4o-mini"
         }
 
         run MessageBuilder
@@ -286,6 +295,7 @@ async fn test_tool_all_arithmetic_operators() {
 
         agent AllMath {
             prompt: "You do all math operations"
+            model: "gpt-4o-mini"
         }
 
         run AllMath
@@ -316,6 +326,7 @@ async fn test_tool_comparison_operators() {
 
         agent Comparator {
             prompt: "You compare numbers"
+            model: "gpt-4o-mini"
         }
 
         run Comparator
@@ -340,6 +351,7 @@ async fn test_tool_string_concatenation() {
 
         agent URLBuilder {
             prompt: "You build URLs"
+            model: "gpt-4o-mini"
         }
 
         run URLBuilder
@@ -366,6 +378,7 @@ async fn test_tool_no_return_type() {
 
         agent Logger {
             prompt: "You log messages"
+            model: "gpt-4o-mini"
         }
 
         run Logger
@@ -388,6 +401,7 @@ async fn test_tool_no_parameters() {
 
         agent SimpleBot {
             prompt: "You greet people"
+            model: "gpt-4o-mini"
         }
 
         run SimpleBot
@@ -410,10 +424,12 @@ async fn test_multiple_agents_with_tools() {
 
         agent Bot1 {
             prompt: "You are Bot1"
+            model: "gpt-4o-mini"
         }
 
         agent Bot2 {
             prompt: "You are Bot2"
+            model: "gpt-4o-mini"
             max_steps: 5
         }
 

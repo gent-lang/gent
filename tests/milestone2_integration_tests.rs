@@ -7,6 +7,7 @@ async fn test_agent_with_tools_parses() {
     let source = r#"
         agent Bot {
             prompt: "Hello"
+            model: "gpt-4o-mini"
             use web_fetch, read_file
         }
         run Bot
@@ -24,6 +25,7 @@ async fn test_agent_with_max_steps() {
     let source = r#"
         agent Bot {
             prompt: "Hello"
+            model: "gpt-4o-mini"
             max_steps: 3
         }
         run Bot
@@ -58,6 +60,7 @@ async fn test_full_researcher_example() {
     let source = r#"
         agent Researcher {
             prompt: "You help research topics."
+            model: "gpt-4o-mini"
             use web_fetch
             max_steps: 5
         }
@@ -76,10 +79,12 @@ async fn test_multiple_agents_with_different_tools() {
     let source = r#"
         agent Reader {
             prompt: "Read files"
+            model: "gpt-4o-mini"
             use read_file
         }
         agent Writer {
             prompt: "Write files"
+            model: "gpt-4o-mini"
             use write_file
         }
         run Reader
