@@ -261,12 +261,12 @@ fn test_run_simple() {
 
 #[test]
 fn test_run_with_input() {
-    assert!(parse_rule(Rule::run_stmt, "run Hello with \"Hi there!\""));
+    assert!(parse_rule(Rule::run_stmt, "run Hello(\"Hi there!\")"));
 }
 
 #[test]
 fn test_run_with_identifier_input() {
-    assert!(parse_rule(Rule::run_stmt, "run Hello with userInput"));
+    assert!(parse_rule(Rule::run_stmt, "run Hello(userInput)"));
 }
 
 // ============================================
