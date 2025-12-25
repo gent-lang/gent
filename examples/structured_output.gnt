@@ -24,6 +24,19 @@ struct SentimentAnalysis {
     keywords: string[]
 }
 
+struct MeetingDetails {
+    date: string
+    time: string
+    attendees: string[]
+    agenda: string[]
+    location: string
+}
+
+struct IssueClassification {
+    type: string
+    confidence: number
+}
+
 // ============================================
 // Agents with Structured Output
 // ============================================
@@ -54,7 +67,7 @@ If any field is not found, use 'unknown'."
     output: ExtractedData
 }
 
-// Analyzer with inline output definition
+// Analyzer with named output type
 agent SentimentAnalyzer {
     prompt: "Analyze the sentiment of the given text. Return:
 - sentiment: 'positive', 'negative', or 'neutral'
@@ -64,24 +77,18 @@ agent SentimentAnalyzer {
     output: SentimentAnalysis
 }
 
-// Agent with nested inline output
+// Agent using named struct for output
 agent MeetingExtractor {
     prompt: "Extract meeting details from the text. Find the date, time, attendees, and agenda items."
     model: "gpt-4o-mini"
-    output: {
-        date: string
-        time: string
-        attendees: string[]
-        agenda: string[]
-        location: string
-    }
+    output: MeetingDetails
 }
 
 // Agent with retries configured
 agent StrictClassifier {
     prompt: "Classify the input into exactly one of: bug, feature, question, documentation. Be precise."
     model: "gpt-4o"
-    output: { type: string, confidence: number }
+    output: IssueClassification
     output_retries: 3
 }
 
