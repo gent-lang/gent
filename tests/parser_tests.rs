@@ -63,34 +63,34 @@ fn test_parse_agent_multiple_fields() {
 }
 
 #[test]
-fn test_parse_run_simple() {
-    let result = parse("run Hello");
+fn test_parse_agent_call_simple() {
+    let result = parse("Hello");
     assert!(result.is_ok());
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::RunStmt(run) => {
-            assert_eq!(run.agent_name, "Hello");
-            assert!(run.input.is_none());
+        Statement::AgentCall(call) => {
+            assert_eq!(call.agent_name, "Hello");
+            assert!(call.input.is_none());
         }
-        _ => panic!("Expected RunStmt"),
+        _ => panic!("Expected AgentCall"),
     }
 }
 
 #[test]
-fn test_parse_run_with_input() {
-    let result = parse(r#"run Hello("Hi there!")"#);
+fn test_parse_agent_call_with_input() {
+    let result = parse(r#"Hello("Hi there!")"#);
     assert!(result.is_ok());
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::RunStmt(run) => {
-            assert_eq!(run.agent_name, "Hello");
-            assert!(run.input.is_some());
-            match run.input.as_ref().unwrap() {
+        Statement::AgentCall(call) => {
+            assert_eq!(call.agent_name, "Hello");
+            assert!(call.input.is_some());
+            match call.input.as_ref().unwrap() {
                 Expression::String(s, _) => assert_eq!(s, "Hi there!"),
                 _ => panic!("Expected String"),
             }
         }
-        _ => panic!("Expected RunStmt"),
+        _ => panic!("Expected AgentCall"),
     }
 }
 
@@ -101,7 +101,7 @@ fn test_parse_run_with_input() {
 #[test]
 fn test_parse_hello_world() {
     let source = r#"agent Hello { prompt: "You are friendly." }
-run Hello"#;
+Hello"#;
     let result = parse(source);
     assert!(result.is_ok());
     let program = result.unwrap();
@@ -116,12 +116,12 @@ run Hello"#;
         _ => panic!("Expected AgentDecl"),
     }
 
-    // Second statement: run
+    // Second statement: agent call
     match &program.statements[1] {
-        Statement::RunStmt(run) => {
-            assert_eq!(run.agent_name, "Hello");
+        Statement::AgentCall(call) => {
+            assert_eq!(call.agent_name, "Hello");
         }
-        _ => panic!("Expected RunStmt"),
+        _ => panic!("Expected AgentCall"),
     }
 }
 
@@ -264,15 +264,15 @@ fn test_parse_span_agent() {
 }
 
 #[test]
-fn test_parse_span_run() {
-    let result = parse("run Hello");
+fn test_parse_span_agent_call() {
+    let result = parse("Hello");
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::RunStmt(run) => {
-            assert_eq!(run.span.start, 0);
-            assert_eq!(run.span.end, 9);
+        Statement::AgentCall(call) => {
+            assert_eq!(call.span.start, 0);
+            assert_eq!(call.span.end, 5);
         }
-        _ => panic!("Expected RunStmt"),
+        _ => panic!("Expected AgentCall"),
     }
 }
 
@@ -307,7 +307,7 @@ fn test_parse_with_comments() {
     let source = r#"// Comment
 agent Hello { prompt: "Hi" }
 // Another comment
-run Hello"#;
+Hello"#;
     let result = parse(source);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().statements.len(), 2);
@@ -324,7 +324,7 @@ fn test_parse_multiline() {
     let source = r#"agent Hello {
     prompt: "You are friendly."
 }
-run Hello"#;
+Hello"#;
     let result = parse(source);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().statements.len(), 2);
