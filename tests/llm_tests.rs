@@ -177,7 +177,7 @@ async fn test_mock_client_with_response_string() {
 async fn test_mock_client_chat_returns_response() {
     let client = MockLLMClient::with_response("Test response");
     let messages = vec![Message::user("Hello")];
-    let result = client.chat(messages, vec![]).await;
+    let result = client.chat(messages, vec![], None).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().content, Some("Test response".to_string()));
 }
@@ -192,8 +192,8 @@ async fn test_mock_client_ignores_messages() {
         Message::user("How are you?"),
     ];
 
-    let r1 = client.chat(messages1, vec![]).await.unwrap();
-    let r2 = client.chat(messages2, vec![]).await.unwrap();
+    let r1 = client.chat(messages1, vec![], None).await.unwrap();
+    let r2 = client.chat(messages2, vec![], None).await.unwrap();
 
     assert_eq!(r1.content, r2.content);
 }
@@ -201,7 +201,7 @@ async fn test_mock_client_ignores_messages() {
 #[tokio::test]
 async fn test_mock_client_empty_messages() {
     let client = MockLLMClient::with_response("Response");
-    let result = client.chat(vec![], vec![]).await;
+    let result = client.chat(vec![], vec![], None).await;
     assert!(result.is_ok());
 }
 
@@ -228,7 +228,7 @@ async fn test_mock_client_debug() {
 async fn test_llm_client_trait_object() {
     let client: Box<dyn LLMClient> = Box::new(MockLLMClient::with_response("Boxed"));
     let messages = vec![Message::user("test")];
-    let result = client.chat(messages, vec![]).await;
+    let result = client.chat(messages, vec![], None).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().content, Some("Boxed".to_string()));
 }
@@ -237,7 +237,7 @@ async fn test_llm_client_trait_object() {
 async fn test_llm_client_as_ref() {
     let client = MockLLMClient::with_response("Ref test");
     let client_ref: &dyn LLMClient = &client;
-    let result = client_ref.chat(vec![Message::user("hi")], vec![]).await;
+    let result = client_ref.chat(vec![Message::user("hi")], vec![], None).await;
     assert!(result.is_ok());
 }
 
