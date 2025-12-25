@@ -5,4 +5,4 @@ agent Researcher {
     max_steps: 5
 }
 
-run Researcher with "What is the capital of France?"
+run Researcher("What is the capital of France?")
