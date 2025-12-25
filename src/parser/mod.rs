@@ -3,8 +3,8 @@
 pub mod ast;
 
 pub use ast::{
-    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, IfStmt, LetStmt,
-    OutputType, Param, Program, ReturnStmt, RunStmt, Statement, StructDecl, StructField, ToolDecl,
+    AgentCall, AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, IfStmt,
+    LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StructDecl, StructField, ToolDecl,
     TypeName, UnaryOp,
 };
 
@@ -48,7 +48,7 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
         Rule::struct_decl => Ok(Statement::StructDecl(parse_struct_decl(inner)?)),
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
-        Rule::run_stmt => Ok(Statement::RunStmt(parse_run_stmt(inner)?)),
+        Rule::agent_call => Ok(Statement::AgentCall(parse_agent_call(inner)?)),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected rule: {:?}", inner.as_rule()),
             span: Span::new(0, 0),
@@ -156,20 +156,20 @@ fn parse_struct_body_from_object(
     Ok(fields)
 }
 
-fn parse_run_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<RunStmt> {
+fn parse_agent_call(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentCall> {
     let span = Span::new(pair.as_span().start(), pair.as_span().end());
     let mut inner = pair.into_inner();
 
     let agent_name = inner.next().unwrap().as_str().to_string();
     let input = if let Some(args) = inner.next() {
-        // run_args contains the expression in parentheses
+        // call_args contains the expression in parentheses
         let expr_pair = args.into_inner().next().unwrap();
         Some(parse_expression(expr_pair)?)
     } else {
         None
     };
 
-    Ok(RunStmt {
+    Ok(AgentCall {
         agent_name,
         input,
         span,
