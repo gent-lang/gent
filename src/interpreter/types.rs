@@ -1,0 +1,101 @@
+//! Value types for the GENT interpreter
+
+use std::fmt;
+
+/// Runtime values in GENT
+#[derive(Debug, Clone, PartialEq)]
+pub enum Value {
+    /// String value
+    String(String),
+    /// Numeric value (f64)
+    Number(f64),
+    /// Boolean value
+    Boolean(bool),
+    /// Null/none value
+    Null,
+    /// Agent value
+    Agent(AgentValue),
+}
+
+/// Represents a defined agent at runtime
+#[derive(Debug, Clone, PartialEq)]
+pub struct AgentValue {
+    /// Name of the agent
+    pub name: String,
+    /// System prompt for the agent
+    pub prompt: String,
+}
+
+impl AgentValue {
+    /// Create a new agent value
+    pub fn new(name: impl Into<String>, prompt: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            prompt: prompt.into(),
+        }
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::String(s) => write!(f, "{}", s),
+            Value::Number(n) => {
+                if n.fract() == 0.0 {
+                    write!(f, "{}", *n as i64)
+                } else {
+                    write!(f, "{}", n)
+                }
+            }
+            Value::Boolean(b) => write!(f, "{}", b),
+            Value::Null => write!(f, "null"),
+            Value::Agent(agent) => write!(f, "<agent {}>", agent.name),
+        }
+    }
+}
+
+impl fmt::Display for AgentValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<agent {}>", self.name)
+    }
+}
+
+impl Value {
+    /// Check if value is truthy
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Value::Boolean(b) => *b,
+            Value::Null => false,
+            Value::String(s) => !s.is_empty(),
+            Value::Number(n) => *n != 0.0,
+            Value::Agent(_) => true,
+        }
+    }
+
+    /// Get type name for error messages
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Value::String(_) => "String",
+            Value::Number(_) => "Number",
+            Value::Boolean(_) => "Boolean",
+            Value::Null => "Null",
+            Value::Agent(_) => "Agent",
+        }
+    }
+
+    /// Try to get as string
+    pub fn as_string(&self) -> Option<&String> {
+        match self {
+            Value::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Try to get as agent
+    pub fn as_agent(&self) -> Option<&AgentValue> {
+        match self {
+            Value::Agent(a) => Some(a),
+            _ => None,
+        }
+    }
+}
