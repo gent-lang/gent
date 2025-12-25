@@ -104,3 +104,43 @@ impl Expression {
         }
     }
 }
+
+/// A block of statements
+#[derive(Debug, Clone, PartialEq)]
+pub struct Block {
+    pub statements: Vec<BlockStmt>,
+    pub span: Span,
+}
+
+/// A statement within a block
+#[derive(Debug, Clone, PartialEq)]
+pub enum BlockStmt {
+    Let(LetStmt),
+    Return(ReturnStmt),
+    If(IfStmt),
+    Expr(Expression),
+}
+
+/// Let statement: `let x = expr`
+#[derive(Debug, Clone, PartialEq)]
+pub struct LetStmt {
+    pub name: String,
+    pub value: Expression,
+    pub span: Span,
+}
+
+/// Return statement: `return expr?`
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReturnStmt {
+    pub value: Option<Expression>,
+    pub span: Span,
+}
+
+/// If statement: `if cond { ... } else { ... }`
+#[derive(Debug, Clone, PartialEq)]
+pub struct IfStmt {
+    pub condition: Expression,
+    pub then_block: Block,
+    pub else_block: Option<Block>,
+    pub span: Span,
+}

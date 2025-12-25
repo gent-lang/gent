@@ -454,3 +454,54 @@ fn test_ast_type_name_variants() {
     ];
     assert_eq!(types.len(), 6);
 }
+
+// ============================================
+// Block and BlockStmt Tests
+// ============================================
+
+use gent::parser::{Block, BlockStmt, LetStmt, ReturnStmt, IfStmt};
+
+#[test]
+fn test_block_creation() {
+    let block = Block {
+        statements: vec![],
+        span: Span::new(0, 10),
+    };
+    assert!(block.statements.is_empty());
+}
+
+#[test]
+fn test_let_stmt() {
+    let stmt = BlockStmt::Let(LetStmt {
+        name: "x".to_string(),
+        value: Expression::Number(42.0, Span::new(0, 2)),
+        span: Span::new(0, 10),
+    });
+    assert!(matches!(stmt, BlockStmt::Let(_)));
+}
+
+#[test]
+fn test_return_stmt() {
+    let stmt = BlockStmt::Return(ReturnStmt {
+        value: Some(Expression::Number(1.0, Span::new(0, 1))),
+        span: Span::new(0, 8),
+    });
+    assert!(matches!(stmt, BlockStmt::Return(_)));
+}
+
+#[test]
+fn test_if_stmt() {
+    let stmt = BlockStmt::If(IfStmt {
+        condition: Expression::Boolean(true, Span::new(0, 4)),
+        then_block: Block { statements: vec![], span: Span::new(0, 2) },
+        else_block: None,
+        span: Span::new(0, 20),
+    });
+    assert!(matches!(stmt, BlockStmt::If(_)));
+}
+
+#[test]
+fn test_block_stmt_expr_variant() {
+    let stmt = BlockStmt::Expr(Expression::Number(42.0, Span::new(0, 2)));
+    assert!(matches!(stmt, BlockStmt::Expr(_)));
+}
