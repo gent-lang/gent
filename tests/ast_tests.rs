@@ -403,3 +403,35 @@ fn test_hello_world_ast() {
         _ => panic!("Expected RunStmt"),
     }
 }
+
+// ============================================
+// BinaryOp and UnaryOp Tests
+// ============================================
+
+use gent::parser::{BinaryOp, UnaryOp};
+
+#[test]
+fn test_binary_op_variants() {
+    let ops = vec![
+        BinaryOp::Add,
+        BinaryOp::Sub,
+        BinaryOp::Mul,
+        BinaryOp::Div,
+        BinaryOp::Mod,
+        BinaryOp::Eq,
+        BinaryOp::Ne,
+        BinaryOp::Lt,
+        BinaryOp::Le,
+        BinaryOp::Gt,
+        BinaryOp::Ge,
+        BinaryOp::And,
+        BinaryOp::Or,
+    ];
+    assert_eq!(ops.len(), 13);
+}
+
+#[test]
+fn test_unary_op_variants() {
+    let ops = vec![UnaryOp::Not, UnaryOp::Neg];
+    assert_eq!(ops.len(), 2);
+}

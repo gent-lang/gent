@@ -2,6 +2,34 @@
 
 use crate::Span;
 
+/// Binary operators
+#[derive(Debug, Clone, PartialEq)]
+pub enum BinaryOp {
+    // Arithmetic
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    // Comparison
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    // Logical
+    And,
+    Or,
+}
+
+/// Unary operators
+#[derive(Debug, Clone, PartialEq)]
+pub enum UnaryOp {
+    Not, // !
+    Neg, // -
+}
+
 /// A complete GENT program
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
