@@ -230,7 +230,7 @@ async fn test_tool_with_run_input() {
             model: "gpt-4o-mini"
         }
 
-        run Processor with "test input"
+        run Processor("test input")
     "#;
 
     let program = parse(source).unwrap();
@@ -524,7 +524,7 @@ async fn test_full_milestone3_program() {
             model: "gpt-4o-mini"
         }
 
-        run ShoppingAssistant with "Calculate my savings"
+        run ShoppingAssistant("Calculate my savings")
     "#;
 
     let program = parse(source).unwrap();
