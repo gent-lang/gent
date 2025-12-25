@@ -139,6 +139,14 @@ pub enum GentError {
         got: String,
         span: Span,
     },
+
+    /// Output validation failed for structured output
+    #[error("Output validation error: {message}\nExpected schema: {expected}\nGot: {got}")]
+    OutputValidationError {
+        message: String,
+        expected: String,
+        got: String,
+    },
 }
 
 impl GentError {
@@ -165,6 +173,7 @@ impl GentError {
             GentError::MissingApiKey { .. } => None,
             GentError::MaxStepsExceeded { .. } => None,
             GentError::ToolError { .. } => None,
+            GentError::OutputValidationError { .. } => None,
         }
     }
 }

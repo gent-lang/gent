@@ -1,10 +1,11 @@
 //! Program evaluation for GENT
 
 use crate::errors::{GentError, GentResult};
-use crate::interpreter::{AgentValue, Environment, UserToolValue, Value};
+use crate::interpreter::{AgentValue, Environment, OutputSchema, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger, NullLogger};
-use crate::parser::{AgentDecl, Expression, Program, Statement, ToolDecl};
+use crate::parser::{AgentDecl, Expression, Program, Statement, StructField, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Evaluate a GENT program
@@ -24,9 +25,18 @@ pub async fn evaluate(
     logger: &dyn Logger,
 ) -> GentResult<()> {
     let mut env = Environment::new();
+    let mut structs: HashMap<String, Vec<StructField>> = HashMap::new();
 
+    // First pass: collect struct declarations
     for statement in &program.statements {
-        evaluate_statement(statement, &mut env, llm, tools, logger).await?;
+        if let Statement::StructDecl(decl) = statement {
+            structs.insert(decl.name.clone(), decl.fields.clone());
+        }
+    }
+
+    // Second pass: evaluate statements
+    for statement in &program.statements {
+        evaluate_statement(statement, &mut env, llm, tools, logger, &structs).await?;
     }
 
     Ok(())
@@ -41,10 +51,19 @@ pub async fn evaluate_with_output(
     let logger = NullLogger;
     let mut env = Environment::new();
     let mut outputs = Vec::new();
+    let mut structs: HashMap<String, Vec<StructField>> = HashMap::new();
 
+    // First pass: collect struct declarations
+    for statement in &program.statements {
+        if let Statement::StructDecl(decl) = statement {
+            structs.insert(decl.name.clone(), decl.fields.clone());
+        }
+    }
+
+    // Second pass: evaluate statements
     for statement in &program.statements {
         if let Some(output) =
-            evaluate_statement_with_output(statement, &mut env, llm, tools, &logger).await?
+            evaluate_statement_with_output(statement, &mut env, llm, tools, &logger, &structs).await?
         {
             outputs.push(output);
         }
@@ -59,6 +78,7 @@ async fn evaluate_statement(
     llm: &dyn LLMClient,
     tools: &mut ToolRegistry,
     logger: &dyn Logger,
+    structs: &HashMap<String, Vec<StructField>>,
 ) -> GentResult<()> {
     match statement {
         Statement::AgentDecl(decl) => {
@@ -67,7 +87,7 @@ async fn evaluate_statement(
                 "eval",
                 &format!("Declaring agent '{}'", decl.name),
             );
-            evaluate_agent_decl(decl, env)?;
+            evaluate_agent_decl(decl, env, structs)?;
         }
         Statement::RunStmt(run) => {
             logger.log(
@@ -100,6 +120,7 @@ async fn evaluate_statement_with_output(
     llm: &dyn LLMClient,
     tools: &mut ToolRegistry,
     logger: &dyn Logger,
+    structs: &HashMap<String, Vec<StructField>>,
 ) -> GentResult<Option<String>> {
     match statement {
         Statement::AgentDecl(decl) => {
@@ -108,7 +129,7 @@ async fn evaluate_statement_with_output(
                 "eval",
                 &format!("Declaring agent '{}'", decl.name),
             );
-            evaluate_agent_decl(decl, env)?;
+            evaluate_agent_decl(decl, env, structs)?;
             Ok(None)
         }
         Statement::RunStmt(run) => {
@@ -137,10 +158,15 @@ async fn evaluate_statement_with_output(
     }
 }
 
-fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()> {
+fn evaluate_agent_decl(
+    decl: &AgentDecl,
+    env: &mut Environment,
+    structs: &HashMap<String, Vec<StructField>>,
+) -> GentResult<()> {
     let mut prompt: Option<String> = None;
     let mut max_steps: Option<u32> = None;
     let mut model: Option<String> = None;
+    let mut output_retries: Option<u32> = None;
 
     // Extract fields
     for field in &decl.fields {
@@ -191,6 +217,26 @@ fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()
                     }
                 });
             }
+            "output_retries" => {
+                let value = evaluate_expression(&field.value)?;
+                output_retries = Some(match value {
+                    Value::Number(n) if n >= 0.0 => n as u32,
+                    Value::Number(_) => {
+                        return Err(GentError::TypeError {
+                            expected: "positive number".to_string(),
+                            got: "negative number".to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "Number".to_string(),
+                            got: value.type_name().to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                });
+            }
             _ => {
                 // Ignore unknown fields for forward compatibility
             }
@@ -218,6 +264,22 @@ fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()
 
     if let Some(steps) = max_steps {
         agent = agent.with_max_steps(steps);
+    }
+
+    // Set output_retries if present
+    if let Some(retries) = output_retries {
+        agent = agent.with_output_retries(retries);
+    }
+
+    // Convert output type to schema if present
+    if let Some(output_type) = &decl.output {
+        let schema = OutputSchema::from_output_type(output_type, structs)
+            .map_err(|msg| GentError::TypeError {
+                expected: "valid output type".to_string(),
+                got: msg,
+                span: decl.span.clone(),
+            })?;
+        agent = agent.with_output_schema(schema);
     }
 
     env.define(&decl.name, Value::Agent(agent));
