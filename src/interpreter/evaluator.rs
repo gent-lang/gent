@@ -72,24 +72,83 @@ fn evaluate_statement_with_output(
 }
 
 fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()> {
-    // Extract prompt from fields
-    let prompt = decl
-        .fields
-        .iter()
-        .find(|f| f.name == "prompt")
-        .map(|f| evaluate_expression(&f.value))
-        .transpose()?
-        .and_then(|v| match v {
-            Value::String(s) => Some(s),
-            _ => None,
-        })
-        .ok_or_else(|| GentError::MissingAgentField {
-            agent: decl.name.clone(),
-            field: "prompt".to_string(),
-            span: decl.span.clone(),
-        })?;
+    let mut prompt: Option<String> = None;
+    let mut max_steps: Option<u32> = None;
+    let mut model: Option<String> = None;
 
-    let agent = AgentValue::new(&decl.name, prompt);
+    // Extract fields
+    for field in &decl.fields {
+        match field.name.as_str() {
+            "prompt" => {
+                let value = evaluate_expression(&field.value)?;
+                prompt = Some(match value {
+                    Value::String(s) => s,
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "String".to_string(),
+                            got: value.type_name().to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                });
+            }
+            "max_steps" => {
+                let value = evaluate_expression(&field.value)?;
+                max_steps = Some(match value {
+                    Value::Number(n) if n >= 0.0 => n as u32,
+                    Value::Number(_) => {
+                        return Err(GentError::TypeError {
+                            expected: "positive number".to_string(),
+                            got: "negative number".to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "Number".to_string(),
+                            got: value.type_name().to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                });
+            }
+            "model" => {
+                let value = evaluate_expression(&field.value)?;
+                model = Some(match value {
+                    Value::String(s) => s,
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "String".to_string(),
+                            got: value.type_name().to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                });
+            }
+            _ => {
+                // Ignore unknown fields for forward compatibility
+            }
+        }
+    }
+
+    // Prompt is required
+    let prompt = prompt.ok_or_else(|| GentError::MissingAgentField {
+        agent: decl.name.clone(),
+        field: "prompt".to_string(),
+        span: decl.span.clone(),
+    })?;
+
+    // Build agent with all fields
+    let mut agent = AgentValue::new(&decl.name, prompt).with_tools(decl.tools.clone());
+
+    if let Some(steps) = max_steps {
+        agent = agent.with_max_steps(steps);
+    }
+
+    if let Some(m) = model {
+        agent = agent.with_model(m);
+    }
+
     env.define(&decl.name, Value::Agent(agent));
 
     Ok(())
