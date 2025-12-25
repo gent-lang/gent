@@ -5,7 +5,7 @@ pub mod llm;
 pub mod providers;
 pub mod tools;
 
-pub use agent::{run_agent, run_agent_full};
+pub use agent::{run_agent, run_agent_full, run_agent_with_tools};
 pub use llm::{
     LLMClient, LLMResponse, Message, MockLLMClient, Role, ToolCall, ToolDefinition, ToolResult,
 };

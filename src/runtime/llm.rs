@@ -101,6 +101,16 @@ impl Message {
             tool_calls: None,
         }
     }
+
+    /// Create an assistant message with tool calls
+    pub fn assistant_with_tool_calls(tool_calls: Vec<ToolCall>) -> Self {
+        Self {
+            role: Role::Assistant,
+            content: String::new(),
+            tool_call_id: None,
+            tool_calls: Some(tool_calls),
+        }
+    }
 }
 
 /// Response from an LLM
