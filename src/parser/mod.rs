@@ -45,6 +45,7 @@ pub fn parse(source: &str) -> GentResult<Program> {
 fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
+        Rule::struct_decl => Ok(Statement::StructDecl(parse_struct_decl(inner)?)),
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
         Rule::run_stmt => Ok(Statement::RunStmt(parse_run_stmt(inner)?)),
@@ -533,6 +534,76 @@ fn parse_if_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<IfStmt> {
         else_block,
         span,
     })
+}
+
+fn parse_struct_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<StructDecl> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let body = inner.next().unwrap();
+    let fields = parse_struct_body(body)?;
+
+    Ok(StructDecl { name, fields, span })
+}
+
+fn parse_struct_body(pair: pest::iterators::Pair<Rule>) -> GentResult<Vec<StructField>> {
+    let mut fields = Vec::new();
+    for field_pair in pair.into_inner() {
+        if field_pair.as_rule() == Rule::struct_field {
+            fields.push(parse_struct_field(field_pair)?);
+        }
+    }
+    Ok(fields)
+}
+
+fn parse_struct_field(pair: pest::iterators::Pair<Rule>) -> GentResult<StructField> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let field_type = parse_field_type(inner.next().unwrap())?;
+
+    Ok(StructField { name, field_type, span })
+}
+
+fn parse_field_type(pair: pest::iterators::Pair<Rule>) -> GentResult<FieldType> {
+    let inner = pair.into_inner().next().unwrap();
+    match inner.as_rule() {
+        Rule::field_type_array => {
+            let base = inner.into_inner().next().unwrap();
+            let base_type = parse_field_type_base(base)?;
+            Ok(FieldType::Array(Box::new(base_type)))
+        }
+        Rule::field_type_object => {
+            let body = inner.into_inner().next().unwrap();
+            let fields = parse_struct_body(body)?;
+            Ok(FieldType::Object(fields))
+        }
+        Rule::field_type_named => {
+            let name = inner.into_inner().next().unwrap().as_str();
+            match name {
+                "string" => Ok(FieldType::String),
+                "number" => Ok(FieldType::Number),
+                "boolean" => Ok(FieldType::Boolean),
+                _ => Ok(FieldType::Named(name.to_string())),
+            }
+        }
+        _ => Err(GentError::SyntaxError {
+            message: format!("Unexpected field type rule: {:?}", inner.as_rule()),
+            span: Span::new(inner.as_span().start(), inner.as_span().end()),
+        }),
+    }
+}
+
+fn parse_field_type_base(pair: pest::iterators::Pair<Rule>) -> GentResult<FieldType> {
+    let name = pair.as_str();
+    match name {
+        "string" => Ok(FieldType::String),
+        "number" => Ok(FieldType::Number),
+        "boolean" => Ok(FieldType::Boolean),
+        _ => Ok(FieldType::Named(name.to_string())),
+    }
 }
 
 fn unescape_string(s: &str) -> String {
