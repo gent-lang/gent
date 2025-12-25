@@ -324,6 +324,46 @@ fn test_whitespace_mixed() {
 }
 
 // ============================================
+// Tool Declaration Tests
+// ============================================
+
+#[test]
+fn test_parse_tool_declaration() {
+    let input = r#"tool greet(name: string) -> string {
+        return "Hello"
+    }"#;
+    let result = GentParser::parse(Rule::tool_decl, input);
+    assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+}
+
+#[test]
+fn test_parse_tool_no_return_type() {
+    let input = r#"tool log(msg: string) {
+        return msg
+    }"#;
+    let result = GentParser::parse(Rule::tool_decl, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_tool_multiple_params() {
+    let input = r#"tool add(a: number, b: number) -> number {
+        return a
+    }"#;
+    let result = GentParser::parse(Rule::tool_decl, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_tool_no_params() {
+    let input = r#"tool get_time() -> string {
+        return "now"
+    }"#;
+    let result = GentParser::parse(Rule::tool_decl, input);
+    assert!(result.is_ok());
+}
+
+// ============================================
 // Error Cases
 // ============================================
 

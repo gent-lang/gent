@@ -1,6 +1,23 @@
 // === Program Structure ===
 program = { SOI ~ statement* ~ EOI }
-statement = { agent_decl | run_stmt }
+statement = { tool_decl | agent_decl | run_stmt }
+
+// === Tool Declaration ===
+tool_decl = {
+    "tool" ~ identifier ~ "(" ~ param_list? ~ ")" ~ return_type? ~ block
+}
+param_list = { param ~ ("," ~ param)* }
+param = { identifier ~ ":" ~ type_name }
+return_type = { "->" ~ type_name }
+type_name = { "string" | "number" | "boolean" | "object" | "array" | "any" }
+
+// === Block & Statements ===
+block = { "{" ~ block_stmt* ~ "}" }
+block_stmt = { let_stmt | return_stmt | if_stmt | expr_stmt }
+let_stmt = { "let" ~ identifier ~ "=" ~ expression }
+return_stmt = { "return" ~ expression? }
+if_stmt = { "if" ~ expression ~ block ~ ("else" ~ block)? }
+expr_stmt = { expression }
 
 // === Agent Declaration ===
 agent_decl = { "agent" ~ identifier ~ "{" ~ agent_body ~ "}" }
