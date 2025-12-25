@@ -21,7 +21,7 @@ async fn test_simple_user_tool() {
             model: "gpt-4o-mini"
         }
 
-        run Bot
+        Bot
     "#;
 
     let program = parse(source).unwrap();
@@ -47,7 +47,7 @@ async fn test_tool_with_arithmetic() {
             model: "gpt-4o-mini"
         }
 
-        run Calculator
+        Calculator
     "#;
 
     let program = parse(source).unwrap();
@@ -77,7 +77,7 @@ async fn test_tool_with_conditional() {
             model: "gpt-4o-mini"
         }
 
-        run WeatherBot
+        WeatherBot
     "#;
 
     let program = parse(source).unwrap();
@@ -104,7 +104,7 @@ async fn test_tool_with_let_binding() {
             model: "gpt-4o-mini"
         }
 
-        run Formatter
+        Formatter
     "#;
 
     let program = parse(source).unwrap();
@@ -138,7 +138,7 @@ async fn test_multiple_tools() {
             model: "gpt-4o-mini"
         }
 
-        run MultiTool
+        MultiTool
     "#;
 
     let program = parse(source).unwrap();
@@ -172,7 +172,7 @@ async fn test_parse_full_expression() {
             model: "gpt-4o-mini"
         }
 
-        run ComplexBot
+        ComplexBot
     "#;
 
     let program = parse(source).unwrap();
@@ -204,7 +204,7 @@ async fn test_tool_with_agent_fields() {
             use web_fetch
         }
 
-        run MathBot
+        MathBot
     "#;
 
     let program = parse(source).unwrap();
@@ -230,7 +230,7 @@ async fn test_tool_with_run_input() {
             model: "gpt-4o-mini"
         }
 
-        run Processor("test input")
+        Processor("test input")
     "#;
 
     let program = parse(source).unwrap();
@@ -268,7 +268,7 @@ async fn test_tool_nested_conditionals() {
             model: "gpt-4o-mini"
         }
 
-        run Grader
+        Grader
     "#;
 
     let program = parse(source).unwrap();
@@ -297,7 +297,7 @@ async fn test_tool_multiple_let_bindings() {
             model: "gpt-4o-mini"
         }
 
-        run MessageBuilder
+        MessageBuilder
     "#;
 
     let program = parse(source).unwrap();
@@ -328,7 +328,7 @@ async fn test_tool_all_arithmetic_operators() {
             model: "gpt-4o-mini"
         }
 
-        run AllMath
+        AllMath
     "#;
 
     let program = parse(source).unwrap();
@@ -362,7 +362,7 @@ async fn test_tool_comparison_operators() {
             model: "gpt-4o-mini"
         }
 
-        run Comparator
+        Comparator
     "#;
 
     let program = parse(source).unwrap();
@@ -390,7 +390,7 @@ async fn test_tool_string_concatenation() {
             model: "gpt-4o-mini"
         }
 
-        run URLBuilder
+        URLBuilder
     "#;
 
     let program = parse(source).unwrap();
@@ -420,7 +420,7 @@ async fn test_tool_no_return_type() {
             model: "gpt-4o-mini"
         }
 
-        run Logger
+        Logger
     "#;
 
     let program = parse(source).unwrap();
@@ -446,7 +446,7 @@ async fn test_tool_no_parameters() {
             model: "gpt-4o-mini"
         }
 
-        run SimpleBot
+        SimpleBot
     "#;
 
     let program = parse(source).unwrap();
@@ -478,7 +478,7 @@ async fn test_multiple_agents_with_tools() {
             max_steps: 5
         }
 
-        run Bot1
+        Bot1
     "#;
 
     let program = parse(source).unwrap();
@@ -524,7 +524,7 @@ async fn test_full_milestone3_program() {
             model: "gpt-4o-mini"
         }
 
-        run ShoppingAssistant("Calculate my savings")
+        ShoppingAssistant("Calculate my savings")
     "#;
 
     let program = parse(source).unwrap();
