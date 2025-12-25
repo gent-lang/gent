@@ -7,10 +7,12 @@ use std::sync::Arc;
 
 use crate::runtime::llm::ToolDefinition;
 
+mod json_parse;
 mod read_file;
 mod web_fetch;
 mod write_file;
 
+pub use json_parse::JsonParseTool;
 pub use read_file::ReadFileTool;
 pub use web_fetch::WebFetchTool;
 pub use write_file::WriteFileTool;
@@ -49,6 +51,7 @@ impl ToolRegistry {
         registry.register(Box::new(WebFetchTool::new()));
         registry.register(Box::new(ReadFileTool::new()));
         registry.register(Box::new(WriteFileTool::new()));
+        registry.register(Box::new(JsonParseTool::new()));
         registry
     }
 
