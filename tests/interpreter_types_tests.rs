@@ -66,7 +66,7 @@ fn test_value_agent() {
     match val {
         Value::Agent(a) => {
             assert_eq!(a.name, "Hello");
-            assert_eq!(a.prompt, "You are friendly.");
+            assert_eq!(a.system_prompt, "You are friendly.");
         }
         _ => panic!("Expected Agent"),
     }
@@ -80,14 +80,14 @@ fn test_value_agent() {
 fn test_agent_value_new() {
     let agent = AgentValue::new("Bot", "Help users.");
     assert_eq!(agent.name, "Bot");
-    assert_eq!(agent.prompt, "Help users.");
+    assert_eq!(agent.system_prompt, "Help users.");
 }
 
 #[test]
 fn test_agent_value_new_string_conversion() {
     let agent = AgentValue::new(String::from("Bot"), String::from("Help."));
     assert_eq!(agent.name, "Bot");
-    assert_eq!(agent.prompt, "Help.");
+    assert_eq!(agent.system_prompt, "Help.");
 }
 
 #[test]

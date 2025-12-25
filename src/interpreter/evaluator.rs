@@ -403,7 +403,7 @@ fn evaluate_expr_with_env<'a>(
                                         Value::String(s) => s,
                                         other => format!("{}", other),
                                     };
-                                    agent.prompt = prompt;
+                                    agent.system_prompt = prompt;
                                     return Ok(Value::Agent(agent));
                                 }
                                 _ => {

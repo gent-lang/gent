@@ -56,7 +56,7 @@ fn test_define_and_get_agent() {
     match env.get("myAgent") {
         Some(Value::Agent(a)) => {
             assert_eq!(a.name, "Bot");
-            assert_eq!(a.prompt, "You help.");
+            assert_eq!(a.system_prompt, "You help.");
         }
         _ => panic!("Expected Agent"),
     }

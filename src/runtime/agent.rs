@@ -54,7 +54,7 @@ pub async fn run_agent_with_tools(
     let mut messages = Vec::new();
 
     // Add system message if prompt is not empty
-    if !agent.prompt.is_empty() {
+    if !agent.system_prompt.is_empty() {
         let system_prompt = if let Some(schema) = &agent.output_schema {
             logger.log(
                 LogLevel::Debug,
@@ -68,13 +68,13 @@ pub async fn run_agent_with_tools(
                 .unwrap_or(default_instructions);
             format!(
                 "{}\n\n{}\n{}",
-                agent.prompt,
+                agent.system_prompt,
                 instructions,
                 serde_json::to_string_pretty(&schema.to_json_schema())
                     .unwrap_or_else(|_| "<schema>".to_string())
             )
         } else {
-            agent.prompt.clone()
+            agent.system_prompt.clone()
         };
         messages.push(Message::system(&system_prompt));
     }
@@ -204,8 +204,8 @@ pub async fn run_agent_full(
     let mut messages = Vec::new();
 
     // Add system message if prompt is not empty
-    if !agent.prompt.is_empty() {
-        messages.push(Message::system(&agent.prompt));
+    if !agent.system_prompt.is_empty() {
+        messages.push(Message::system(&agent.system_prompt));
     }
 
     // Add user message from agent's user_prompt or from input parameter

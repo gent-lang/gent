@@ -111,7 +111,7 @@ pub struct AgentValue {
     /// Name of the agent
     pub name: String,
     /// System prompt for the agent
-    pub prompt: String,
+    pub system_prompt: String,
     /// User prompt for the agent (optional)
     pub user_prompt: Option<String>,
     /// Tools available to this agent
@@ -132,10 +132,10 @@ pub struct AgentValue {
 
 impl AgentValue {
     /// Create a new agent value
-    pub fn new(name: impl Into<String>, prompt: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<String>, system_prompt: impl Into<String>) -> Self {
         Self {
             name: name.into(),
-            prompt: prompt.into(),
+            system_prompt: system_prompt.into(),
             user_prompt: None,
             tools: Vec::new(),
             max_steps: None,
