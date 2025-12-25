@@ -7,6 +7,7 @@ fn test_agent_decl_with_tools() {
         name: "Bot".to_string(),
         fields: vec![],
         tools: vec!["web_fetch".to_string(), "read_file".to_string()],
+        output: None,
         span: Span::new(0, 10),
     };
     assert_eq!(decl.tools.len(), 2);
@@ -19,6 +20,7 @@ fn test_agent_decl_without_tools() {
         name: "Bot".to_string(),
         fields: vec![],
         tools: vec![],
+        output: None,
         span: Span::new(0, 10),
     };
     assert!(decl.tools.is_empty());
@@ -34,6 +36,7 @@ fn test_agent_decl_with_tools_and_fields() {
             span: Span::new(0, 10),
         }],
         tools: vec!["web_fetch".to_string()],
+        output: None,
         span: Span::new(0, 50),
     };
     assert_eq!(decl.fields.len(), 1);

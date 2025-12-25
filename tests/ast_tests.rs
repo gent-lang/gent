@@ -154,6 +154,7 @@ fn test_agent_decl_creation() {
             span: Span::new(12, 39),
         }],
         tools: vec![],
+        output: None,
         span: Span::new(0, 41),
     };
     assert_eq!(agent.name, "Hello");
@@ -177,6 +178,7 @@ fn test_agent_decl_multiple_fields() {
             },
         ],
         tools: vec![],
+        output: None,
         span: Span::new(0, 50),
     };
     assert_eq!(agent.fields.len(), 2);
@@ -188,6 +190,7 @@ fn test_agent_decl_empty_fields() {
         name: "Empty".to_string(),
         fields: vec![],
         tools: vec![],
+        output: None,
         span: Span::new(0, 10),
     };
     assert!(agent.fields.is_empty());
@@ -199,6 +202,7 @@ fn test_agent_decl_equality() {
         name: "Test".to_string(),
         fields: vec![],
         tools: vec![],
+        output: None,
         span: Span::new(0, 10),
     };
     let a2 = a1.clone();
@@ -255,6 +259,7 @@ fn test_statement_agent_decl() {
         name: "Hello".to_string(),
         fields: vec![],
         tools: vec![],
+        output: None,
         span: Span::new(0, 10),
     });
     match stmt {
@@ -321,6 +326,7 @@ fn test_program_multiple_statements() {
                 name: "Hello".to_string(),
                 fields: vec![],
                 tools: vec![],
+        output: None,
                 span: Span::new(0, 10),
             }),
             Statement::RunStmt(RunStmt {
@@ -371,6 +377,7 @@ fn test_hello_world_ast() {
                     span: Span::new(14, 41),
                 }],
                 tools: vec![],
+        output: None,
                 span: Span::new(0, 43),
             }),
             Statement::RunStmt(RunStmt {

@@ -63,6 +63,7 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
     let name = inner.next().unwrap().as_str().to_string();
     let mut fields = Vec::new();
     let mut tools = Vec::new();
+    let mut output = None;
 
     if let Some(body) = inner.next() {
         for item_pair in body.into_inner() {
@@ -78,7 +79,13 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
                     }
                 }
                 Rule::agent_field => {
-                    fields.push(parse_agent_field(item_inner)?);
+                    let field = parse_agent_field(item_inner)?;
+                    // Check if this is the output field
+                    if field.name == "output" {
+                        output = Some(parse_output_type_from_expr(&field.value)?);
+                    } else {
+                        fields.push(field);
+                    }
                 }
                 _ => {}
             }
@@ -89,6 +96,7 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
         name,
         fields,
         tools,
+        output,
         span,
     })
 }
@@ -643,4 +651,43 @@ fn unescape_string(s: &str) -> String {
         }
     }
     result
+}
+
+fn parse_output_type_from_expr(expr: &Expression) -> GentResult<OutputType> {
+    match expr {
+        Expression::Identifier(name, _) => Ok(OutputType::Named(name.clone())),
+        Expression::Object(fields, _) => {
+            let struct_fields = fields
+                .iter()
+                .map(|(name, value)| {
+                    let field_type = infer_field_type_from_expr(value)?;
+                    Ok(StructField {
+                        name: name.clone(),
+                        field_type,
+                        span: value.span().clone(),
+                    })
+                })
+                .collect::<GentResult<Vec<_>>>()?;
+            Ok(OutputType::Inline(struct_fields))
+        }
+        _ => Err(GentError::SyntaxError {
+            message: "output must be an identifier or object type".to_string(),
+            span: expr.span().clone(),
+        }),
+    }
+}
+
+fn infer_field_type_from_expr(expr: &Expression) -> GentResult<FieldType> {
+    match expr {
+        Expression::Identifier(name, _) => match name.as_str() {
+            "string" => Ok(FieldType::String),
+            "number" => Ok(FieldType::Number),
+            "boolean" => Ok(FieldType::Boolean),
+            _ => Ok(FieldType::Named(name.clone())),
+        },
+        _ => Err(GentError::SyntaxError {
+            message: "Invalid type expression".to_string(),
+            span: expr.span().clone(),
+        }),
+    }
 }

@@ -1,4 +1,4 @@
-use gent::parser::{parse, Statement, FieldType};
+use gent::parser::{parse, Statement, FieldType, OutputType};
 
 #[test]
 fn test_parse_simple_struct() {
@@ -48,5 +48,53 @@ fn test_parse_nested_struct() {
             assert!(matches!(&decl.fields[2].field_type, FieldType::Object(_)));
         }
         _ => panic!("Expected StructDecl"),
+    }
+}
+
+#[test]
+fn test_parse_agent_with_inline_output() {
+    let source = r#"
+        agent Classifier {
+            prompt: "Classify input"
+            model: "gpt-4o"
+            output: { category: string, confidence: number }
+        }
+    "#;
+
+    let program = parse(source).unwrap();
+    match &program.statements[0] {
+        Statement::AgentDecl(decl) => {
+            assert_eq!(decl.name, "Classifier");
+            assert!(decl.output.is_some());
+            match decl.output.as_ref().unwrap() {
+                OutputType::Inline(fields) => {
+                    assert_eq!(fields.len(), 2);
+                    assert_eq!(fields[0].name, "category");
+                    assert_eq!(fields[1].name, "confidence");
+                }
+                _ => panic!("Expected inline output type"),
+            }
+        }
+        _ => panic!("Expected AgentDecl"),
+    }
+}
+
+#[test]
+fn test_parse_agent_with_named_output() {
+    let source = r#"
+        struct Result { value: string }
+        agent Extractor {
+            prompt: "Extract"
+            model: "gpt-4o"
+            output: Result
+        }
+    "#;
+
+    let program = parse(source).unwrap();
+    match &program.statements[1] {
+        Statement::AgentDecl(decl) => {
+            assert!(matches!(decl.output.as_ref().unwrap(), OutputType::Named(n) if n == "Result"));
+        }
+        _ => panic!("Expected AgentDecl"),
     }
 }

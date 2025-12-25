@@ -97,6 +97,7 @@ pub struct AgentDecl {
     pub name: String,
     pub fields: Vec<AgentField>,
     pub tools: Vec<String>, // Tool names from `use` statements
+    pub output: Option<OutputType>,
     pub span: Span,
 }
 
