@@ -57,9 +57,15 @@ pub async fn run_agent_with_tools(
             "agent",
             "Agent has output schema, enabling JSON mode",
         );
+        let default_instructions = "You must respond with JSON matching this schema:";
+        let instructions = agent
+            .output_instructions
+            .as_deref()
+            .unwrap_or(default_instructions);
         format!(
-            "{}\n\nYou must respond with JSON matching this schema:\n{}",
+            "{}\n\n{}\n{}",
             agent.prompt,
+            instructions,
             serde_json::to_string_pretty(&schema.to_json_schema())
                 .unwrap_or_else(|_| "<schema>".to_string())
         )
@@ -218,8 +224,10 @@ async fn validate_and_retry_output(
                     "agent",
                     &format!("Retry {}: invalid JSON", retry + 1),
                 );
+                let default_retry = "Please respond with valid JSON.";
+                let retry_msg = agent.retry_prompt.as_deref().unwrap_or(default_retry);
                 retry_messages.push(Message::assistant(&last_content));
-                retry_messages.push(Message::user("Please respond with valid JSON."));
+                retry_messages.push(Message::user(retry_msg));
                 let response = llm
                     .chat(retry_messages.clone(), tools.to_vec(), model, true)
                     .await?;
@@ -248,11 +256,16 @@ async fn validate_and_retry_output(
                     "agent",
                     &format!("Retry {}: {}", retry + 1, e),
                 );
-                retry_messages.push(Message::assistant(&last_content));
-                retry_messages.push(Message::user(format!(
+                let default_retry = format!(
                     "Invalid response: {}. Please respond with JSON matching the schema.",
                     e
-                )));
+                );
+                let retry_msg = agent
+                    .retry_prompt
+                    .clone()
+                    .unwrap_or(default_retry);
+                retry_messages.push(Message::assistant(&last_content));
+                retry_messages.push(Message::user(retry_msg));
                 let response = llm
                     .chat(retry_messages.clone(), tools.to_vec(), model, true)
                     .await?;

@@ -122,6 +122,10 @@ pub struct AgentValue {
     pub output_schema: Option<OutputSchema>,
     /// Number of retries for output validation
     pub output_retries: u32,
+    /// Custom instructions for schema output (None = default)
+    pub output_instructions: Option<String>,
+    /// Custom prompt for validation retries (None = default)
+    pub retry_prompt: Option<String>,
 }
 
 impl AgentValue {
@@ -135,6 +139,8 @@ impl AgentValue {
             model: None,
             output_schema: None,
             output_retries: 1, // default: retry once
+            output_instructions: None,
+            retry_prompt: None,
         }
     }
 
@@ -165,6 +171,18 @@ impl AgentValue {
     /// Set output retries
     pub fn with_output_retries(mut self, retries: u32) -> Self {
         self.output_retries = retries;
+        self
+    }
+
+    /// Set custom output instructions
+    pub fn with_output_instructions(mut self, instructions: impl Into<String>) -> Self {
+        self.output_instructions = Some(instructions.into());
+        self
+    }
+
+    /// Set custom retry prompt
+    pub fn with_retry_prompt(mut self, prompt: impl Into<String>) -> Self {
+        self.retry_prompt = Some(prompt.into());
         self
     }
 }
