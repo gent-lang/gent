@@ -1,4 +1,17 @@
+use gent::interpreter::evaluate;
+use gent::logging::NullLogger;
 use gent::parser::{parse, Expression, Statement, StringPart};
+use gent::runtime::{llm::MockLLMClient, ToolRegistry};
+
+async fn run_program(source: &str) -> Result<(), String> {
+    let program = parse(source).map_err(|e| e.to_string())?;
+    let llm = MockLLMClient::new();
+    let mut tools = ToolRegistry::new();
+    let logger = NullLogger;
+    evaluate(&program, &llm, &mut tools, &logger)
+        .await
+        .map_err(|e| e.to_string())
+}
 
 // ============================================
 // String Interpolation Parsing Tests
@@ -139,4 +152,50 @@ fn test_parse_escaped_braces() {
         }
         _ => panic!("Expected LetStmt"),
     }
+}
+
+// ============================================
+// String Interpolation Evaluation Tests
+// ============================================
+// These tests verify that string interpolation is properly evaluated at runtime.
+// Variables and expressions within {braces} should be resolved to their values.
+
+#[tokio::test]
+async fn test_eval_simple_interpolation() {
+    let source = r#"
+        let name = "Alice"
+        let msg = "Hello, {name}!"
+    "#;
+    let result = run_program(source).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_eval_number_interpolation() {
+    let source = r#"
+        let count = 5
+        let msg = "You have {count} items"
+    "#;
+    let result = run_program(source).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_eval_expression_interpolation() {
+    let source = r#"
+        let x = 10
+        let msg = "Result: {x + 1}"
+    "#;
+    let result = run_program(source).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_eval_member_access_interpolation() {
+    let source = r#"
+        let user = { name: "Bob" }
+        let msg = "User: {user.name}"
+    "#;
+    let result = run_program(source).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
