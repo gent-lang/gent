@@ -1,8 +1,70 @@
 //! Value types for the GENT interpreter
 
-use crate::parser::ast::{Block, Param, TypeName as ParserTypeName};
+use crate::parser::ast::{Block, FieldType, OutputType, Param, StructField, TypeName as ParserTypeName};
 use std::collections::HashMap;
 use std::fmt;
+
+/// Runtime representation of an output schema
+#[derive(Debug, Clone, PartialEq)]
+pub struct OutputSchema {
+    pub fields: Vec<StructField>,
+}
+
+impl OutputSchema {
+    pub fn from_output_type(output_type: &OutputType, structs: &HashMap<String, Vec<StructField>>) -> Result<Self, String> {
+        match output_type {
+            OutputType::Inline(fields) => Ok(OutputSchema { fields: fields.clone() }),
+            OutputType::Named(name) => {
+                structs.get(name)
+                    .map(|fields| OutputSchema { fields: fields.clone() })
+                    .ok_or_else(|| format!("Unknown struct: {}", name))
+            }
+        }
+    }
+
+    pub fn to_json_schema(&self) -> serde_json::Value {
+        use serde_json::json;
+
+        let properties: serde_json::Map<String, serde_json::Value> = self.fields
+            .iter()
+            .map(|f| (f.name.clone(), field_type_to_json_schema(&f.field_type)))
+            .collect();
+
+        let required: Vec<String> = self.fields.iter().map(|f| f.name.clone()).collect();
+
+        json!({
+            "type": "object",
+            "properties": properties,
+            "required": required
+        })
+    }
+}
+
+fn field_type_to_json_schema(ft: &FieldType) -> serde_json::Value {
+    use serde_json::json;
+    match ft {
+        FieldType::String => json!({"type": "string"}),
+        FieldType::Number => json!({"type": "number"}),
+        FieldType::Boolean => json!({"type": "boolean"}),
+        FieldType::Array(inner) => json!({
+            "type": "array",
+            "items": field_type_to_json_schema(inner)
+        }),
+        FieldType::Object(fields) => {
+            let properties: serde_json::Map<String, serde_json::Value> = fields
+                .iter()
+                .map(|f| (f.name.clone(), field_type_to_json_schema(&f.field_type)))
+                .collect();
+            let required: Vec<String> = fields.iter().map(|f| f.name.clone()).collect();
+            json!({
+                "type": "object",
+                "properties": properties,
+                "required": required
+            })
+        }
+        FieldType::Named(name) => json!({"$ref": format!("#/definitions/{}", name)}),
+    }
+}
 
 /// Represents a user-defined tool at runtime
 #[derive(Debug, Clone, PartialEq)]
@@ -47,6 +109,10 @@ pub struct AgentValue {
     pub max_steps: Option<u32>,
     /// Model to use (None = default)
     pub model: Option<String>,
+    /// Output schema for structured responses
+    pub output_schema: Option<OutputSchema>,
+    /// Number of retries for output validation
+    pub output_retries: u32,
 }
 
 impl AgentValue {
@@ -58,6 +124,8 @@ impl AgentValue {
             tools: Vec::new(),
             max_steps: None,
             model: None,
+            output_schema: None,
+            output_retries: 1, // default: retry once
         }
     }
 
@@ -76,6 +144,18 @@ impl AgentValue {
     /// Set model
     pub fn with_model(mut self, model: impl Into<String>) -> Self {
         self.model = Some(model.into());
+        self
+    }
+
+    /// Set output schema
+    pub fn with_output_schema(mut self, schema: OutputSchema) -> Self {
+        self.output_schema = Some(schema);
+        self
+    }
+
+    /// Set output retries
+    pub fn with_output_retries(mut self, retries: u32) -> Self {
+        self.output_retries = retries;
         self
     }
 }
