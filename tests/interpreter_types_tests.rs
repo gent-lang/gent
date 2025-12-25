@@ -288,3 +288,43 @@ fn test_value_debug() {
     assert!(debug.contains("String"));
     assert!(debug.contains("test"));
 }
+
+// ============================================
+// Array Tests
+// ============================================
+
+#[test]
+fn test_array_value_creation() {
+    let arr = Value::Array(vec![
+        Value::Number(1.0),
+        Value::Number(2.0),
+        Value::String("three".to_string()),
+    ]);
+    assert!(matches!(arr, Value::Array(_)));
+}
+
+#[test]
+fn test_array_display() {
+    let arr = Value::Array(vec![Value::Number(1.0), Value::Number(2.0)]);
+    assert_eq!(format!("{}", arr), "[1, 2]");
+}
+
+#[test]
+fn test_array_display_empty() {
+    let arr = Value::Array(vec![]);
+    assert_eq!(format!("{}", arr), "[]");
+}
+
+#[test]
+fn test_array_type_name() {
+    let arr = Value::Array(vec![]);
+    assert_eq!(arr.type_name(), "Array");
+}
+
+#[test]
+fn test_array_is_truthy() {
+    let empty = Value::Array(vec![]);
+    let non_empty = Value::Array(vec![Value::Null]);
+    assert!(!empty.is_truthy());
+    assert!(non_empty.is_truthy());
+}

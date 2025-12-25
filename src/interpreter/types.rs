@@ -15,6 +15,8 @@ pub enum Value {
     Null,
     /// Agent value
     Agent(AgentValue),
+    /// Array value
+    Array(Vec<Value>),
 }
 
 /// Represents a defined agent at runtime
@@ -77,6 +79,10 @@ impl fmt::Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::Null => write!(f, "null"),
             Value::Agent(agent) => write!(f, "<agent {}>", agent.name),
+            Value::Array(items) => {
+                let formatted: Vec<String> = items.iter().map(|v| format!("{}", v)).collect();
+                write!(f, "[{}]", formatted.join(", "))
+            }
         }
     }
 }
@@ -96,6 +102,7 @@ impl Value {
             Value::String(s) => !s.is_empty(),
             Value::Number(n) => *n != 0.0,
             Value::Agent(_) => true,
+            Value::Array(items) => !items.is_empty(),
         }
     }
 
@@ -107,6 +114,7 @@ impl Value {
             Value::Boolean(_) => "Boolean",
             Value::Null => "Null",
             Value::Agent(_) => "Agent",
+            Value::Array(_) => "Array",
         }
     }
 
@@ -122,6 +130,14 @@ impl Value {
     pub fn as_agent(&self) -> Option<&AgentValue> {
         match self {
             Value::Agent(a) => Some(a),
+            _ => None,
+        }
+    }
+
+    /// Try to get as array
+    pub fn as_array(&self) -> Option<&Vec<Value>> {
+        match self {
+            Value::Array(arr) => Some(arr),
             _ => None,
         }
     }
