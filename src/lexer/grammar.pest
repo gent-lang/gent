@@ -35,10 +35,11 @@ output_type = { field_type_object | identifier }
 
 // === Block & Statements ===
 block = { "{" ~ block_stmt* ~ "}" }
-block_stmt = { let_stmt | return_stmt | if_stmt | expr_stmt }
+block_stmt = { let_stmt | return_stmt | if_stmt | for_stmt | expr_stmt }
 let_stmt = { "let" ~ identifier ~ "=" ~ expression }
 return_stmt = { "return" ~ expression? }
 if_stmt = { "if" ~ expression ~ block ~ ("else" ~ block)? }
+for_stmt = { "for" ~ identifier ~ "in" ~ expression ~ block }
 expr_stmt = { expression }
 
 // === Agent Declaration ===
@@ -77,11 +78,15 @@ primary = {
     array_literal |
     object_literal |
     null_literal |
+    range_expr |
     string_literal |
     number_literal |
     boolean_literal |
     identifier
 }
+
+// === Range Expression ===
+range_expr = { number_literal ~ ".." ~ number_literal }
 
 // === New Literals ===
 null_literal = { "null" }
