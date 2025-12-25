@@ -48,12 +48,23 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
         Rule::struct_decl => Ok(Statement::StructDecl(parse_struct_decl(inner)?)),
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
+        Rule::top_level_let => Ok(Statement::LetStmt(parse_top_level_let(inner)?)),
         Rule::agent_call => Ok(Statement::AgentCall(parse_agent_call(inner)?)),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected rule: {:?}", inner.as_rule()),
             span: Span::new(0, 0),
         }),
     }
+}
+
+fn parse_top_level_let(pair: pest::iterators::Pair<Rule>) -> GentResult<LetStmt> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let value = parse_expression(inner.next().unwrap())?;
+
+    Ok(LetStmt { name, value, span })
 }
 
 fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> {
