@@ -90,13 +90,13 @@ async fn evaluate_statement(
             );
             evaluate_agent_decl(decl, env, structs)?;
         }
-        Statement::RunStmt(run) => {
+        Statement::AgentCall(call) => {
             logger.log(
                 LogLevel::Info,
                 "eval",
-                &format!("Running agent '{}'", run.agent_name),
+                &format!("Calling agent '{}'", call.agent_name),
             );
-            let output = evaluate_run_stmt(run, env, llm, tools, logger).await?;
+            let output = evaluate_agent_call(call, env, llm, tools, logger).await?;
             println!("{}", output);
         }
         Statement::ToolDecl(decl) => {
@@ -133,13 +133,13 @@ async fn evaluate_statement_with_output(
             evaluate_agent_decl(decl, env, structs)?;
             Ok(None)
         }
-        Statement::RunStmt(run) => {
+        Statement::AgentCall(call) => {
             logger.log(
                 LogLevel::Info,
                 "eval",
-                &format!("Running agent '{}'", run.agent_name),
+                &format!("Calling agent '{}'", call.agent_name),
             );
-            let output = evaluate_run_stmt(run, env, llm, tools, logger).await?;
+            let output = evaluate_agent_call(call, env, llm, tools, logger).await?;
             Ok(Some(output))
         }
         Statement::ToolDecl(decl) => {
@@ -311,8 +311,8 @@ fn evaluate_tool_decl(
     Ok(())
 }
 
-async fn evaluate_run_stmt(
-    run: &crate::parser::RunStmt,
+async fn evaluate_agent_call(
+    call: &crate::parser::AgentCall,
     env: &Environment,
     llm: &dyn LLMClient,
     tools: &ToolRegistry,
@@ -320,10 +320,10 @@ async fn evaluate_run_stmt(
 ) -> GentResult<String> {
     // Look up the agent
     let agent_value = env
-        .get(&run.agent_name)
+        .get(&call.agent_name)
         .ok_or_else(|| GentError::UndefinedAgent {
-            name: run.agent_name.clone(),
-            span: run.span.clone(),
+            name: call.agent_name.clone(),
+            span: call.span.clone(),
         })?;
 
     let agent = match agent_value {
@@ -332,13 +332,13 @@ async fn evaluate_run_stmt(
             return Err(GentError::TypeError {
                 expected: "Agent".to_string(),
                 got: other.type_name().to_string(),
-                span: run.span.clone(),
+                span: call.span.clone(),
             })
         }
     };
 
     // Evaluate input expression if present
-    let input = if let Some(expr) = &run.input {
+    let input = if let Some(expr) = &call.input {
         let value = evaluate_expression(expr)?;
         match value {
             Value::String(s) => Some(s),
