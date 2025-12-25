@@ -58,8 +58,19 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
     let mut fields = Vec::new();
 
     if let Some(body) = inner.next() {
-        for field_pair in body.into_inner() {
-            fields.push(parse_agent_field(field_pair)?);
+        for item_pair in body.into_inner() {
+            // item_pair is agent_item which contains either use_stmt or agent_field
+            let item_inner = item_pair.into_inner().next().unwrap();
+            match item_inner.as_rule() {
+                Rule::use_stmt => {
+                    // Skip use_stmt for now - we'll handle it in Task 4
+                    // For now, just ignore it so the parser doesn't break
+                }
+                Rule::agent_field => {
+                    fields.push(parse_agent_field(item_inner)?);
+                }
+                _ => {}
+            }
         }
     }
 

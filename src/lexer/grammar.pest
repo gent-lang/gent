@@ -4,7 +4,13 @@ statement = { agent_decl | run_stmt }
 
 // === Agent Declaration ===
 agent_decl = { "agent" ~ identifier ~ "{" ~ agent_body ~ "}" }
-agent_body = { agent_field* }
+agent_body = { agent_item* }
+agent_item = { use_stmt | agent_field }
+
+// === Use Statement ===
+use_stmt = { "use" ~ identifier ~ ("," ~ identifier)* }
+
+// === Agent Field ===
 agent_field = { identifier ~ ":" ~ expression }
 
 // === Run Statement ===
