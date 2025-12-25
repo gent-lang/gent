@@ -4,7 +4,7 @@ pub mod ast;
 
 pub use ast::{
     AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, IfStmt,
-    LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StructDecl, StructField, ToolDecl,
+    LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl,
     TypeName, UnaryOp,
 };
 
@@ -196,7 +196,9 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
             // Remove quotes and handle escapes
             let content = &raw[1..raw.len() - 1];
             let unescaped = unescape_string(content);
-            Ok(Expression::String(unescaped, span))
+            // For now, wrap plain strings in a single Literal part
+            // Interpolation parsing will be added in a later task
+            Ok(Expression::String(vec![StringPart::Literal(unescaped)], span))
         }
         Rule::number_literal => {
             let num: f64 = pair.as_str().parse().map_err(|_| GentError::SyntaxError {

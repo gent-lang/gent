@@ -1,9 +1,14 @@
 //! Tests for expression evaluation
 
 use gent::interpreter::{evaluate_expr, Environment, Value};
-use gent::parser::ast::{BinaryOp, Expression, UnaryOp};
+use gent::parser::ast::{BinaryOp, Expression, StringPart, UnaryOp};
 use gent::Span;
 use std::collections::HashMap;
+
+/// Helper to create a simple string expression (single literal)
+fn string_expr(s: &str, span: Span) -> Expression {
+    Expression::String(vec![StringPart::Literal(s.to_string())], span)
+}
 
 #[test]
 fn test_eval_number() {
@@ -16,7 +21,7 @@ fn test_eval_number() {
 #[test]
 fn test_eval_string() {
     let env = Environment::new();
-    let expr = Expression::String("hello".to_string(), Span::new(0, 7));
+    let expr = string_expr("hello", Span::new(0, 7));
     let result = evaluate_expr(&expr, &env).unwrap();
     assert_eq!(result, Value::String("hello".to_string()));
 }
@@ -90,7 +95,7 @@ fn test_eval_object_literal() {
         vec![
             (
                 "name".to_string(),
-                Expression::String("John".to_string(), Span::new(7, 13)),
+                string_expr("John", Span::new(7, 13)),
             ),
             (
                 "age".to_string(),
@@ -130,8 +135,8 @@ fn test_eval_add_strings() {
     let env = Environment::new();
     let expr = Expression::Binary(
         BinaryOp::Add,
-        Box::new(Expression::String("hello".to_string(), Span::new(0, 7))),
-        Box::new(Expression::String(" world".to_string(), Span::new(10, 18))),
+        Box::new(string_expr("hello", Span::new(0, 7))),
+        Box::new(string_expr(" world", Span::new(10, 18))),
         Span::new(0, 18),
     );
     let result = evaluate_expr(&expr, &env).unwrap();
@@ -143,7 +148,7 @@ fn test_eval_add_string_number() {
     let env = Environment::new();
     let expr = Expression::Binary(
         BinaryOp::Add,
-        Box::new(Expression::String("value: ".to_string(), Span::new(0, 9))),
+        Box::new(string_expr("value: ", Span::new(0, 9))),
         Box::new(Expression::Number(42.0, Span::new(12, 14))),
         Span::new(0, 14),
     );
@@ -514,7 +519,7 @@ fn test_eval_index_access_object() {
 
     let expr = Expression::Index(
         Box::new(Expression::Identifier("obj".to_string(), Span::new(0, 3))),
-        Box::new(Expression::String("key".to_string(), Span::new(4, 9))),
+        Box::new(string_expr("key", Span::new(4, 9))),
         Span::new(0, 10),
     );
     let result = evaluate_expr(&expr, &env).unwrap();

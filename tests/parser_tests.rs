@@ -1,4 +1,19 @@
-use gent::parser::{parse, Expression, Statement, TypeName};
+use gent::parser::{parse, Expression, Statement, StringPart, TypeName};
+
+/// Helper to extract string content from an Expression::String with a single Literal part
+fn get_string_content(expr: &Expression) -> Option<&str> {
+    match expr {
+        Expression::String(parts, _) => {
+            if parts.len() == 1 {
+                if let StringPart::Literal(s) = &parts[0] {
+                    return Some(s.as_str());
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
 
 // ============================================
 // Basic Parsing Tests
@@ -37,10 +52,7 @@ fn test_parse_agent_with_prompt() {
             assert_eq!(agent.name, "Hello");
             assert_eq!(agent.fields.len(), 1);
             assert_eq!(agent.fields[0].name, "prompt");
-            match &agent.fields[0].value {
-                Expression::String(s, _) => assert_eq!(s, "You are friendly."),
-                _ => panic!("Expected String"),
-            }
+            assert_eq!(get_string_content(&agent.fields[0].value), Some("You are friendly."));
         }
         _ => panic!("Expected AgentDecl"),
     }
@@ -145,10 +157,9 @@ fn test_parse_string_simple() {
     let result = parse(r#"agent A { x: "hello" }"#);
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::AgentDecl(agent) => match &agent.fields[0].value {
-            Expression::String(s, _) => assert_eq!(s, "hello"),
-            _ => panic!("Expected String"),
-        },
+        Statement::AgentDecl(agent) => {
+            assert_eq!(get_string_content(&agent.fields[0].value), Some("hello"));
+        }
         _ => panic!("Expected AgentDecl"),
     }
 }
@@ -158,10 +169,9 @@ fn test_parse_string_with_escapes() {
     let result = parse(r#"agent A { x: "say \"hi\"" }"#);
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::AgentDecl(agent) => match &agent.fields[0].value {
-            Expression::String(s, _) => assert_eq!(s, "say \"hi\""),
-            _ => panic!("Expected String"),
-        },
+        Statement::AgentDecl(agent) => {
+            assert_eq!(get_string_content(&agent.fields[0].value), Some("say \"hi\""));
+        }
         _ => panic!("Expected AgentDecl"),
     }
 }
@@ -171,10 +181,9 @@ fn test_parse_string_with_newline() {
     let result = parse(r#"agent A { x: "line1\nline2" }"#);
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::AgentDecl(agent) => match &agent.fields[0].value {
-            Expression::String(s, _) => assert_eq!(s, "line1\nline2"),
-            _ => panic!("Expected String"),
-        },
+        Statement::AgentDecl(agent) => {
+            assert_eq!(get_string_content(&agent.fields[0].value), Some("line1\nline2"));
+        }
         _ => panic!("Expected AgentDecl"),
     }
 }

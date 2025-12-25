@@ -1,7 +1,7 @@
 //! Tests for UserToolWrapper functionality
 
 use gent::interpreter::{Environment, UserToolValue};
-use gent::parser::ast::{BinaryOp, Block, BlockStmt, Expression, Param, ReturnStmt, TypeName};
+use gent::parser::ast::{BinaryOp, Block, BlockStmt, Expression, Param, ReturnStmt, StringPart, TypeName};
 use gent::runtime::tools::{Tool, ToolRegistry, UserToolWrapper};
 use gent::Span;
 use serde_json::json;
@@ -22,7 +22,7 @@ async fn test_user_tool_wrapper_execute() {
             statements: vec![BlockStmt::Return(ReturnStmt {
                 value: Some(Expression::Binary(
                     BinaryOp::Add,
-                    Box::new(Expression::String("Hello, ".to_string(), Span::default())),
+                    Box::new(Expression::String(vec![StringPart::Literal("Hello, ".to_string())], Span::default())),
                     Box::new(Expression::Identifier("name".to_string(), Span::default())),
                     Span::default(),
                 )),
@@ -168,7 +168,7 @@ async fn test_user_tool_wrapper_in_registry() {
         return_type: None,
         body: Block {
             statements: vec![BlockStmt::Return(ReturnStmt {
-                value: Some(Expression::String("success".to_string(), Span::default())),
+                value: Some(Expression::String(vec![StringPart::Literal("success".to_string())], Span::default())),
                 span: Span::default(),
             })],
             span: Span::default(),

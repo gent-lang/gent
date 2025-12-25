@@ -1,4 +1,4 @@
-use gent::parser::{parse, Expression, Statement};
+use gent::parser::{parse, Expression, Statement, StringPart};
 
 // ============================================
 // String Interpolation Parsing Tests
@@ -11,14 +11,27 @@ use gent::parser::{parse, Expression, Statement};
 // indicating that interpolation is being parsed properly.
 
 /// Helper to check if an expression is a plain string (not interpolated)
+/// A plain string has exactly one Literal part
 fn is_plain_string(expr: &Expression) -> bool {
-    matches!(expr, Expression::String(_, _))
+    match expr {
+        Expression::String(parts, _) => {
+            parts.len() == 1 && matches!(&parts[0], StringPart::Literal(_))
+        }
+        _ => false,
+    }
 }
 
-/// Helper to get the string content if it's a plain string
+/// Helper to get the string content if it's a plain string (single literal)
 fn get_plain_string(expr: &Expression) -> Option<&str> {
     match expr {
-        Expression::String(s, _) => Some(s.as_str()),
+        Expression::String(parts, _) => {
+            if parts.len() == 1 {
+                if let StringPart::Literal(s) = &parts[0] {
+                    return Some(s.as_str());
+                }
+            }
+            None
+        }
         _ => None,
     }
 }

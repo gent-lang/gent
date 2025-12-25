@@ -4,14 +4,27 @@
 
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::{Environment, Value};
-use crate::parser::ast::{BinaryOp, Expression, UnaryOp};
+use crate::parser::ast::{BinaryOp, Expression, StringPart, UnaryOp};
 use std::collections::HashMap;
 
 /// Evaluate an expression in the given environment
 pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> {
     match expr {
         // Literals
-        Expression::String(s, _) => Ok(Value::String(s.clone())),
+        Expression::String(parts, _span) => {
+            // Evaluate each part and concatenate
+            let mut result = String::new();
+            for part in parts {
+                match part {
+                    StringPart::Literal(s) => result.push_str(s),
+                    StringPart::Expr(expr) => {
+                        let value = evaluate_expr(expr, env)?;
+                        result.push_str(&value.to_string());
+                    }
+                }
+            }
+            Ok(Value::String(result))
+        }
         Expression::Number(n, _) => Ok(Value::Number(*n)),
         Expression::Boolean(b, _) => Ok(Value::Boolean(*b)),
         Expression::Null(_) => Ok(Value::Null),

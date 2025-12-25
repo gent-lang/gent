@@ -3,7 +3,7 @@
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::{AgentValue, Environment, OutputSchema, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger, NullLogger};
-use crate::parser::{AgentDecl, Expression, Program, Statement, StructField, ToolDecl};
+use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -349,7 +349,20 @@ fn evaluate_expr_with_env<'a>(
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
     Box::pin(async move {
         match expr {
-            Expression::String(s, _) => Ok(Value::String(s.clone())),
+            Expression::String(parts, _span) => {
+                // Evaluate each part and concatenate
+                let mut result = String::new();
+                for part in parts {
+                    match part {
+                        StringPart::Literal(s) => result.push_str(s),
+                        StringPart::Expr(expr) => {
+                            let value = evaluate_expr_with_env(expr, env, llm, tools, logger).await?;
+                            result.push_str(&value.to_string());
+                        }
+                    }
+                }
+                Ok(Value::String(result))
+            }
             Expression::Number(n, _) => Ok(Value::Number(*n)),
             Expression::Boolean(b, _) => Ok(Value::Boolean(*b)),
             Expression::Identifier(name, span) => {
@@ -455,7 +468,22 @@ fn evaluate_expr_with_env<'a>(
 
 fn evaluate_expression(expr: &Expression) -> GentResult<Value> {
     match expr {
-        Expression::String(s, _) => Ok(Value::String(s.clone())),
+        Expression::String(parts, span) => {
+            // For synchronous evaluation, only support literal parts
+            let mut result = String::new();
+            for part in parts {
+                match part {
+                    StringPart::Literal(s) => result.push_str(s),
+                    StringPart::Expr(_) => {
+                        return Err(GentError::SyntaxError {
+                            message: "String interpolation not supported in this context".to_string(),
+                            span: span.clone(),
+                        });
+                    }
+                }
+            }
+            Ok(Value::String(result))
+        }
         Expression::Number(n, _) => Ok(Value::Number(*n)),
         Expression::Boolean(b, _) => Ok(Value::Boolean(*b)),
         Expression::Identifier(name, span) => {

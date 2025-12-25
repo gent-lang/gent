@@ -1,4 +1,4 @@
-use gent::parser::ast::{AgentDecl, AgentField, Expression};
+use gent::parser::ast::{AgentDecl, AgentField, Expression, StringPart};
 use gent::Span;
 
 #[test]
@@ -32,7 +32,7 @@ fn test_agent_decl_with_tools_and_fields() {
         name: "Bot".to_string(),
         fields: vec![AgentField {
             name: "prompt".to_string(),
-            value: Expression::String("Hi".to_string(), Span::new(0, 2)),
+            value: Expression::String(vec![StringPart::Literal("Hi".to_string())], Span::new(0, 2)),
             span: Span::new(0, 10),
         }],
         tools: vec!["web_fetch".to_string()],

@@ -30,6 +30,15 @@ pub enum UnaryOp {
     Neg, // -
 }
 
+/// Part of an interpolated string
+#[derive(Debug, Clone, PartialEq)]
+pub enum StringPart {
+    /// Literal text
+    Literal(String),
+    /// Interpolated expression
+    Expr(Box<Expression>),
+}
+
 /// Type names in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeName {
@@ -130,8 +139,8 @@ pub struct Param {
 /// An expression in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    /// String literal: `"hello"`
-    String(String, Span),
+    /// String literal: `"hello"` or interpolated string: `"Hello, ${name}!"`
+    String(Vec<StringPart>, Span),
     /// Number literal: `42` or `3.14`
     Number(f64, Span),
     /// Boolean literal: `true` or `false`

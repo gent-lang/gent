@@ -1,5 +1,25 @@
-use gent::parser::{AgentDecl, AgentField, Expression, LetStmt, Program, Statement};
+use gent::parser::{AgentDecl, AgentField, Expression, LetStmt, Program, Statement, StringPart};
 use gent::Span;
+
+/// Helper to create a simple string expression (single literal)
+fn string_expr(s: &str, span: Span) -> Expression {
+    Expression::String(vec![StringPart::Literal(s.to_string())], span)
+}
+
+/// Helper to get the string content if it's a plain string (single literal)
+fn get_string_content(expr: &Expression) -> Option<&str> {
+    match expr {
+        Expression::String(parts, _) => {
+            if parts.len() == 1 {
+                if let StringPart::Literal(s) = &parts[0] {
+                    return Some(s.as_str());
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
 
 // ============================================
 // Span Integration Tests
@@ -8,7 +28,7 @@ use gent::Span;
 #[test]
 fn test_span_in_ast_nodes() {
     let span = Span::new(0, 10);
-    let expr = Expression::String("hello".to_string(), span.clone());
+    let expr = string_expr("hello", span.clone());
     match expr {
         Expression::String(_, s) => assert_eq!(s, span),
         _ => panic!("Expected String expression"),
@@ -21,11 +41,8 @@ fn test_span_in_ast_nodes() {
 
 #[test]
 fn test_string_expression() {
-    let expr = Expression::String("hello".to_string(), Span::new(0, 7));
-    match &expr {
-        Expression::String(s, _) => assert_eq!(s, "hello"),
-        _ => panic!("Expected String"),
-    }
+    let expr = string_expr("hello", Span::new(0, 7));
+    assert_eq!(get_string_content(&expr), Some("hello"));
 }
 
 #[test]
@@ -75,9 +92,9 @@ fn test_identifier_expression() {
 
 #[test]
 fn test_expression_equality() {
-    let e1 = Expression::String("test".to_string(), Span::new(0, 6));
-    let e2 = Expression::String("test".to_string(), Span::new(0, 6));
-    let e3 = Expression::String("other".to_string(), Span::new(0, 7));
+    let e1 = string_expr("test", Span::new(0, 6));
+    let e2 = string_expr("test", Span::new(0, 6));
+    let e3 = string_expr("other", Span::new(0, 7));
     assert_eq!(e1, e2);
     assert_ne!(e1, e3);
 }
@@ -100,7 +117,7 @@ fn test_expression_debug() {
 #[test]
 fn test_expression_span() {
     let span = Span::new(5, 10);
-    let expr = Expression::String("x".to_string(), span.clone());
+    let expr = string_expr("x", span.clone());
     assert_eq!(expr.span(), &span);
 }
 
@@ -112,7 +129,7 @@ fn test_expression_span() {
 fn test_agent_field_creation() {
     let field = AgentField {
         name: "prompt".to_string(),
-        value: Expression::String("You are helpful.".to_string(), Span::new(8, 26)),
+        value: string_expr("You are helpful.", Span::new(8, 26)),
         span: Span::new(0, 26),
     };
     assert_eq!(field.name, "prompt");
@@ -122,7 +139,7 @@ fn test_agent_field_creation() {
 fn test_agent_field_equality() {
     let f1 = AgentField {
         name: "prompt".to_string(),
-        value: Expression::String("test".to_string(), Span::new(8, 14)),
+        value: string_expr("test", Span::new(8, 14)),
         span: Span::new(0, 14),
     };
     let f2 = f1.clone();
@@ -133,7 +150,7 @@ fn test_agent_field_equality() {
 fn test_agent_field_debug() {
     let field = AgentField {
         name: "prompt".to_string(),
-        value: Expression::String("test".to_string(), Span::new(0, 4)),
+        value: string_expr("test", Span::new(0, 4)),
         span: Span::new(0, 10),
     };
     let debug = format!("{:?}", field);
@@ -150,7 +167,7 @@ fn test_agent_decl_creation() {
         name: "Hello".to_string(),
         fields: vec![AgentField {
             name: "prompt".to_string(),
-            value: Expression::String("You are friendly.".to_string(), Span::new(20, 39)),
+            value: string_expr("You are friendly.", Span::new(20, 39)),
             span: Span::new(12, 39),
         }],
         tools: vec![],
@@ -168,12 +185,12 @@ fn test_agent_decl_multiple_fields() {
         fields: vec![
             AgentField {
                 name: "prompt".to_string(),
-                value: Expression::String("Help users.".to_string(), Span::new(0, 11)),
+                value: string_expr("Help users.", Span::new(0, 11)),
                 span: Span::new(0, 11),
             },
             AgentField {
                 name: "model".to_string(),
-                value: Expression::String("gpt-4".to_string(), Span::new(0, 7)),
+                value: string_expr("gpt-4", Span::new(0, 7)),
                 span: Span::new(0, 7),
             },
         ],
@@ -376,7 +393,7 @@ fn test_hello_world_ast() {
                 name: "Hello".to_string(),
                 fields: vec![AgentField {
                     name: "systemPrompt".to_string(),
-                    value: Expression::String("You are friendly.".to_string(), Span::new(22, 41)),
+                    value: string_expr("You are friendly.", Span::new(22, 41)),
                     span: Span::new(14, 41),
                 }],
                 tools: vec![],
@@ -603,7 +620,7 @@ fn test_expression_object() {
     let expr = Expression::Object(
         vec![(
             "key".to_string(),
-            Expression::String("value".to_string(), Span::new(0, 5)),
+            string_expr("value", Span::new(0, 5)),
         )],
         Span::new(0, 15),
     );
