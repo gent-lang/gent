@@ -40,25 +40,25 @@ pub async fn run_agent_with_tools(
         }
 
         // Add assistant message with tool calls
-        messages.push(Message::assistant_with_tool_calls(response.tool_calls.clone()));
+        messages.push(Message::assistant_with_tool_calls(
+            response.tool_calls.clone(),
+        ));
 
         // Execute each tool call
         for call in &response.tool_calls {
             let result = match tools.get(&call.name) {
-                Some(tool) => {
-                    match tool.execute(call.arguments.clone()).await {
-                        Ok(output) => ToolResult {
-                            call_id: call.id.clone(),
-                            content: output,
-                            is_error: false,
-                        },
-                        Err(error) => ToolResult {
-                            call_id: call.id.clone(),
-                            content: error,
-                            is_error: true,
-                        },
-                    }
-                }
+                Some(tool) => match tool.execute(call.arguments.clone()).await {
+                    Ok(output) => ToolResult {
+                        call_id: call.id.clone(),
+                        content: output,
+                        is_error: false,
+                    },
+                    Err(error) => ToolResult {
+                        call_id: call.id.clone(),
+                        content: error,
+                        is_error: true,
+                    },
+                },
                 None => ToolResult {
                     call_id: call.id.clone(),
                     content: format!("Unknown tool: {}", call.name),

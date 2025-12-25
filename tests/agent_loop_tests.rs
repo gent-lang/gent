@@ -1,5 +1,5 @@
 use gent::interpreter::types::AgentValue;
-use gent::runtime::{run_agent_with_tools, MockLLMClient, ToolRegistry, ToolCall};
+use gent::runtime::{run_agent_with_tools, MockLLMClient, ToolCall, ToolRegistry};
 use serde_json::json;
 
 #[tokio::test]
@@ -15,8 +15,8 @@ async fn test_agent_simple_response() {
 
 #[tokio::test]
 async fn test_agent_with_tool_call() {
-    let agent = AgentValue::new("Bot", "You help with files.")
-        .with_tools(vec!["read_file".to_string()]);
+    let agent =
+        AgentValue::new("Bot", "You help with files.").with_tools(vec!["read_file".to_string()]);
 
     // First call returns tool request, second returns final answer
     let llm = MockLLMClient::with_tool_calls(vec![ToolCall {
@@ -28,15 +28,15 @@ async fn test_agent_with_tool_call() {
     let registry = ToolRegistry::with_builtins();
 
     // This will execute the tool and loop
-    let result = run_agent_with_tools(&agent, Some("Read test.txt".to_string()), &llm, &registry).await;
+    let result =
+        run_agent_with_tools(&agent, Some("Read test.txt".to_string()), &llm, &registry).await;
     // Result depends on mock behavior after tool execution
     assert!(result.is_ok() || result.is_err()); // Just testing it runs
 }
 
 #[tokio::test]
 async fn test_agent_max_steps_exceeded() {
-    let agent = AgentValue::new("Bot", "Loop forever")
-        .with_max_steps(2);
+    let agent = AgentValue::new("Bot", "Loop forever").with_max_steps(2);
 
     // Always return tool calls to force max steps
     let llm = MockLLMClient::with_tool_calls(vec![ToolCall {
@@ -54,8 +54,8 @@ async fn test_agent_max_steps_exceeded() {
 
 #[tokio::test]
 async fn test_agent_unknown_tool() {
-    let agent = AgentValue::new("Bot", "Use unknown tool")
-        .with_tools(vec!["nonexistent".to_string()]);
+    let agent =
+        AgentValue::new("Bot", "Use unknown tool").with_tools(vec!["nonexistent".to_string()]);
 
     let llm = MockLLMClient::with_tool_calls(vec![ToolCall {
         id: "call_1".to_string(),

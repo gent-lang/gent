@@ -38,7 +38,9 @@ pub async fn evaluate_with_output(
     let mut outputs = Vec::new();
 
     for statement in &program.statements {
-        if let Some(output) = evaluate_statement_with_output(statement, &mut env, llm, tools).await? {
+        if let Some(output) =
+            evaluate_statement_with_output(statement, &mut env, llm, tools).await?
+        {
             outputs.push(output);
         }
     }

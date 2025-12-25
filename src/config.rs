@@ -78,10 +78,10 @@ impl Config {
 
     /// Get OpenAI API key or return error
     pub fn require_openai_key(&self) -> Result<&str, crate::errors::GentError> {
-        self.openai_api_key.as_deref().ok_or_else(|| {
-            crate::errors::GentError::MissingApiKey {
+        self.openai_api_key
+            .as_deref()
+            .ok_or_else(|| crate::errors::GentError::MissingApiKey {
                 provider: "OPENAI".to_string(),
-            }
-        })
+            })
     }
 }

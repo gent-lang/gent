@@ -1,8 +1,8 @@
-use gent::runtime::providers::OpenAIClient;
 use gent::runtime::llm::{LLMClient, Message, ToolDefinition};
+use gent::runtime::providers::OpenAIClient;
 use serde_json::json;
-use wiremock::{MockServer, Mock, ResponseTemplate};
 use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
 async fn test_openai_client_creation() {
@@ -12,8 +12,7 @@ async fn test_openai_client_creation() {
 
 #[tokio::test]
 async fn test_openai_client_with_model() {
-    let client = OpenAIClient::new("test-key".to_string())
-        .with_model("gpt-4o");
+    let client = OpenAIClient::new("test-key".to_string()).with_model("gpt-4o");
     assert!(client.model() == "gpt-4o");
 }
 
@@ -38,8 +37,7 @@ async fn test_openai_chat_simple() {
         .mount(&mock_server)
         .await;
 
-    let client = OpenAIClient::new("test-key".to_string())
-        .with_base_url(&mock_server.uri());
+    let client = OpenAIClient::new("test-key".to_string()).with_base_url(&mock_server.uri());
 
     let messages = vec![Message::user("Hello")];
     let response = client.chat(messages, vec![]).await.unwrap();
@@ -76,8 +74,7 @@ async fn test_openai_chat_with_tool_call() {
         .mount(&mock_server)
         .await;
 
-    let client = OpenAIClient::new("test-key".to_string())
-        .with_base_url(&mock_server.uri());
+    let client = OpenAIClient::new("test-key".to_string()).with_base_url(&mock_server.uri());
 
     let tools = vec![ToolDefinition {
         name: "web_fetch".to_string(),
@@ -108,8 +105,7 @@ async fn test_openai_api_error() {
         .mount(&mock_server)
         .await;
 
-    let client = OpenAIClient::new("bad-key".to_string())
-        .with_base_url(&mock_server.uri());
+    let client = OpenAIClient::new("bad-key".to_string()).with_base_url(&mock_server.uri());
 
     let messages = vec![Message::user("Hello")];
     let result = client.chat(messages, vec![]).await;

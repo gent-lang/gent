@@ -58,27 +58,32 @@ impl OpenAIClient {
             },
             tool_call_id: message.tool_call_id.clone(),
             tool_calls: message.tool_calls.as_ref().map(|tcs| {
-                tcs.iter().map(|tc| OpenAIToolCall {
-                    id: tc.id.clone(),
-                    r#type: "function".to_string(),
-                    function: OpenAIFunction {
-                        name: tc.name.clone(),
-                        arguments: tc.arguments.to_string(),
-                    },
-                }).collect()
+                tcs.iter()
+                    .map(|tc| OpenAIToolCall {
+                        id: tc.id.clone(),
+                        r#type: "function".to_string(),
+                        function: OpenAIFunction {
+                            name: tc.name.clone(),
+                            arguments: tc.arguments.to_string(),
+                        },
+                    })
+                    .collect()
             }),
         }
     }
 
     fn to_openai_tools(&self, tools: &[ToolDefinition]) -> Vec<OpenAITool> {
-        tools.iter().map(|t| OpenAITool {
-            r#type: "function".to_string(),
-            function: OpenAIFunctionDef {
-                name: t.name.clone(),
-                description: t.description.clone(),
-                parameters: t.parameters.clone(),
-            },
-        }).collect()
+        tools
+            .iter()
+            .map(|t| OpenAITool {
+                r#type: "function".to_string(),
+                function: OpenAIFunctionDef {
+                    name: t.name.clone(),
+                    description: t.description.clone(),
+                    parameters: t.parameters.clone(),
+                },
+            })
+            .collect()
     }
 }
 
@@ -100,7 +105,8 @@ impl LLMClient for OpenAIClient {
             body["tools"] = json!(self.to_openai_tools(&tools));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
@@ -119,27 +125,29 @@ impl LLMClient for OpenAIClient {
             });
         }
 
-        let api_response: OpenAIResponse = response
-            .json()
-            .await
-            .map_err(|e| GentError::ApiError {
+        let api_response: OpenAIResponse =
+            response.json().await.map_err(|e| GentError::ApiError {
                 message: format!("Failed to parse response: {}", e),
             })?;
 
-        let choice = api_response.choices.into_iter().next().ok_or_else(|| {
-            GentError::ApiError {
-                message: "No choices in response".to_string(),
-            }
-        })?;
+        let choice =
+            api_response
+                .choices
+                .into_iter()
+                .next()
+                .ok_or_else(|| GentError::ApiError {
+                    message: "No choices in response".to_string(),
+                })?;
 
-        let tool_calls = choice.message.tool_calls
+        let tool_calls = choice
+            .message
+            .tool_calls
             .unwrap_or_default()
             .into_iter()
             .map(|tc| ToolCall {
                 id: tc.id,
                 name: tc.function.name,
-                arguments: serde_json::from_str(&tc.function.arguments)
-                    .unwrap_or(JsonValue::Null),
+                arguments: serde_json::from_str(&tc.function.arguments).unwrap_or(JsonValue::Null),
             })
             .collect();
 

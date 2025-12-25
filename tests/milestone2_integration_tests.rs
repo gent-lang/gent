@@ -1,5 +1,5 @@
-use gent::parser::parse;
 use gent::interpreter::evaluate;
+use gent::parser::parse;
 use gent::runtime::{MockLLMClient, ToolRegistry};
 
 #[tokio::test]
