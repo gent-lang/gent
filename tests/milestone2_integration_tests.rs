@@ -68,7 +68,7 @@ async fn test_full_researcher_example() {
             use web_fetch
             max_steps: 5
         }
-        run Researcher with "Tell me about Rust"
+        run Researcher("Tell me about Rust")
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Rust is a systems programming language.");
