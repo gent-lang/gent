@@ -53,7 +53,7 @@ agent_field = { identifier ~ ":" ~ expression }
 
 // === Run Statement ===
 run_stmt = { "run" ~ identifier ~ run_args? }
-run_args = { "with" ~ expression }
+run_args = { "(" ~ expression ~ ")" }
 
 // === Expressions (EXPANDED) ===
 expression = { logical_or }
