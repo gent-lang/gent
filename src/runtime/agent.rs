@@ -2,6 +2,7 @@
 
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::AgentValue;
+use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::runtime::{LLMClient, LLMResponse, Message, ToolRegistry, ToolResult};
 
 const DEFAULT_MAX_STEPS: u32 = 10;
@@ -13,7 +14,8 @@ pub async fn run_agent(
     llm: &dyn LLMClient,
 ) -> GentResult<String> {
     let registry = ToolRegistry::new();
-    run_agent_with_tools(agent, input, llm, &registry).await
+    let logger = NullLogger;
+    run_agent_with_tools(agent, input, llm, &registry, &logger).await
 }
 
 /// Run an agent with tools
@@ -22,16 +24,24 @@ pub async fn run_agent_with_tools(
     input: Option<String>,
     llm: &dyn LLMClient,
     tools: &ToolRegistry,
+    logger: &dyn Logger,
 ) -> GentResult<String> {
     let max_steps = agent.max_steps.unwrap_or(DEFAULT_MAX_STEPS);
     let tool_defs = tools.definitions_for(&agent.tools);
     let model = agent.model.as_deref();
 
-    // Debug: Show what tools the agent requested
-    eprintln!("\n[DEBUG] Agent '{}' requested tools: {:?}", agent.name, agent.tools);
-    eprintln!("[DEBUG] Tool definitions provided to LLM: {}", tool_defs.len());
+    logger.log(
+        LogLevel::Debug,
+        "agent",
+        &format!("Agent '{}' requested tools: {:?}", agent.name, agent.tools),
+    );
+    logger.log(
+        LogLevel::Debug,
+        "agent",
+        &format!("Tool definitions provided to LLM: {}", tool_defs.len()),
+    );
     for def in &tool_defs {
-        eprintln!("  - {} : {}", def.name, def.description);
+        logger.log(LogLevel::Trace, "agent", &format!("  - {} : {}", def.name, def.description));
     }
 
     let mut messages = vec![
@@ -40,18 +50,22 @@ pub async fn run_agent_with_tools(
     ];
 
     for step in 0..max_steps {
-        eprintln!("\n[DEBUG] Step {}/{}", step + 1, max_steps);
+        logger.log(LogLevel::Debug, "agent", &format!("Step {}/{}", step + 1, max_steps));
         let response = llm.chat(messages.clone(), tool_defs.clone(), model).await?;
 
         // If no tool calls, return the response content
         if response.tool_calls.is_empty() {
-            eprintln!("[DEBUG] No tool calls, returning response");
+            logger.log(LogLevel::Debug, "agent", "No tool calls, returning response");
             return Ok(response.content.unwrap_or_default());
         }
 
-        eprintln!("[DEBUG] LLM made {} tool call(s):", response.tool_calls.len());
+        logger.log(
+            LogLevel::Debug,
+            "agent",
+            &format!("LLM made {} tool call(s)", response.tool_calls.len()),
+        );
         for call in &response.tool_calls {
-            eprintln!("  - {}({})", call.name, call.arguments);
+            logger.log(LogLevel::Trace, "agent", &format!("  - {}({})", call.name, call.arguments));
         }
 
         // Add assistant message with tool calls
@@ -64,7 +78,11 @@ pub async fn run_agent_with_tools(
             let result = match tools.get(&call.name) {
                 Some(tool) => match tool.execute(call.arguments.clone()).await {
                     Ok(output) => {
-                        eprintln!("[DEBUG] Tool '{}' returned: {}", call.name, output);
+                        logger.log(
+                            LogLevel::Debug,
+                            "agent",
+                            &format!("Tool '{}' returned: {}", call.name, output),
+                        );
                         ToolResult {
                             call_id: call.id.clone(),
                             content: output,
@@ -72,7 +90,11 @@ pub async fn run_agent_with_tools(
                         }
                     }
                     Err(error) => {
-                        eprintln!("[DEBUG] Tool '{}' error: {}", call.name, error);
+                        logger.log(
+                            LogLevel::Warn,
+                            "agent",
+                            &format!("Tool '{}' error: {}", call.name, error),
+                        );
                         ToolResult {
                             call_id: call.id.clone(),
                             content: error,
@@ -81,7 +103,11 @@ pub async fn run_agent_with_tools(
                     }
                 },
                 None => {
-                    eprintln!("[DEBUG] Unknown tool: {}", call.name);
+                    logger.log(
+                        LogLevel::Warn,
+                        "agent",
+                        &format!("Unknown tool: {}", call.name),
+                    );
                     ToolResult {
                         call_id: call.id.clone(),
                         content: format!("Unknown tool: {}", call.name),

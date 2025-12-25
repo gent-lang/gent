@@ -2,6 +2,7 @@
 
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::{AgentValue, Environment, UserToolValue, Value};
+use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
 use std::sync::Arc;
@@ -12,6 +13,7 @@ use std::sync::Arc;
 /// * `program` - The parsed AST
 /// * `llm` - The LLM client to use for agent execution
 /// * `tools` - The tool registry for agent execution
+/// * `logger` - The logger for debug output
 ///
 /// # Returns
 /// Ok(()) on success, Err on failure
@@ -19,28 +21,30 @@ pub async fn evaluate(
     program: &Program,
     llm: &dyn LLMClient,
     tools: &mut ToolRegistry,
+    logger: &dyn Logger,
 ) -> GentResult<()> {
     let mut env = Environment::new();
 
     for statement in &program.statements {
-        evaluate_statement(statement, &mut env, llm, tools).await?;
+        evaluate_statement(statement, &mut env, llm, tools, logger).await?;
     }
 
     Ok(())
 }
 
-/// Evaluate a GENT program and capture output
+/// Evaluate a GENT program and capture output (uses null logger)
 pub async fn evaluate_with_output(
     program: &Program,
     llm: &dyn LLMClient,
     tools: &mut ToolRegistry,
 ) -> GentResult<Vec<String>> {
+    let logger = NullLogger;
     let mut env = Environment::new();
     let mut outputs = Vec::new();
 
     for statement in &program.statements {
         if let Some(output) =
-            evaluate_statement_with_output(statement, &mut env, llm, tools).await?
+            evaluate_statement_with_output(statement, &mut env, llm, tools, &logger).await?
         {
             outputs.push(output);
         }
@@ -54,16 +58,20 @@ async fn evaluate_statement(
     env: &mut Environment,
     llm: &dyn LLMClient,
     tools: &mut ToolRegistry,
+    logger: &dyn Logger,
 ) -> GentResult<()> {
     match statement {
         Statement::AgentDecl(decl) => {
+            logger.log(LogLevel::Debug, "eval", &format!("Declaring agent '{}'", decl.name));
             evaluate_agent_decl(decl, env)?;
         }
         Statement::RunStmt(run) => {
-            let output = evaluate_run_stmt(run, env, llm, tools).await?;
+            logger.log(LogLevel::Info, "eval", &format!("Running agent '{}'", run.agent_name));
+            let output = evaluate_run_stmt(run, env, llm, tools, logger).await?;
             println!("{}", output);
         }
         Statement::ToolDecl(decl) => {
+            logger.log(LogLevel::Debug, "eval", &format!("Declaring tool '{}'", decl.name));
             evaluate_tool_decl(decl, env, tools)?;
         }
     }
@@ -75,17 +83,21 @@ async fn evaluate_statement_with_output(
     env: &mut Environment,
     llm: &dyn LLMClient,
     tools: &mut ToolRegistry,
+    logger: &dyn Logger,
 ) -> GentResult<Option<String>> {
     match statement {
         Statement::AgentDecl(decl) => {
+            logger.log(LogLevel::Debug, "eval", &format!("Declaring agent '{}'", decl.name));
             evaluate_agent_decl(decl, env)?;
             Ok(None)
         }
         Statement::RunStmt(run) => {
-            let output = evaluate_run_stmt(run, env, llm, tools).await?;
+            logger.log(LogLevel::Info, "eval", &format!("Running agent '{}'", run.agent_name));
+            let output = evaluate_run_stmt(run, env, llm, tools, logger).await?;
             Ok(Some(output))
         }
         Statement::ToolDecl(decl) => {
+            logger.log(LogLevel::Debug, "eval", &format!("Declaring tool '{}'", decl.name));
             evaluate_tool_decl(decl, env, tools)?;
             Ok(None)
         }
@@ -203,6 +215,7 @@ async fn evaluate_run_stmt(
     env: &Environment,
     llm: &dyn LLMClient,
     tools: &ToolRegistry,
+    logger: &dyn Logger,
 ) -> GentResult<String> {
     // Look up the agent
     let agent_value = env
@@ -235,7 +248,7 @@ async fn evaluate_run_stmt(
     };
 
     // Run the agent with tools
-    run_agent_with_tools(agent, input, llm, tools).await
+    run_agent_with_tools(agent, input, llm, tools, logger).await
 }
 
 fn evaluate_expression(expr: &Expression) -> GentResult<Value> {
