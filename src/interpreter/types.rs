@@ -24,6 +24,12 @@ pub struct AgentValue {
     pub name: String,
     /// System prompt for the agent
     pub prompt: String,
+    /// Tools available to this agent
+    pub tools: Vec<String>,
+    /// Maximum steps before stopping (None = default 10)
+    pub max_steps: Option<u32>,
+    /// Model to use (None = default)
+    pub model: Option<String>,
 }
 
 impl AgentValue {
@@ -32,7 +38,28 @@ impl AgentValue {
         Self {
             name: name.into(),
             prompt: prompt.into(),
+            tools: Vec::new(),
+            max_steps: None,
+            model: None,
         }
+    }
+
+    /// Add tools to the agent
+    pub fn with_tools(mut self, tools: Vec<String>) -> Self {
+        self.tools = tools;
+        self
+    }
+
+    /// Set max steps
+    pub fn with_max_steps(mut self, steps: u32) -> Self {
+        self.max_steps = Some(steps);
+        self
+    }
+
+    /// Set model
+    pub fn with_model(mut self, model: impl Into<String>) -> Self {
+        self.model = Some(model.into());
+        self
     }
 }
 
