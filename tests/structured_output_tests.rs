@@ -12,7 +12,7 @@ async fn test_agent_with_inline_structured_output() {
             model: "gpt-4o"
             output: { category: string, confidence: number }
         }
-        run Classifier with "test input"
+        run Classifier("test input")
     "#;
 
     let program = parse(source).unwrap();
@@ -42,7 +42,7 @@ async fn test_agent_with_named_struct_output() {
             model: "gpt-4o"
             output: Classification
         }
-        run Classifier with "test input"
+        run Classifier("test input")
     "#;
 
     let program = parse(source).unwrap();
@@ -67,7 +67,7 @@ async fn test_agent_without_output_schema() {
             prompt: "Just respond"
             model: "gpt-4o"
         }
-        run Simple with "hello"
+        run Simple("hello")
     "#;
 
     let program = parse(source).unwrap();
@@ -99,7 +99,7 @@ async fn test_struct_with_nested_output() {
             model: "gpt-4o"
             output: DataOutput
         }
-        run Extractor with "extract from this"
+        run Extractor("extract from this")
     "#;
 
     let program = parse(source).unwrap();
@@ -130,7 +130,7 @@ async fn test_struct_with_array_output() {
             model: "gpt-4o"
             output: TagList
         }
-        run TagExtractor with "find tags"
+        run TagExtractor("find tags")
     "#;
 
     let program = parse(source).unwrap();
