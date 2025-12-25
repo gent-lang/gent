@@ -1,0 +1,30 @@
+// === Program Structure ===
+program = { SOI ~ statement* ~ EOI }
+statement = { agent_decl | run_stmt }
+
+// === Agent Declaration ===
+agent_decl = { "agent" ~ identifier ~ "{" ~ agent_body ~ "}" }
+agent_body = { agent_field* }
+agent_field = { identifier ~ ":" ~ expression }
+
+// === Run Statement ===
+run_stmt = { "run" ~ identifier ~ run_args? }
+run_args = { "with" ~ expression }
+
+// === Expressions ===
+expression = { string_literal | number_literal | boolean_literal | identifier }
+
+// === Literals ===
+string_literal = ${ "\"" ~ string_inner ~ "\"" }
+string_inner = @{ (!("\"" | "\\") ~ ANY | escape_sequence)* }
+escape_sequence = @{ "\\" ~ ("\"" | "\\" | "n" | "r" | "t") }
+
+number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+boolean_literal = { "true" | "false" }
+
+// === Identifiers ===
+identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+
+// === Whitespace & Comments ===
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
