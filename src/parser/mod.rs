@@ -3,7 +3,7 @@
 pub mod ast;
 
 pub use ast::{
-    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, IfStmt,
+    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, ForStmt, IfStmt,
     LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl,
     TypeName, UnaryOp,
 };
@@ -248,6 +248,7 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
         Rule::identifier => Ok(Expression::Identifier(pair.as_str().to_string(), span)),
         Rule::array_literal => parse_array_literal(pair),
         Rule::object_literal => parse_object_literal(pair),
+        Rule::range_expr => parse_range_expr(pair),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected expression: {:?}", pair.as_rule()),
             span,
@@ -566,6 +567,7 @@ fn parse_block_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<BlockStmt> 
         Rule::let_stmt => Ok(BlockStmt::Let(parse_let_stmt(inner)?)),
         Rule::return_stmt => Ok(BlockStmt::Return(parse_return_stmt(inner)?)),
         Rule::if_stmt => Ok(BlockStmt::If(parse_if_stmt(inner)?)),
+        Rule::for_stmt => Ok(BlockStmt::For(parse_for_stmt(inner)?)),
         Rule::expr_stmt => {
             let expr_pair = inner.into_inner().next().unwrap();
             Ok(BlockStmt::Expr(parse_expression(expr_pair)?))
@@ -612,6 +614,32 @@ fn parse_if_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<IfStmt> {
         else_block,
         span,
     })
+}
+
+fn parse_for_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<ForStmt> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let variable = inner.next().unwrap().as_str().to_string();
+    let iterable = parse_expression(inner.next().unwrap())?;
+    let body = parse_block(inner.next().unwrap())?;
+
+    Ok(ForStmt {
+        variable,
+        iterable,
+        body,
+        span,
+    })
+}
+
+fn parse_range_expr(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let start = parse_expression(inner.next().unwrap())?;
+    let end = parse_expression(inner.next().unwrap())?;
+
+    Ok(Expression::Range(Box::new(start), Box::new(end), span))
 }
 
 fn parse_struct_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<StructDecl> {
