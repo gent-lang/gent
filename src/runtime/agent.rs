@@ -67,10 +67,10 @@ pub async fn run_agent_with_tools(
         agent.prompt.clone()
     };
 
-    let mut messages = vec![
-        Message::system(&system_prompt),
-        Message::user(input.unwrap_or_else(|| "Hello!".to_string())),
-    ];
+    let mut messages = vec![Message::system(&system_prompt)];
+    if let Some(user_input) = input {
+        messages.push(Message::user(user_input));
+    }
 
     for step in 0..max_steps {
         logger.log(
@@ -176,11 +176,10 @@ pub async fn run_agent_full(
     input: Option<String>,
     llm: &dyn LLMClient,
 ) -> GentResult<LLMResponse> {
-    let mut messages = Vec::new();
-    messages.push(Message::system(&agent.prompt));
-
-    let user_input = input.unwrap_or_else(|| "Hello!".to_string());
-    messages.push(Message::user(user_input));
+    let mut messages = vec![Message::system(&agent.prompt)];
+    if let Some(user_input) = input {
+        messages.push(Message::user(user_input));
+    }
 
     let model = agent.model.as_deref();
     llm.chat(messages, vec![], model, false).await
