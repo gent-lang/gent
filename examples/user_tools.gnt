@@ -21,6 +21,7 @@ tool add(a: number, b: number) -> number {
 agent Assistant {
     prompt: "You are a helpful assistant that can greet users, format temperatures, and do math."
     use greet, format_temp, add
+    model: "gpt-4o-mini"
     max_steps: 5
 }
 

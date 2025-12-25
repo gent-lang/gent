@@ -1,6 +1,7 @@
 agent Researcher {
     prompt: "You are a helpful research assistant. Use the web_fetch tool to find information."
     use web_fetch
+    model: "gpt-4o"
     max_steps: 5
 }
 
