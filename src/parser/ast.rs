@@ -87,7 +87,7 @@ pub struct Program {
 pub enum Statement {
     AgentDecl(AgentDecl),
     ToolDecl(ToolDecl),
-    RunStmt(RunStmt),
+    AgentCall(AgentCall),
     StructDecl(StructDecl),
 }
 
@@ -127,9 +127,9 @@ pub struct Param {
     pub span: Span,
 }
 
-/// A run statement: `run AgentName` or `run AgentName with input`
+/// An agent call: `AgentName` or `AgentName(input)`
 #[derive(Debug, Clone, PartialEq)]
-pub struct RunStmt {
+pub struct AgentCall {
     pub agent_name: String,
     pub input: Option<Expression>,
     pub span: Span,
