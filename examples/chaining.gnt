@@ -17,7 +17,11 @@ agent ToneAnalyzer {
 }
 
 // Chain agents: summarize -> translate -> analyze tone
-let summary = Summarizer.userPrompt("The quick brown fox jumps over the lazy dog. This classic pangram contains every letter of the English alphabet. It has been used for decades to test typewriters, fonts, and keyboards. The sentence is memorable and easy to type, making it a favorite among typists and designers alike.").invoke()
+let summary = Summarizer.userPrompt("The quick brown fox jumps over the lazy dog.
+This classic pangram contains every letter of the English alphabet.
+It has been used for decades to test typewriters, fonts, and keyboards.
+The sentence is memorable and easy to type,
+making it a favorite among typists and designers alike.").invoke()
 
 let french = Translator.userPrompt(summary).invoke()
 
