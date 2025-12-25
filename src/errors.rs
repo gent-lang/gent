@@ -82,6 +82,60 @@ pub enum GentError {
     /// Tool execution failed
     #[error("Tool '{tool}' failed: {message}")]
     ToolError { tool: String, message: String },
+
+    /// Undefined variable reference
+    #[error("Undefined variable: {name}")]
+    UndefinedVariable { name: String, span: Span },
+
+    /// Undefined property access
+    #[error("Undefined property: {property} on {type_name}")]
+    UndefinedProperty {
+        property: String,
+        type_name: String,
+        span: Span,
+    },
+
+    /// Array/List index out of bounds
+    #[error("Index out of bounds: {index} (length: {length})")]
+    IndexOutOfBounds {
+        index: i64,
+        length: usize,
+        span: Span,
+    },
+
+    /// Attempt to index a non-indexable type
+    #[error("Cannot index into {type_name}")]
+    NotIndexable { type_name: String, span: Span },
+
+    /// Invalid operand types for binary operation
+    #[error("Invalid operand types: {left} {op} {right}")]
+    InvalidOperands {
+        op: String,
+        left: String,
+        right: String,
+        span: Span,
+    },
+
+    /// Division by zero error
+    #[error("Division by zero")]
+    DivisionByZero { span: Span },
+
+    /// Wrong number of arguments to function/tool
+    #[error("Expected {expected} arguments, got {got}")]
+    WrongArgumentCount {
+        expected: usize,
+        got: usize,
+        span: Span,
+    },
+
+    /// Type mismatch for function/tool argument
+    #[error("Type mismatch for parameter '{param}': expected {expected}, got {got}")]
+    ArgumentTypeMismatch {
+        param: String,
+        expected: String,
+        got: String,
+        span: Span,
+    },
 }
 
 impl GentError {
@@ -94,6 +148,14 @@ impl GentError {
             GentError::MissingAgentField { span, .. } => Some(span),
             GentError::TypeError { span, .. } => Some(span),
             GentError::UnknownTool { span, .. } => Some(span),
+            GentError::UndefinedVariable { span, .. } => Some(span),
+            GentError::UndefinedProperty { span, .. } => Some(span),
+            GentError::IndexOutOfBounds { span, .. } => Some(span),
+            GentError::NotIndexable { span, .. } => Some(span),
+            GentError::InvalidOperands { span, .. } => Some(span),
+            GentError::DivisionByZero { span } => Some(span),
+            GentError::WrongArgumentCount { span, .. } => Some(span),
+            GentError::ArgumentTypeMismatch { span, .. } => Some(span),
             GentError::LLMError { .. } => None,
             GentError::FileReadError { .. } => None,
             GentError::ApiError { .. } => None,

@@ -152,7 +152,9 @@ fn test_error_debug() {
 fn test_gent_result_ok() {
     let result: GentResult<i32> = Ok(42);
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), 42);
+    if let Ok(value) = result {
+        assert_eq!(value, 42);
+    }
 }
 
 #[test]
@@ -193,4 +195,105 @@ fn test_file_read_error_no_span() {
         source: io_err,
     };
     assert_eq!(err.span(), None);
+}
+
+// ============================================
+// Milestone 3: New Error Types Tests
+// ============================================
+
+#[test]
+fn test_undefined_variable_error() {
+    let err = GentError::UndefinedVariable {
+        name: "foo".to_string(),
+        span: Span::new(0, 3),
+    };
+    assert!(err.to_string().contains("Undefined variable"));
+    assert!(err.to_string().contains("foo"));
+}
+
+#[test]
+fn test_undefined_property_error() {
+    let err = GentError::UndefinedProperty {
+        property: "bar".to_string(),
+        type_name: "Object".to_string(),
+        span: Span::new(0, 3),
+    };
+    assert!(err.to_string().contains("Undefined property"));
+}
+
+#[test]
+fn test_index_out_of_bounds_error() {
+    let err = GentError::IndexOutOfBounds {
+        index: 5,
+        length: 3,
+        span: Span::new(0, 1),
+    };
+    assert!(err.to_string().contains("out of bounds"));
+}
+
+#[test]
+fn test_not_indexable_error() {
+    let err = GentError::NotIndexable {
+        type_name: "Boolean".to_string(),
+        span: Span::new(0, 1),
+    };
+    assert!(err.to_string().contains("Cannot index"));
+}
+
+#[test]
+fn test_invalid_operands_error() {
+    let err = GentError::InvalidOperands {
+        op: "+".to_string(),
+        left: "String".to_string(),
+        right: "Boolean".to_string(),
+        span: Span::new(0, 1),
+    };
+    assert!(err.to_string().contains("Invalid operand"));
+}
+
+#[test]
+fn test_division_by_zero_error() {
+    let err = GentError::DivisionByZero {
+        span: Span::new(0, 1),
+    };
+    assert!(err.to_string().contains("Division by zero"));
+}
+
+#[test]
+fn test_wrong_argument_count_error() {
+    let err = GentError::WrongArgumentCount {
+        expected: 2,
+        got: 1,
+        span: Span::new(0, 1),
+    };
+    assert!(err.to_string().contains("2"));
+    assert!(err.to_string().contains("1"));
+}
+
+#[test]
+fn test_argument_type_mismatch_error() {
+    let err = GentError::ArgumentTypeMismatch {
+        param: "city".to_string(),
+        expected: "String".to_string(),
+        got: "Number".to_string(),
+        span: Span::new(0, 1),
+    };
+    assert!(err.to_string().contains("city"));
+}
+
+#[test]
+fn test_undefined_variable_has_span() {
+    let span = Span::new(5, 8);
+    let err = GentError::UndefinedVariable {
+        name: "foo".to_string(),
+        span: span.clone(),
+    };
+    assert_eq!(err.span(), Some(&span));
+}
+
+#[test]
+fn test_division_by_zero_has_span() {
+    let span = Span::new(10, 11);
+    let err = GentError::DivisionByZero { span: span.clone() };
+    assert_eq!(err.span(), Some(&span));
 }
