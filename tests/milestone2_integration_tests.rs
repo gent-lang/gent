@@ -1,4 +1,5 @@
 use gent::interpreter::evaluate;
+use gent::logging::NullLogger;
 use gent::parser::parse;
 use gent::runtime::{MockLLMClient, ToolRegistry};
 
@@ -15,8 +16,9 @@ async fn test_agent_with_tools_parses() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::with_builtins();
+    let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools).await;
+    let result = evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -33,8 +35,9 @@ async fn test_agent_with_max_steps() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
+    let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools).await;
+    let result = evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -50,8 +53,9 @@ async fn test_agent_with_model() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
+    let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools).await;
+    let result = evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -69,8 +73,9 @@ async fn test_full_researcher_example() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Rust is a systems programming language.");
     let mut tools = ToolRegistry::with_builtins();
+    let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools).await;
+    let result = evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -93,8 +98,9 @@ async fn test_multiple_agents_with_different_tools() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::with_builtins();
+    let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools).await;
+    let result = evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 

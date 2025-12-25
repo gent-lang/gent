@@ -1,4 +1,5 @@
 use gent::interpreter::evaluate;
+use gent::logging::NullLogger;
 use gent::parser::parse;
 use gent::runtime::{llm::MockLLMClient, ToolRegistry};
 
@@ -7,7 +8,8 @@ async fn run_program(source: &str) -> Result<(), String> {
     let program = parse(source).map_err(|e| e.to_string())?;
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    evaluate(&program, &llm, &mut tools)
+    let logger = NullLogger;
+    evaluate(&program, &llm, &mut tools, &logger)
         .await
         .map_err(|e| e.to_string())
 }

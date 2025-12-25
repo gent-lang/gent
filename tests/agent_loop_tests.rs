@@ -1,4 +1,5 @@
 use gent::interpreter::types::AgentValue;
+use gent::logging::NullLogger;
 use gent::runtime::{run_agent_with_tools, MockLLMClient, ToolCall, ToolRegistry};
 use serde_json::json;
 
@@ -8,7 +9,8 @@ async fn test_agent_simple_response() {
     let llm = MockLLMClient::with_response("Hello there!");
     let registry = ToolRegistry::new();
 
-    let result = run_agent_with_tools(&agent, Some("Hi".to_string()), &llm, &registry).await;
+    let logger = NullLogger;
+    let result = run_agent_with_tools(&agent, Some("Hi".to_string()), &llm, &registry, &logger).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), "Hello there!");
 }
@@ -28,8 +30,9 @@ async fn test_agent_with_tool_call() {
     let registry = ToolRegistry::with_builtins();
 
     // This will execute the tool and loop
+    let logger = NullLogger;
     let result =
-        run_agent_with_tools(&agent, Some("Read test.txt".to_string()), &llm, &registry).await;
+        run_agent_with_tools(&agent, Some("Read test.txt".to_string()), &llm, &registry, &logger).await;
     // Result depends on mock behavior after tool execution
     assert!(result.is_ok() || result.is_err()); // Just testing it runs
 }
@@ -47,7 +50,8 @@ async fn test_agent_max_steps_exceeded() {
 
     let registry = ToolRegistry::with_builtins();
 
-    let result = run_agent_with_tools(&agent, None, &llm, &registry).await;
+    let logger = NullLogger;
+    let result = run_agent_with_tools(&agent, None, &llm, &registry, &logger).await;
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("exceeded"));
 }
@@ -65,7 +69,8 @@ async fn test_agent_unknown_tool() {
 
     let registry = ToolRegistry::new(); // Empty, no tools
 
-    let result = run_agent_with_tools(&agent, None, &llm, &registry).await;
+    let logger = NullLogger;
+    let result = run_agent_with_tools(&agent, None, &llm, &registry, &logger).await;
     // Should handle gracefully - either error or tell LLM tool not found
     assert!(result.is_ok() || result.is_err());
 }
