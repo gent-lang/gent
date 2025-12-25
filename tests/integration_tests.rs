@@ -85,7 +85,7 @@ async fn test_run_with_string_input() {
     let result = run_program(
         r#"
         agent Echo { prompt: "Echo things" model: "gpt-4o-mini" }
-        run Echo with "Hello there"
+        run Echo("Hello there")
     "#,
     )
     .await;
