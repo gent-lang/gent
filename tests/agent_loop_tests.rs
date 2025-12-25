@@ -10,7 +10,8 @@ async fn test_agent_simple_response() {
     let registry = ToolRegistry::new();
 
     let logger = NullLogger;
-    let result = run_agent_with_tools(&agent, Some("Hi".to_string()), &llm, &registry, &logger).await;
+    let result =
+        run_agent_with_tools(&agent, Some("Hi".to_string()), &llm, &registry, &logger).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), "Hello there!");
 }
@@ -31,8 +32,14 @@ async fn test_agent_with_tool_call() {
 
     // This will execute the tool and loop
     let logger = NullLogger;
-    let result =
-        run_agent_with_tools(&agent, Some("Read test.txt".to_string()), &llm, &registry, &logger).await;
+    let result = run_agent_with_tools(
+        &agent,
+        Some("Read test.txt".to_string()),
+        &llm,
+        &registry,
+        &logger,
+    )
+    .await;
     // Result depends on mock behavior after tool execution
     assert!(result.is_ok() || result.is_err()); // Just testing it runs
 }

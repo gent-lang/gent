@@ -17,13 +17,14 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
         Expression::Null(_) => Ok(Value::Null),
 
         // Identifier
-        Expression::Identifier(name, span) => env
-            .get(name)
-            .cloned()
-            .ok_or_else(|| GentError::UndefinedVariable {
-                name: name.clone(),
-                span: span.clone(),
-            }),
+        Expression::Identifier(name, span) => {
+            env.get(name)
+                .cloned()
+                .ok_or_else(|| GentError::UndefinedVariable {
+                    name: name.clone(),
+                    span: span.clone(),
+                })
+        }
 
         // Array literal
         Expression::Array(elements, _) => {
@@ -61,13 +62,15 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
         Expression::Member(object_expr, property, span) => {
             let object = evaluate_expr(object_expr, env)?;
             match object {
-                Value::Object(map) => map.get(property).cloned().ok_or_else(|| {
-                    GentError::UndefinedProperty {
-                        property: property.clone(),
-                        type_name: "Object".to_string(),
-                        span: span.clone(),
-                    }
-                }),
+                Value::Object(map) => {
+                    map.get(property)
+                        .cloned()
+                        .ok_or_else(|| GentError::UndefinedProperty {
+                            property: property.clone(),
+                            type_name: "Object".to_string(),
+                            span: span.clone(),
+                        })
+                }
                 _ => Err(GentError::UndefinedProperty {
                     property: property.clone(),
                     type_name: object.type_name().to_string(),
@@ -104,13 +107,13 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
                 Value::Object(ref map) => {
                     // Object indexing requires a string
                     if let Value::String(key) = index {
-                        map.get(&key).cloned().ok_or_else(|| {
-                            GentError::UndefinedProperty {
+                        map.get(&key)
+                            .cloned()
+                            .ok_or_else(|| GentError::UndefinedProperty {
                                 property: key.clone(),
                                 type_name: "Object".to_string(),
                                 span: span.clone(),
-                            }
-                        })
+                            })
                     } else {
                         Err(GentError::NotIndexable {
                             type_name: format!("Object with {} index", index.type_name()),
@@ -272,7 +275,8 @@ fn values_equal(left: &Value, right: &Value) -> bool {
             if a.len() != b.len() {
                 return false;
             }
-            a.iter().all(|(k, v)| b.get(k).is_some_and(|v2| values_equal(v, v2)))
+            a.iter()
+                .all(|(k, v)| b.get(k).is_some_and(|v2| values_equal(v, v2)))
         }
         _ => false, // Different types are never equal
     }

@@ -46,11 +46,10 @@ impl Tool for JsonParseTool {
             .ok_or_else(|| "Missing required parameter: text".to_string())?;
 
         // Parse the JSON string to validate it
-        let parsed: Value = serde_json::from_str(text)
-            .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+        let parsed: Value =
+            serde_json::from_str(text).map_err(|e| format!("Failed to parse JSON: {}", e))?;
 
         // Return the JSON string (the interpreter will convert it to a Value)
-        serde_json::to_string(&parsed)
-            .map_err(|e| format!("Failed to serialize JSON: {}", e))
+        serde_json::to_string(&parsed).map_err(|e| format!("Failed to serialize JSON: {}", e))
     }
 }

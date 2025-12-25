@@ -459,7 +459,7 @@ fn test_ast_type_name_variants() {
 // Block and BlockStmt Tests
 // ============================================
 
-use gent::parser::{Block, BlockStmt, LetStmt, ReturnStmt, IfStmt};
+use gent::parser::{Block, BlockStmt, IfStmt, LetStmt, ReturnStmt};
 
 #[test]
 fn test_block_creation() {
@@ -493,7 +493,10 @@ fn test_return_stmt() {
 fn test_if_stmt() {
     let stmt = BlockStmt::If(IfStmt {
         condition: Expression::Boolean(true, Span::new(0, 4)),
-        then_block: Block { statements: vec![], span: Span::new(0, 2) },
+        then_block: Block {
+            statements: vec![],
+            span: Span::new(0, 2),
+        },
         else_block: None,
         span: Span::new(0, 20),
     });
@@ -510,7 +513,7 @@ fn test_block_stmt_expr_variant() {
 // ToolDecl and Param Tests
 // ============================================
 
-use gent::parser::{ToolDecl, Param};
+use gent::parser::{Param, ToolDecl};
 
 #[test]
 fn test_tool_decl_creation() {
@@ -522,7 +525,10 @@ fn test_tool_decl_creation() {
             span: Span::new(0, 12),
         }],
         return_type: Some(AstTypeName::String),
-        body: Block { statements: vec![], span: Span::new(0, 2) },
+        body: Block {
+            statements: vec![],
+            span: Span::new(0, 2),
+        },
         span: Span::new(0, 50),
     };
     assert_eq!(tool.name, "greet");
@@ -535,7 +541,10 @@ fn test_statement_tool_decl_variant() {
         name: "test".to_string(),
         params: vec![],
         return_type: None,
-        body: Block { statements: vec![], span: Span::new(0, 2) },
+        body: Block {
+            statements: vec![],
+            span: Span::new(0, 2),
+        },
         span: Span::new(0, 20),
     };
     let stmt = Statement::ToolDecl(tool);
@@ -575,7 +584,10 @@ fn test_expression_array() {
 #[test]
 fn test_expression_object() {
     let expr = Expression::Object(
-        vec![("key".to_string(), Expression::String("value".to_string(), Span::new(0, 5)))],
+        vec![(
+            "key".to_string(),
+            Expression::String("value".to_string(), Span::new(0, 5)),
+        )],
         Span::new(0, 15),
     );
     assert!(matches!(expr, Expression::Object(_, _)));

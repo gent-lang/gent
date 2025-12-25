@@ -2,7 +2,10 @@
 
 pub mod ast;
 
-pub use ast::{BinaryOp, UnaryOp, TypeName, Program, Statement, AgentDecl, AgentField, ToolDecl, Param, RunStmt, Expression, Block, BlockStmt, LetStmt, ReturnStmt, IfStmt};
+pub use ast::{
+    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, IfStmt, LetStmt, Param, Program,
+    ReturnStmt, RunStmt, Statement, ToolDecl, TypeName, UnaryOp,
+};
 
 use crate::errors::{GentError, GentResult, Span};
 use crate::lexer::{GentParser, Rule};
@@ -129,9 +132,14 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
         Rule::logical_or => parse_binary_left(pair, &[BinaryOp::Or]),
         Rule::logical_and => parse_binary_left(pair, &[BinaryOp::And]),
         Rule::equality => parse_binary_left(pair, &[BinaryOp::Eq, BinaryOp::Ne]),
-        Rule::comparison => parse_binary_left(pair, &[BinaryOp::Lt, BinaryOp::Le, BinaryOp::Gt, BinaryOp::Ge]),
+        Rule::comparison => parse_binary_left(
+            pair,
+            &[BinaryOp::Lt, BinaryOp::Le, BinaryOp::Gt, BinaryOp::Ge],
+        ),
         Rule::additive => parse_binary_left(pair, &[BinaryOp::Add, BinaryOp::Sub]),
-        Rule::multiplicative => parse_binary_left(pair, &[BinaryOp::Mul, BinaryOp::Div, BinaryOp::Mod]),
+        Rule::multiplicative => {
+            parse_binary_left(pair, &[BinaryOp::Mul, BinaryOp::Div, BinaryOp::Mod])
+        }
         Rule::unary => parse_unary(pair),
         Rule::postfix => parse_postfix(pair),
         Rule::primary => {
@@ -170,7 +178,10 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
 /// Parse binary left-associative operators
 /// The grammar is: level = { next_level ~ ((op1 | op2 | ...) ~ next_level)* }
 /// Pest gives us all children at next_level, so we need to extract operators from source positions
-fn parse_binary_left(pair: pest::iterators::Pair<Rule>, ops: &[BinaryOp]) -> GentResult<Expression> {
+fn parse_binary_left(
+    pair: pest::iterators::Pair<Rule>,
+    ops: &[BinaryOp],
+) -> GentResult<Expression> {
     let span = Span::new(pair.as_span().start(), pair.as_span().end());
     let source = pair.as_str();
     let base_pos = pair.as_span().start();
@@ -209,16 +220,21 @@ fn parse_binary_left(pair: pest::iterators::Pair<Rule>, ops: &[BinaryOp]) -> Gen
             "*" => BinaryOp::Mul,
             "/" => BinaryOp::Div,
             "%" => BinaryOp::Mod,
-            _ => return Err(GentError::SyntaxError {
-                message: format!("Unknown operator: {}", op_str),
-                span: span.clone(),
-            }),
+            _ => {
+                return Err(GentError::SyntaxError {
+                    message: format!("Unknown operator: {}", op_str),
+                    span: span.clone(),
+                })
+            }
         };
 
         // Verify this operator is in the expected set
         if !ops.contains(&op) {
             return Err(GentError::SyntaxError {
-                message: format!("Unexpected operator: {} (expected one of {:?})", op_str, ops),
+                message: format!(
+                    "Unexpected operator: {} (expected one of {:?})",
+                    op_str, ops
+                ),
                 span: span.clone(),
             });
         }
@@ -358,10 +374,12 @@ fn parse_object_literal(pair: pest::iterators::Pair<Rule>) -> GentResult<Express
                     let content = &raw[1..raw.len() - 1];
                     unescape_string(content)
                 }
-                _ => return Err(GentError::SyntaxError {
-                    message: "Expected identifier or string for object key".to_string(),
-                    span: Span::new(key_pair.as_span().start(), key_pair.as_span().end()),
-                }),
+                _ => {
+                    return Err(GentError::SyntaxError {
+                        message: "Expected identifier or string for object key".to_string(),
+                        span: Span::new(key_pair.as_span().start(), key_pair.as_span().end()),
+                    })
+                }
             };
 
             let value = parse_expression(field_inner.next().unwrap())?;
@@ -427,7 +445,11 @@ fn parse_param(pair: pest::iterators::Pair<Rule>) -> GentResult<Param> {
     let type_pair = inner.next().unwrap();
     let type_name = parse_type_name(type_pair)?;
 
-    Ok(Param { name, type_name, span })
+    Ok(Param {
+        name,
+        type_name,
+        span,
+    })
 }
 
 fn parse_type_name(pair: pest::iterators::Pair<Rule>) -> GentResult<TypeName> {
@@ -487,7 +509,11 @@ fn parse_let_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<LetStmt> {
 
 fn parse_return_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<ReturnStmt> {
     let span = Span::new(pair.as_span().start(), pair.as_span().end());
-    let value = pair.into_inner().next().map(|p| parse_expression(p)).transpose()?;
+    let value = pair
+        .into_inner()
+        .next()
+        .map(|p| parse_expression(p))
+        .transpose()?;
 
     Ok(ReturnStmt { value, span })
 }
@@ -500,7 +526,12 @@ fn parse_if_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<IfStmt> {
     let then_block = parse_block(inner.next().unwrap())?;
     let else_block = inner.next().map(|p| parse_block(p)).transpose()?;
 
-    Ok(IfStmt { condition, then_block, else_block, span })
+    Ok(IfStmt {
+        condition,
+        then_block,
+        else_block,
+        span,
+    })
 }
 
 fn unescape_string(s: &str) -> String {

@@ -39,7 +39,10 @@ impl<'a> ErrorReporter<'a> {
 
     /// Get the source line containing the given offset
     fn get_line(&self, offset: usize) -> &str {
-        let start = self.source[..offset].rfind('\n').map(|i| i + 1).unwrap_or(0);
+        let start = self.source[..offset]
+            .rfind('\n')
+            .map(|i| i + 1)
+            .unwrap_or(0);
         let end = self.source[offset..]
             .find('\n')
             .map(|i| offset + i)
@@ -87,7 +90,12 @@ impl<'a> ErrorReporter<'a> {
                     width = line_num_width
                 ));
             } else {
-                output.push_str(&format!("{:>width$} | {}\n", line, source_line, width = line_num_width));
+                output.push_str(&format!(
+                    "{:>width$} | {}\n",
+                    line,
+                    source_line,
+                    width = line_num_width
+                ));
             }
 
             // Caret line

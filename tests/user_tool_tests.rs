@@ -1,9 +1,7 @@
 //! Tests for UserToolWrapper functionality
 
 use gent::interpreter::{Environment, UserToolValue};
-use gent::parser::ast::{
-    Block, BlockStmt, BinaryOp, Expression, Param, ReturnStmt, TypeName,
-};
+use gent::parser::ast::{BinaryOp, Block, BlockStmt, Expression, Param, ReturnStmt, TypeName};
 use gent::runtime::tools::{Tool, ToolRegistry, UserToolWrapper};
 use gent::Span;
 use serde_json::json;

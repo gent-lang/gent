@@ -172,5 +172,8 @@ async fn test_openai_chat_uses_client_default_when_no_override() {
     // Pass None for model - should use client default (gpt-4o-mini)
     let response = client.chat(messages, vec![], None).await.unwrap();
 
-    assert_eq!(response.content, Some("Response from default model".to_string()));
+    assert_eq!(
+        response.content,
+        Some("Response from default model".to_string())
+    );
 }

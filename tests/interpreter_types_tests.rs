@@ -1,5 +1,5 @@
-use gent::interpreter::{AgentValue, Value};
 use gent::interpreter::types::UserToolValue;
+use gent::interpreter::{AgentValue, Value};
 use gent::parser::ast::{Block, Param, TypeName};
 use gent::Span;
 use std::collections::HashMap;
@@ -502,13 +502,11 @@ fn test_tool_with_ast_block() {
     // Create a tool with a real AST block containing statements
     let tool = UserToolValue {
         name: "calculate".to_string(),
-        params: vec![
-            Param {
-                name: "x".to_string(),
-                type_name: TypeName::Number,
-                span: Span::new(0, 1),
-            },
-        ],
+        params: vec![Param {
+            name: "x".to_string(),
+            type_name: TypeName::Number,
+            span: Span::new(0, 1),
+        }],
         return_type: Some(TypeName::Number),
         body: Block {
             statements: vec![
@@ -520,7 +518,10 @@ fn test_tool_with_ast_block() {
                 }),
                 // return result
                 BlockStmt::Return(ReturnStmt {
-                    value: Some(Expression::Identifier("result".to_string(), Span::new(20, 26))),
+                    value: Some(Expression::Identifier(
+                        "result".to_string(),
+                        Span::new(20, 26),
+                    )),
                     span: Span::new(15, 26),
                 }),
             ],
@@ -535,6 +536,12 @@ fn test_tool_with_ast_block() {
     assert_eq!(val.as_tool().unwrap().params.len(), 1);
     assert_eq!(val.as_tool().unwrap().params[0].name, "x");
     assert_eq!(val.as_tool().unwrap().body.statements.len(), 2);
-    assert!(matches!(val.as_tool().unwrap().body.statements[0], BlockStmt::Let(_)));
-    assert!(matches!(val.as_tool().unwrap().body.statements[1], BlockStmt::Return(_)));
+    assert!(matches!(
+        val.as_tool().unwrap().body.statements[0],
+        BlockStmt::Let(_)
+    ));
+    assert!(matches!(
+        val.as_tool().unwrap().body.statements[1],
+        BlockStmt::Return(_)
+    ));
 }

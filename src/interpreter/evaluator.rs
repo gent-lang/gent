@@ -62,16 +62,28 @@ async fn evaluate_statement(
 ) -> GentResult<()> {
     match statement {
         Statement::AgentDecl(decl) => {
-            logger.log(LogLevel::Debug, "eval", &format!("Declaring agent '{}'", decl.name));
+            logger.log(
+                LogLevel::Debug,
+                "eval",
+                &format!("Declaring agent '{}'", decl.name),
+            );
             evaluate_agent_decl(decl, env)?;
         }
         Statement::RunStmt(run) => {
-            logger.log(LogLevel::Info, "eval", &format!("Running agent '{}'", run.agent_name));
+            logger.log(
+                LogLevel::Info,
+                "eval",
+                &format!("Running agent '{}'", run.agent_name),
+            );
             let output = evaluate_run_stmt(run, env, llm, tools, logger).await?;
             println!("{}", output);
         }
         Statement::ToolDecl(decl) => {
-            logger.log(LogLevel::Debug, "eval", &format!("Declaring tool '{}'", decl.name));
+            logger.log(
+                LogLevel::Debug,
+                "eval",
+                &format!("Declaring tool '{}'", decl.name),
+            );
             evaluate_tool_decl(decl, env, tools)?;
         }
     }
@@ -87,17 +99,29 @@ async fn evaluate_statement_with_output(
 ) -> GentResult<Option<String>> {
     match statement {
         Statement::AgentDecl(decl) => {
-            logger.log(LogLevel::Debug, "eval", &format!("Declaring agent '{}'", decl.name));
+            logger.log(
+                LogLevel::Debug,
+                "eval",
+                &format!("Declaring agent '{}'", decl.name),
+            );
             evaluate_agent_decl(decl, env)?;
             Ok(None)
         }
         Statement::RunStmt(run) => {
-            logger.log(LogLevel::Info, "eval", &format!("Running agent '{}'", run.agent_name));
+            logger.log(
+                LogLevel::Info,
+                "eval",
+                &format!("Running agent '{}'", run.agent_name),
+            );
             let output = evaluate_run_stmt(run, env, llm, tools, logger).await?;
             Ok(Some(output))
         }
         Statement::ToolDecl(decl) => {
-            logger.log(LogLevel::Debug, "eval", &format!("Declaring tool '{}'", decl.name));
+            logger.log(
+                LogLevel::Debug,
+                "eval",
+                &format!("Declaring tool '{}'", decl.name),
+            );
             evaluate_tool_decl(decl, env, tools)?;
             Ok(None)
         }
@@ -192,7 +216,11 @@ fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()
     Ok(())
 }
 
-fn evaluate_tool_decl(decl: &ToolDecl, env: &mut Environment, tools: &mut ToolRegistry) -> GentResult<()> {
+fn evaluate_tool_decl(
+    decl: &ToolDecl,
+    env: &mut Environment,
+    tools: &mut ToolRegistry,
+) -> GentResult<()> {
     let tool_value = UserToolValue {
         name: decl.name.clone(),
         params: decl.params.clone(),

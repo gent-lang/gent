@@ -237,7 +237,9 @@ async fn test_llm_client_trait_object() {
 async fn test_llm_client_as_ref() {
     let client = MockLLMClient::with_response("Ref test");
     let client_ref: &dyn LLMClient = &client;
-    let result = client_ref.chat(vec![Message::user("hi")], vec![], None).await;
+    let result = client_ref
+        .chat(vec![Message::user("hi")], vec![], None)
+        .await;
     assert!(result.is_ok());
 }
 

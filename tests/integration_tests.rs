@@ -112,7 +112,9 @@ async fn test_comments_everywhere() {
 
 #[tokio::test]
 async fn test_whitespace_variations() {
-    let result = run_program("agent   A   {   prompt  :   \"x\"   model: \"gpt-4o-mini\"  }   run   A").await;
+    let result =
+        run_program("agent   A   {   prompt  :   \"x\"   model: \"gpt-4o-mini\"  }   run   A")
+            .await;
     assert!(result.is_ok());
 }
 
@@ -225,7 +227,10 @@ async fn test_agent_name_with_underscore() {
 #[tokio::test]
 async fn test_long_prompt() {
     let long_prompt = "x".repeat(5000);
-    let source = format!(r#"agent Long {{ prompt: "{}" model: "gpt-4o-mini" }} run Long"#, long_prompt);
+    let source = format!(
+        r#"agent Long {{ prompt: "{}" model: "gpt-4o-mini" }} run Long"#,
+        long_prompt
+    );
     let result = run_program(&source).await;
     assert!(result.is_ok());
 }

@@ -33,11 +33,11 @@ impl LogLevel {
 
     fn color_code(&self) -> &'static str {
         match self {
-            LogLevel::Trace => "\x1b[90m",   // Gray
-            LogLevel::Debug => "\x1b[36m",   // Cyan
-            LogLevel::Info => "\x1b[32m",    // Green
-            LogLevel::Warn => "\x1b[33m",    // Yellow
-            LogLevel::Error => "\x1b[31m",   // Red
+            LogLevel::Trace => "\x1b[90m", // Gray
+            LogLevel::Debug => "\x1b[36m", // Cyan
+            LogLevel::Info => "\x1b[32m",  // Green
+            LogLevel::Warn => "\x1b[33m",  // Yellow
+            LogLevel::Error => "\x1b[31m", // Red
             LogLevel::Off => "",
         }
     }
@@ -94,7 +94,13 @@ impl GentLogger {
         }
     }
 
-    fn format_message(&self, level: LogLevel, target: &str, message: &str, duration_ms: Option<u64>) -> String {
+    fn format_message(
+        &self,
+        level: LogLevel,
+        target: &str,
+        message: &str,
+        duration_ms: Option<u64>,
+    ) -> String {
         let reset = "\x1b[0m";
         let dim = "\x1b[90m";
 
@@ -157,9 +163,20 @@ pub struct NullLogger;
 
 impl Logger for NullLogger {
     fn log(&self, _level: LogLevel, _target: &str, _message: &str) {}
-    fn log_with_duration(&self, _level: LogLevel, _target: &str, _message: &str, _duration_ms: u64) {}
-    fn is_enabled(&self, _level: LogLevel) -> bool { false }
-    fn level(&self) -> LogLevel { LogLevel::Off }
+    fn log_with_duration(
+        &self,
+        _level: LogLevel,
+        _target: &str,
+        _message: &str,
+        _duration_ms: u64,
+    ) {
+    }
+    fn is_enabled(&self, _level: LogLevel) -> bool {
+        false
+    }
+    fn level(&self) -> LogLevel {
+        LogLevel::Off
+    }
 }
 
 /// Timer for measuring operation duration
@@ -173,7 +190,12 @@ pub struct Timer<'a> {
 }
 
 impl<'a> Timer<'a> {
-    pub fn new(name: impl Into<String>, target: impl Into<String>, level: LogLevel, logger: &'a dyn Logger) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        target: impl Into<String>,
+        level: LogLevel,
+        logger: &'a dyn Logger,
+    ) -> Self {
         Self {
             start: Instant::now(),
             name: name.into(),
@@ -248,7 +270,9 @@ mod tests {
         let buffer = Arc::new(Mutex::new(Vec::new()));
         let buffer_clone = buffer.clone();
 
-        let writer = Box::new(TestWriter { buffer: buffer_clone });
+        let writer = Box::new(TestWriter {
+            buffer: buffer_clone,
+        });
         let logger = GentLogger::with_writer(LogLevel::Debug, writer);
 
         logger.log(LogLevel::Info, "test", "hello world");

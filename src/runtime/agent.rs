@@ -41,7 +41,11 @@ pub async fn run_agent_with_tools(
         &format!("Tool definitions provided to LLM: {}", tool_defs.len()),
     );
     for def in &tool_defs {
-        logger.log(LogLevel::Trace, "agent", &format!("  - {} : {}", def.name, def.description));
+        logger.log(
+            LogLevel::Trace,
+            "agent",
+            &format!("  - {} : {}", def.name, def.description),
+        );
     }
 
     let mut messages = vec![
@@ -50,12 +54,20 @@ pub async fn run_agent_with_tools(
     ];
 
     for step in 0..max_steps {
-        logger.log(LogLevel::Debug, "agent", &format!("Step {}/{}", step + 1, max_steps));
+        logger.log(
+            LogLevel::Debug,
+            "agent",
+            &format!("Step {}/{}", step + 1, max_steps),
+        );
         let response = llm.chat(messages.clone(), tool_defs.clone(), model).await?;
 
         // If no tool calls, return the response content
         if response.tool_calls.is_empty() {
-            logger.log(LogLevel::Debug, "agent", "No tool calls, returning response");
+            logger.log(
+                LogLevel::Debug,
+                "agent",
+                "No tool calls, returning response",
+            );
             return Ok(response.content.unwrap_or_default());
         }
 
@@ -65,7 +77,11 @@ pub async fn run_agent_with_tools(
             &format!("LLM made {} tool call(s)", response.tool_calls.len()),
         );
         for call in &response.tool_calls {
-            logger.log(LogLevel::Trace, "agent", &format!("  - {}({})", call.name, call.arguments));
+            logger.log(
+                LogLevel::Trace,
+                "agent",
+                &format!("  - {}({})", call.name, call.arguments),
+            );
         }
 
         // Add assistant message with tool calls

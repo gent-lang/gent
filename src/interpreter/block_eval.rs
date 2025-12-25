@@ -54,8 +54,7 @@ pub fn evaluate_block<'a>(
                         // Execute then block
                         let then_result = evaluate_block(&if_stmt.then_block, env, tools).await?;
                         // If the then block returned, propagate that return
-                        if !matches!(then_result, Value::Null) || has_return(&if_stmt.then_block)
-                        {
+                        if !matches!(then_result, Value::Null) || has_return(&if_stmt.then_block) {
                             env.pop_scope();
                             return Ok(then_result);
                         }
@@ -119,10 +118,12 @@ pub fn evaluate_expr_async<'a>(
                 };
 
                 // Look up the tool in the registry
-                let tool = tools.get(&tool_name).ok_or_else(|| GentError::UnknownTool {
-                    name: tool_name.clone(),
-                    span: span.clone(),
-                })?;
+                let tool = tools
+                    .get(&tool_name)
+                    .ok_or_else(|| GentError::UnknownTool {
+                        name: tool_name.clone(),
+                        span: span.clone(),
+                    })?;
 
                 // Evaluate arguments recursively
                 let mut arg_values = Vec::new();

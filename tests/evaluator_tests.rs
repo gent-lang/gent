@@ -18,7 +18,8 @@ async fn test_evaluate_empty_program() {
 
 #[tokio::test]
 async fn test_evaluate_agent_declaration() {
-    let program = parse(r#"agent Hello { prompt: "You are friendly." model: "gpt-4o-mini" }"#).unwrap();
+    let program =
+        parse(r#"agent Hello { prompt: "You are friendly." model: "gpt-4o-mini" }"#).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
     let result = evaluate_with_output(&program, &llm, &mut tools).await;
@@ -229,7 +230,10 @@ async fn test_evaluate_empty_prompt() {
 #[tokio::test]
 async fn test_evaluate_long_prompt() {
     let long_text = "You are helpful. ".repeat(50);
-    let source = format!(r#"agent Long {{ prompt: "{}" model: "gpt-4o-mini" }} run Long"#, long_text);
+    let source = format!(
+        r#"agent Long {{ prompt: "{}" model: "gpt-4o-mini" }} run Long"#,
+        long_text
+    );
     let program = parse(&source).unwrap();
     let llm = MockLLMClient::with_response("OK");
     let mut tools = ToolRegistry::new();

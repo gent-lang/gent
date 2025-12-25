@@ -4,9 +4,7 @@ use serde_json::json;
 #[tokio::test]
 async fn test_json_parse_object() {
     let tool = JsonParseTool::new();
-    let result = tool
-        .execute(json!({"text": r#"{"name": "Tokyo"}"#}))
-        .await;
+    let result = tool.execute(json!({"text": r#"{"name": "Tokyo"}"#})).await;
 
     assert!(result.is_ok());
     let parsed = result.unwrap();

@@ -82,9 +82,17 @@ async fn main() -> ExitCode {
 }
 
 async fn run(cli: &Cli, source: &str, logger: &dyn Logger) -> Result<(), GentError> {
-    logger.log(LogLevel::Debug, "cli", &format!("Parsing {} bytes", source.len()));
+    logger.log(
+        LogLevel::Debug,
+        "cli",
+        &format!("Parsing {} bytes", source.len()),
+    );
     let program = parse(source)?;
-    logger.log(LogLevel::Debug, "cli", &format!("Parsed {} statements", program.statements.len()));
+    logger.log(
+        LogLevel::Debug,
+        "cli",
+        &format!("Parsed {} statements", program.statements.len()),
+    );
 
     let mut tools = ToolRegistry::with_builtins();
 

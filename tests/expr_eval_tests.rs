@@ -88,8 +88,14 @@ fn test_eval_object_literal() {
     let env = Environment::new();
     let expr = Expression::Object(
         vec![
-            ("name".to_string(), Expression::String("John".to_string(), Span::new(7, 13))),
-            ("age".to_string(), Expression::Number(30.0, Span::new(20, 22))),
+            (
+                "name".to_string(),
+                Expression::String("John".to_string(), Span::new(7, 13)),
+            ),
+            (
+                "age".to_string(),
+                Expression::Number(30.0, Span::new(20, 22)),
+            ),
         ],
         Span::new(0, 24),
     );
@@ -195,7 +201,10 @@ fn test_eval_div_by_zero() {
     );
     let result = evaluate_expr(&expr, &env);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), gent::GentError::DivisionByZero { .. }));
+    assert!(matches!(
+        result.unwrap_err(),
+        gent::GentError::DivisionByZero { .. }
+    ));
 }
 
 #[test]
@@ -222,7 +231,10 @@ fn test_eval_mod_by_zero() {
     );
     let result = evaluate_expr(&expr, &env);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), gent::GentError::DivisionByZero { .. }));
+    assert!(matches!(
+        result.unwrap_err(),
+        gent::GentError::DivisionByZero { .. }
+    ));
 }
 
 // Binary operators - Comparison
@@ -418,7 +430,10 @@ fn test_eval_member_access() {
     env.define("person", Value::Object(obj));
 
     let expr = Expression::Member(
-        Box::new(Expression::Identifier("person".to_string(), Span::new(0, 6))),
+        Box::new(Expression::Identifier(
+            "person".to_string(),
+            Span::new(0, 6),
+        )),
         "name".to_string(),
         Span::new(0, 11),
     );
@@ -434,13 +449,19 @@ fn test_eval_member_access_undefined_property() {
     env.define("person", Value::Object(obj));
 
     let expr = Expression::Member(
-        Box::new(Expression::Identifier("person".to_string(), Span::new(0, 6))),
+        Box::new(Expression::Identifier(
+            "person".to_string(),
+            Span::new(0, 6),
+        )),
         "name".to_string(),
         Span::new(0, 11),
     );
     let result = evaluate_expr(&expr, &env);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), gent::GentError::UndefinedProperty { .. }));
+    assert!(matches!(
+        result.unwrap_err(),
+        gent::GentError::UndefinedProperty { .. }
+    ));
 }
 
 #[test]
@@ -455,7 +476,10 @@ fn test_eval_member_access_not_object() {
     );
     let result = evaluate_expr(&expr, &env);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), gent::GentError::UndefinedProperty { .. }));
+    assert!(matches!(
+        result.unwrap_err(),
+        gent::GentError::UndefinedProperty { .. }
+    ));
 }
 
 // Index access
@@ -464,7 +488,11 @@ fn test_eval_index_access_array() {
     let mut env = Environment::new();
     env.define(
         "arr",
-        Value::Array(vec![Value::Number(10.0), Value::Number(20.0), Value::Number(30.0)]),
+        Value::Array(vec![
+            Value::Number(10.0),
+            Value::Number(20.0),
+            Value::Number(30.0),
+        ]),
     );
 
     let expr = Expression::Index(
@@ -505,7 +533,10 @@ fn test_eval_index_out_of_bounds() {
     );
     let result = evaluate_expr(&expr, &env);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), gent::GentError::IndexOutOfBounds { .. }));
+    assert!(matches!(
+        result.unwrap_err(),
+        gent::GentError::IndexOutOfBounds { .. }
+    ));
 }
 
 #[test]
@@ -520,7 +551,10 @@ fn test_eval_index_not_indexable() {
     );
     let result = evaluate_expr(&expr, &env);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), gent::GentError::NotIndexable { .. }));
+    assert!(matches!(
+        result.unwrap_err(),
+        gent::GentError::NotIndexable { .. }
+    ));
 }
 
 // Complex expressions
@@ -547,7 +581,10 @@ fn test_eval_nested_arithmetic() {
 fn test_eval_call_requires_async() {
     let _env = Environment::new();
     let expr = Expression::Call(
-        Box::new(Expression::Identifier("someFunc".to_string(), Span::new(0, 8))),
+        Box::new(Expression::Identifier(
+            "someFunc".to_string(),
+            Span::new(0, 8),
+        )),
         vec![],
         Span::new(0, 10),
     );

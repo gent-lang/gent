@@ -1,8 +1,8 @@
 //! Value types for the GENT interpreter
 
+use crate::parser::ast::{Block, Param, TypeName as ParserTypeName};
 use std::collections::HashMap;
 use std::fmt;
-use crate::parser::ast::{Block, Param, TypeName as ParserTypeName};
 
 /// Represents a user-defined tool at runtime
 #[derive(Debug, Clone, PartialEq)]
@@ -99,10 +99,8 @@ impl fmt::Display for Value {
                 write!(f, "[{}]", formatted.join(", "))
             }
             Value::Object(map) => {
-                let formatted: Vec<String> = map
-                    .iter()
-                    .map(|(k, v)| format!("{}: {}", k, v))
-                    .collect();
+                let formatted: Vec<String> =
+                    map.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
                 write!(f, "{{{}}}", formatted.join(", "))
             }
             Value::Tool(t) => write!(f, "<tool {}>", t.name),
