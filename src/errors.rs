@@ -62,6 +62,26 @@ pub enum GentError {
         #[source]
         source: std::io::Error,
     },
+
+    /// API request failed
+    #[error("API error: {message}")]
+    ApiError { message: String },
+
+    /// Missing API key
+    #[error("Missing API key for {provider}. Set {provider}_API_KEY environment variable.")]
+    MissingApiKey { provider: String },
+
+    /// Agent exceeded maximum steps
+    #[error("Agent exceeded maximum steps ({limit})")]
+    MaxStepsExceeded { limit: u32 },
+
+    /// Unknown tool referenced
+    #[error("Unknown tool: '{name}'")]
+    UnknownTool { name: String, span: Span },
+
+    /// Tool execution failed
+    #[error("Tool '{tool}' failed: {message}")]
+    ToolError { tool: String, message: String },
 }
 
 impl GentError {
@@ -73,8 +93,13 @@ impl GentError {
             GentError::UndefinedAgent { span, .. } => Some(span),
             GentError::MissingAgentField { span, .. } => Some(span),
             GentError::TypeError { span, .. } => Some(span),
+            GentError::UnknownTool { span, .. } => Some(span),
             GentError::LLMError { .. } => None,
             GentError::FileReadError { .. } => None,
+            GentError::ApiError { .. } => None,
+            GentError::MissingApiKey { .. } => None,
+            GentError::MaxStepsExceeded { .. } => None,
+            GentError::ToolError { .. } => None,
         }
     }
 }
