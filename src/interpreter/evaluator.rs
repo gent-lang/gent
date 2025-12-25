@@ -158,15 +158,20 @@ fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()
         span: decl.span.clone(),
     })?;
 
+    // Model is required
+    let model = model.ok_or_else(|| GentError::MissingAgentField {
+        agent: decl.name.clone(),
+        field: "model".to_string(),
+        span: decl.span.clone(),
+    })?;
+
     // Build agent with all fields
-    let mut agent = AgentValue::new(&decl.name, prompt).with_tools(decl.tools.clone());
+    let mut agent = AgentValue::new(&decl.name, prompt)
+        .with_tools(decl.tools.clone())
+        .with_model(model);
 
     if let Some(steps) = max_steps {
         agent = agent.with_max_steps(steps);
-    }
-
-    if let Some(m) = model {
-        agent = agent.with_model(m);
     }
 
     env.define(&decl.name, Value::Agent(agent));
