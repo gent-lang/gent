@@ -1,5 +1,6 @@
 //! Value types for the GENT interpreter
 
+use std::collections::HashMap;
 use std::fmt;
 
 /// Runtime values in GENT
@@ -17,6 +18,8 @@ pub enum Value {
     Agent(AgentValue),
     /// Array value
     Array(Vec<Value>),
+    /// Object value (key-value map)
+    Object(HashMap<String, Value>),
 }
 
 /// Represents a defined agent at runtime
@@ -83,6 +86,13 @@ impl fmt::Display for Value {
                 let formatted: Vec<String> = items.iter().map(|v| format!("{}", v)).collect();
                 write!(f, "[{}]", formatted.join(", "))
             }
+            Value::Object(map) => {
+                let formatted: Vec<String> = map
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect();
+                write!(f, "{{{}}}", formatted.join(", "))
+            }
         }
     }
 }
@@ -103,6 +113,7 @@ impl Value {
             Value::Number(n) => *n != 0.0,
             Value::Agent(_) => true,
             Value::Array(items) => !items.is_empty(),
+            Value::Object(map) => !map.is_empty(),
         }
     }
 
@@ -115,6 +126,7 @@ impl Value {
             Value::Null => "Null",
             Value::Agent(_) => "Agent",
             Value::Array(_) => "Array",
+            Value::Object(_) => "Object",
         }
     }
 
@@ -138,6 +150,14 @@ impl Value {
     pub fn as_array(&self) -> Option<&Vec<Value>> {
         match self {
             Value::Array(arr) => Some(arr),
+            _ => None,
+        }
+    }
+
+    /// Try to get as object
+    pub fn as_object(&self) -> Option<&HashMap<String, Value>> {
+        match self {
+            Value::Object(map) => Some(map),
             _ => None,
         }
     }

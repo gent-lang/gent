@@ -1,4 +1,5 @@
 use gent::interpreter::{AgentValue, Value};
+use std::collections::HashMap;
 
 // ============================================
 // Value Creation Tests
@@ -261,6 +262,33 @@ fn test_as_agent_failure() {
     assert_eq!(val.as_agent(), None);
 }
 
+#[test]
+fn test_as_array_success() {
+    let arr = vec![Value::Number(1.0), Value::Number(2.0)];
+    let val = Value::Array(arr.clone());
+    assert_eq!(val.as_array(), Some(&arr));
+}
+
+#[test]
+fn test_as_array_failure() {
+    let val = Value::String("test".to_string());
+    assert_eq!(val.as_array(), None);
+}
+
+#[test]
+fn test_as_object_success() {
+    let mut map = HashMap::new();
+    map.insert("key".to_string(), Value::Number(42.0));
+    let val = Value::Object(map.clone());
+    assert_eq!(val.as_object(), Some(&map));
+}
+
+#[test]
+fn test_as_object_failure() {
+    let val = Value::String("test".to_string());
+    assert_eq!(val.as_object(), None);
+}
+
 // ============================================
 // Clone and Equality Tests
 // ============================================
@@ -325,6 +353,51 @@ fn test_array_type_name() {
 fn test_array_is_truthy() {
     let empty = Value::Array(vec![]);
     let non_empty = Value::Array(vec![Value::Null]);
+    assert!(!empty.is_truthy());
+    assert!(non_empty.is_truthy());
+}
+
+// ============================================
+// Object Tests
+// ============================================
+
+#[test]
+fn test_object_value_creation() {
+    let mut map = HashMap::new();
+    map.insert("name".to_string(), Value::String("Tokyo".to_string()));
+    map.insert("temp".to_string(), Value::Number(22.0));
+    let obj = Value::Object(map);
+    assert!(matches!(obj, Value::Object(_)));
+}
+
+#[test]
+fn test_object_display() {
+    let mut map = HashMap::new();
+    map.insert("a".to_string(), Value::Number(1.0));
+    let obj = Value::Object(map);
+    // Object display shows {key: value} format
+    let s = format!("{}", obj);
+    assert!(s.contains("a: 1"));
+}
+
+#[test]
+fn test_object_display_empty() {
+    let obj = Value::Object(HashMap::new());
+    assert_eq!(format!("{}", obj), "{}");
+}
+
+#[test]
+fn test_object_type_name() {
+    let obj = Value::Object(HashMap::new());
+    assert_eq!(obj.type_name(), "Object");
+}
+
+#[test]
+fn test_object_is_truthy() {
+    let empty = Value::Object(HashMap::new());
+    let mut map = HashMap::new();
+    map.insert("x".to_string(), Value::Null);
+    let non_empty = Value::Object(map);
     assert!(!empty.is_truthy());
     assert!(non_empty.is_truthy());
 }
