@@ -1,4 +1,4 @@
-use gent::parser::{AgentDecl, AgentField, Expression, Program, RunStmt, Statement};
+use gent::parser::{AgentDecl, AgentField, Expression, Program, AgentCall, Statement};
 use gent::Span;
 
 // ============================================
@@ -210,12 +210,12 @@ fn test_agent_decl_equality() {
 }
 
 // ============================================
-// RunStmt Tests
+// AgentCall Tests
 // ============================================
 
 #[test]
 fn test_run_stmt_simple() {
-    let run = RunStmt {
+    let run = AgentCall {
         agent_name: "Hello".to_string(),
         input: None,
         span: Span::new(0, 9),
@@ -226,7 +226,7 @@ fn test_run_stmt_simple() {
 
 #[test]
 fn test_run_stmt_with_input() {
-    let run = RunStmt {
+    let run = AgentCall {
         agent_name: "Greeter".to_string(),
         input: Some(Expression::String(
             "Hi there!".to_string(),
@@ -240,7 +240,7 @@ fn test_run_stmt_with_input() {
 
 #[test]
 fn test_run_stmt_equality() {
-    let r1 = RunStmt {
+    let r1 = AgentCall {
         agent_name: "Test".to_string(),
         input: None,
         span: Span::new(0, 8),
@@ -270,20 +270,20 @@ fn test_statement_agent_decl() {
 
 #[test]
 fn test_statement_run_stmt() {
-    let stmt = Statement::RunStmt(RunStmt {
+    let stmt = Statement::AgentCall(AgentCall {
         agent_name: "Hello".to_string(),
         input: None,
         span: Span::new(0, 9),
     });
     match stmt {
-        Statement::RunStmt(r) => assert_eq!(r.agent_name, "Hello"),
-        _ => panic!("Expected RunStmt"),
+        Statement::AgentCall(r) => assert_eq!(r.agent_name, "Hello"),
+        _ => panic!("Expected AgentCall"),
     }
 }
 
 #[test]
 fn test_statement_equality() {
-    let s1 = Statement::RunStmt(RunStmt {
+    let s1 = Statement::AgentCall(AgentCall {
         agent_name: "X".to_string(),
         input: None,
         span: Span::new(0, 5),
@@ -308,7 +308,7 @@ fn test_program_empty() {
 #[test]
 fn test_program_single_statement() {
     let program = Program {
-        statements: vec![Statement::RunStmt(RunStmt {
+        statements: vec![Statement::AgentCall(AgentCall {
             agent_name: "Hello".to_string(),
             input: None,
             span: Span::new(0, 9),
@@ -329,7 +329,7 @@ fn test_program_multiple_statements() {
                 output: None,
                 span: Span::new(0, 10),
             }),
-            Statement::RunStmt(RunStmt {
+            Statement::AgentCall(AgentCall {
                 agent_name: "Hello".to_string(),
                 input: None,
                 span: Span::new(11, 20),
@@ -380,7 +380,7 @@ fn test_hello_world_ast() {
                 output: None,
                 span: Span::new(0, 43),
             }),
-            Statement::RunStmt(RunStmt {
+            Statement::AgentCall(AgentCall {
                 agent_name: "Hello".to_string(),
                 input: None,
                 span: Span::new(44, 53),
@@ -403,11 +403,11 @@ fn test_hello_world_ast() {
 
     // Verify second statement is run stmt
     match &program.statements[1] {
-        Statement::RunStmt(run) => {
+        Statement::AgentCall(run) => {
             assert_eq!(run.agent_name, "Hello");
             assert!(run.input.is_none());
         }
-        _ => panic!("Expected RunStmt"),
+        _ => panic!("Expected AgentCall"),
     }
 }
 
