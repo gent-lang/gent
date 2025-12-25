@@ -108,12 +108,14 @@ fn test_number_float() {
 
 #[test]
 fn test_number_negative_integer() {
-    assert!(parse_rule(Rule::number_literal, "-42"));
+    // Negative numbers are now handled via unary expression
+    assert!(parse_rule(Rule::expression, "-42"));
 }
 
 #[test]
 fn test_number_negative_float() {
-    assert!(parse_rule(Rule::number_literal, "-3.14"));
+    // Negative numbers are now handled via unary expression
+    assert!(parse_rule(Rule::expression, "-3.14"));
 }
 
 #[test]
@@ -380,4 +382,92 @@ fn test_error_missing_braces() {
 #[test]
 fn test_error_unclosed_brace() {
     assert!(!parse_rule(Rule::agent_decl, "agent Hello {"));
+}
+
+// ============================================
+// Full Expression Tests (Task 6)
+// ============================================
+
+#[test]
+fn test_parse_binary_arithmetic() {
+    let input = "1 + 2 * 3";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[test]
+fn test_parse_comparison() {
+    let input = "a > 10";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_logical() {
+    let input = "a && b || c";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_member_access() {
+    let input = "obj.prop.nested";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_index_access() {
+    let input = "arr[0]";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_function_call() {
+    let input = "foo(1, 2, 3)";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_array_literal() {
+    let input = "[1, 2, 3]";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_object_literal() {
+    let input = r#"{name: "Tokyo", temp: 22}"#;
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_unary_not() {
+    let input = "!flag";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_unary_neg() {
+    let input = "-5";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_null_literal() {
+    let input = "null";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_parse_double_unary() {
+    let input = "!!flag";
+    let result = GentParser::parse(Rule::expression, input);
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
 }

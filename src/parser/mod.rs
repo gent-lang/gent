@@ -121,7 +121,28 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
     let span = Span::new(pair.as_span().start(), pair.as_span().end());
 
     match pair.as_rule() {
-        Rule::expression => {
+        // For most intermediate expression rules, descend to the inner pair
+        Rule::expression | Rule::logical_or | Rule::logical_and | Rule::equality |
+        Rule::comparison | Rule::additive | Rule::multiplicative |
+        Rule::postfix | Rule::primary => {
+            let inner = pair.into_inner().next().unwrap();
+            parse_expression(inner)
+        }
+        // Special handling for unary to support negative numbers
+        Rule::unary => {
+            let full_text = pair.as_str().trim();
+            // Check if it starts with a negation and looks like a number
+            if full_text.starts_with('-') && full_text.len() > 1 {
+                let rest = &full_text[1..].trim_start();
+                // Check if the rest is a valid number
+                if rest.chars().next().map_or(false, |c| c.is_ascii_digit()) {
+                    // Try to parse as a negative number
+                    if let Ok(num) = full_text.parse::<f64>() {
+                        return Ok(Expression::Number(num, span));
+                    }
+                }
+            }
+            // Otherwise, descend normally (will handle ! and other cases in future)
             let inner = pair.into_inner().next().unwrap();
             parse_expression(inner)
         }
@@ -144,6 +165,7 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
             Ok(Expression::Boolean(val, span))
         }
         Rule::identifier => Ok(Expression::Identifier(pair.as_str().to_string(), span)),
+        Rule::null_literal => Ok(Expression::Identifier("null".to_string(), span)), // Temporary: treat null as identifier
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected expression: {:?}", pair.as_rule()),
             span,

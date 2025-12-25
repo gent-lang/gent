@@ -34,15 +34,45 @@ agent_field = { identifier ~ ":" ~ expression }
 run_stmt = { "run" ~ identifier ~ run_args? }
 run_args = { "with" ~ expression }
 
-// === Expressions ===
-expression = { string_literal | number_literal | boolean_literal | identifier }
+// === Expressions (EXPANDED) ===
+expression = { logical_or }
+logical_or = { logical_and ~ ("||" ~ logical_and)* }
+logical_and = { equality ~ ("&&" ~ equality)* }
+equality = { comparison ~ (("==" | "!=") ~ comparison)* }
+comparison = { additive ~ (("<=" | ">=" | "<" | ">") ~ additive)* }
+additive = { multiplicative ~ (("+" | "-") ~ multiplicative)* }
+multiplicative = { unary ~ (("*" | "/" | "%") ~ unary)* }
+unary = { ("!" | "-")* ~ postfix }
+postfix = { primary ~ (call_expr | index_expr | member_expr)* }
+
+call_expr = { "(" ~ arg_list? ~ ")" }
+arg_list = { expression ~ ("," ~ expression)* }
+index_expr = { "[" ~ expression ~ "]" }
+member_expr = { "." ~ identifier }
+
+primary = {
+    "(" ~ expression ~ ")" |
+    array_literal |
+    object_literal |
+    null_literal |
+    string_literal |
+    number_literal |
+    boolean_literal |
+    identifier
+}
+
+// === New Literals ===
+null_literal = { "null" }
+array_literal = { "[" ~ (expression ~ ("," ~ expression)*)? ~ "]" }
+object_literal = { "{" ~ (object_field ~ ("," ~ object_field)*)? ~ "}" }
+object_field = { (identifier | string_literal) ~ ":" ~ expression }
 
 // === Literals ===
 string_literal = ${ "\"" ~ string_inner ~ "\"" }
 string_inner = @{ (!("\"" | "\\") ~ ANY | escape_sequence)* }
 escape_sequence = @{ "\\" ~ ("\"" | "\\" | "n" | "r" | "t") }
 
-number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+number_literal = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
 boolean_literal = { "true" | "false" }
 
 // === Identifiers ===
