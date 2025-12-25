@@ -25,6 +25,7 @@ pub async fn run_agent_with_tools(
 ) -> GentResult<String> {
     let max_steps = agent.max_steps.unwrap_or(DEFAULT_MAX_STEPS);
     let tool_defs = tools.definitions_for(&agent.tools);
+    let model = agent.model.as_deref();
 
     let mut messages = vec![
         Message::system(&agent.prompt),
@@ -32,7 +33,7 @@ pub async fn run_agent_with_tools(
     ];
 
     for _step in 0..max_steps {
-        let response = llm.chat(messages.clone(), tool_defs.clone()).await?;
+        let response = llm.chat(messages.clone(), tool_defs.clone(), model).await?;
 
         // If no tool calls, return the response content
         if response.tool_calls.is_empty() {
@@ -85,5 +86,6 @@ pub async fn run_agent_full(
     let user_input = input.unwrap_or_else(|| "Hello!".to_string());
     messages.push(Message::user(user_input));
 
-    llm.chat(messages, vec![]).await
+    let model = agent.model.as_deref();
+    llm.chat(messages, vec![], model).await
 }
