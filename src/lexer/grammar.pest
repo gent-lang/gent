@@ -41,12 +41,14 @@ expr_stmt = { expression }
 // === Agent Declaration ===
 agent_decl = { "agent" ~ identifier ~ "{" ~ agent_body ~ "}" }
 agent_body = { agent_item* }
-agent_item = { use_stmt | agent_field }
+agent_item = { use_stmt | output_field | agent_field }
 
 // === Use Statement ===
 use_stmt = { "use" ~ identifier ~ ("," ~ identifier)* }
 
 // === Agent Field ===
+// output_field must come before agent_field since "output" would also match as identifier
+output_field = { "output" ~ ":" ~ output_type }
 agent_field = { identifier ~ ":" ~ expression }
 
 // === Run Statement ===

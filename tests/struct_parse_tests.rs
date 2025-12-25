@@ -1,6 +1,44 @@
 use gent::parser::{parse, FieldType, OutputType, Statement};
 
 #[test]
+fn test_parse_agent_with_multiline_inline_output() {
+    let source = r#"
+        agent MeetingExtractor {
+            prompt: "Extract meeting details"
+            model: "gpt-4o"
+            output: {
+                date: string
+                time: string
+                attendees: string[]
+            }
+        }
+    "#;
+
+    let program = parse(source).unwrap();
+    match &program.statements[0] {
+        Statement::AgentDecl(decl) => {
+            assert_eq!(decl.name, "MeetingExtractor");
+            assert!(decl.output.is_some());
+            match decl.output.as_ref().unwrap() {
+                OutputType::Inline(fields) => {
+                    assert_eq!(fields.len(), 3);
+                    assert_eq!(fields[0].name, "date");
+                    assert!(matches!(fields[0].field_type, FieldType::String));
+                    assert_eq!(fields[1].name, "time");
+                    assert!(matches!(fields[1].field_type, FieldType::String));
+                    assert_eq!(fields[2].name, "attendees");
+                    assert!(
+                        matches!(&fields[2].field_type, FieldType::Array(inner) if matches!(inner.as_ref(), FieldType::String))
+                    );
+                }
+                _ => panic!("Expected inline output type"),
+            }
+        }
+        _ => panic!("Expected AgentDecl"),
+    }
+}
+
+#[test]
 fn test_parse_simple_struct() {
     let source = r#"
         struct Person {

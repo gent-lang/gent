@@ -77,18 +77,24 @@ agent SentimentAnalyzer {
     output: SentimentAnalysis
 }
 
-// Agent using named struct for output
+// Agent with multi-line inline output type
 agent MeetingExtractor {
     prompt: "Extract meeting details from the text. Find the date, time, attendees, and agenda items."
     model: "gpt-4o-mini"
-    output: MeetingDetails
+    output: {
+        date: string
+        time: string
+        attendees: string[]
+        agenda: string[]
+        location: string
+    }
 }
 
-// Agent with retries configured
+// Agent with retries configured and inline output
 agent StrictClassifier {
     prompt: "Classify the input into exactly one of: bug, feature, question, documentation. Be precise."
     model: "gpt-4o"
-    output: IssueClassification
+    output: { type: string, confidence: number }
     output_retries: 3
 }
 

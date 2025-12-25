@@ -78,9 +78,13 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
                         }
                     }
                 }
+                Rule::output_field => {
+                    // Parse output field directly from grammar rule
+                    output = Some(parse_output_field(item_inner)?);
+                }
                 Rule::agent_field => {
                     let field = parse_agent_field(item_inner)?;
-                    // Check if this is the output field
+                    // Legacy support: Check if this is the output field (shouldn't happen with new grammar)
                     if field.name == "output" {
                         output = Some(parse_output_type_from_expr(&field.value)?);
                     } else {
@@ -109,6 +113,47 @@ fn parse_agent_field(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentField
     let value = parse_expression(inner.next().unwrap())?;
 
     Ok(AgentField { name, value, span })
+}
+
+/// Parse output field: "output" ~ ":" ~ output_type
+fn parse_output_field(pair: pest::iterators::Pair<Rule>) -> GentResult<OutputType> {
+    // output_field = { "output" ~ ":" ~ output_type }
+    // We only get the output_type part since "output" and ":" are consumed by grammar
+    let output_type_pair = pair.into_inner().next().unwrap();
+    parse_output_type(output_type_pair)
+}
+
+/// Parse output_type = { field_type_object | identifier }
+fn parse_output_type(pair: pest::iterators::Pair<Rule>) -> GentResult<OutputType> {
+    let inner = pair.into_inner().next().unwrap();
+    match inner.as_rule() {
+        Rule::field_type_object => {
+            let fields = parse_struct_body_from_object(inner)?;
+            Ok(OutputType::Inline(fields))
+        }
+        Rule::identifier => Ok(OutputType::Named(inner.as_str().to_string())),
+        _ => Err(GentError::SyntaxError {
+            message: format!("Expected output type, got {:?}", inner.as_rule()),
+            span: Span::new(inner.as_span().start(), inner.as_span().end()),
+        }),
+    }
+}
+
+/// Parse struct_body from field_type_object: "{" ~ struct_body ~ "}"
+fn parse_struct_body_from_object(
+    pair: pest::iterators::Pair<Rule>,
+) -> GentResult<Vec<StructField>> {
+    let mut fields = Vec::new();
+    for inner in pair.into_inner() {
+        if inner.as_rule() == Rule::struct_body {
+            for field_pair in inner.into_inner() {
+                if field_pair.as_rule() == Rule::struct_field {
+                    fields.push(parse_struct_field(field_pair)?);
+                }
+            }
+        }
+    }
+    Ok(fields)
 }
 
 fn parse_run_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<RunStmt> {
