@@ -1,5 +1,6 @@
 //! GENT - A programming language for AI agents
 
+pub mod config;
 pub mod errors;
 pub mod interpreter;
 pub mod lexer;
