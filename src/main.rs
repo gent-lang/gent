@@ -7,7 +7,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 
 use gent::config::Config;
-use gent::errors::GentError;
+use gent::errors::{ErrorReporter, GentError};
 use gent::interpreter::evaluate;
 use gent::logging::{GentLogger, LogLevel, Logger};
 use gent::parser::parse;
@@ -61,24 +61,29 @@ async fn main() -> ExitCode {
     let log_level = cli.effective_log_level();
     let logger: Arc<dyn Logger> = Arc::new(GentLogger::new(log_level));
 
-    if let Err(e) = run(&cli, logger.as_ref()).await {
-        eprintln!("Error: {}", e);
+    // Load source first so we can use it for error reporting
+    let filename = cli.file.display().to_string();
+    let source = match fs::read_to_string(&cli.file) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("error: Could not read file '{}': {}", filename, e);
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let reporter = ErrorReporter::new(&source, &filename);
+
+    if let Err(e) = run(&cli, &source, logger.as_ref()).await {
+        eprint!("{}", reporter.format(&e));
         return ExitCode::FAILURE;
     }
 
     ExitCode::SUCCESS
 }
 
-async fn run(cli: &Cli, logger: &dyn Logger) -> Result<(), GentError> {
-    logger.log(LogLevel::Debug, "cli", &format!("Loading file: {}", cli.file.display()));
-
-    let source = fs::read_to_string(&cli.file).map_err(|e| GentError::FileReadError {
-        path: cli.file.display().to_string(),
-        source: e,
-    })?;
-
+async fn run(cli: &Cli, source: &str, logger: &dyn Logger) -> Result<(), GentError> {
     logger.log(LogLevel::Debug, "cli", &format!("Parsing {} bytes", source.len()));
-    let program = parse(&source)?;
+    let program = parse(source)?;
     logger.log(LogLevel::Debug, "cli", &format!("Parsed {} statements", program.statements.len()));
 
     let mut tools = ToolRegistry::with_builtins();
