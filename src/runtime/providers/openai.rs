@@ -93,11 +93,15 @@ impl LLMClient for OpenAIClient {
         &self,
         messages: Vec<Message>,
         tools: Vec<ToolDefinition>,
+        model: Option<&str>,
     ) -> GentResult<LLMResponse> {
         let url = format!("{}/v1/chat/completions", self.base_url);
 
+        // Use provided model or fall back to client default
+        let model_to_use = model.unwrap_or(&self.model);
+
         let mut body = json!({
-            "model": self.model,
+            "model": model_to_use,
             "messages": self.to_openai_messages(&messages),
         });
 

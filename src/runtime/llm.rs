@@ -152,10 +152,16 @@ impl LLMResponse {
 #[async_trait]
 pub trait LLMClient: Send + Sync {
     /// Send a chat request to the LLM
+    ///
+    /// # Arguments
+    /// * `messages` - The conversation history
+    /// * `tools` - Available tool definitions
+    /// * `model` - Optional model override (uses client default if None)
     async fn chat(
         &self,
         messages: Vec<Message>,
         tools: Vec<ToolDefinition>,
+        model: Option<&str>,
     ) -> GentResult<LLMResponse>;
 }
 
@@ -211,6 +217,7 @@ impl LLMClient for MockLLMClient {
         &self,
         _messages: Vec<Message>,
         _tools: Vec<ToolDefinition>,
+        _model: Option<&str>,
     ) -> GentResult<LLMResponse> {
         if !self.tool_calls.is_empty() {
             Ok(LLMResponse::with_tool_calls(self.tool_calls.clone()))
