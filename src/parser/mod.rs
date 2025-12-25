@@ -56,6 +56,7 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
 
     let name = inner.next().unwrap().as_str().to_string();
     let mut fields = Vec::new();
+    let mut tools = Vec::new();
 
     if let Some(body) = inner.next() {
         for item_pair in body.into_inner() {
@@ -63,8 +64,12 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
             let item_inner = item_pair.into_inner().next().unwrap();
             match item_inner.as_rule() {
                 Rule::use_stmt => {
-                    // Skip use_stmt for now - we'll handle it in Task 4
-                    // For now, just ignore it so the parser doesn't break
+                    // Extract tool names from use statement
+                    for ident in item_inner.into_inner() {
+                        if ident.as_rule() == Rule::identifier {
+                            tools.push(ident.as_str().to_string());
+                        }
+                    }
                 }
                 Rule::agent_field => {
                     fields.push(parse_agent_field(item_inner)?);
@@ -77,7 +82,7 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
     Ok(AgentDecl {
         name,
         fields,
-        tools: vec![],
+        tools,
         span,
     })
 }
