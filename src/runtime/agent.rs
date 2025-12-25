@@ -50,32 +50,50 @@ pub async fn run_agent_with_tools(
         );
     }
 
-    // Build system prompt with schema if needed
-    let system_prompt = if let Some(schema) = &agent.output_schema {
+    // Build messages based on which prompts are present
+    let mut messages = Vec::new();
+
+    // Add system message if prompt is not empty
+    if !agent.prompt.is_empty() {
+        let system_prompt = if let Some(schema) = &agent.output_schema {
+            logger.log(
+                LogLevel::Debug,
+                "agent",
+                "Agent has output schema, enabling JSON mode",
+            );
+            let default_instructions = "You must respond with JSON matching this schema:";
+            let instructions = agent
+                .output_instructions
+                .as_deref()
+                .unwrap_or(default_instructions);
+            format!(
+                "{}\n\n{}\n{}",
+                agent.prompt,
+                instructions,
+                serde_json::to_string_pretty(&schema.to_json_schema())
+                    .unwrap_or_else(|_| "<schema>".to_string())
+            )
+        } else {
+            agent.prompt.clone()
+        };
+        messages.push(Message::system(&system_prompt));
+    }
+
+    // Add user message from agent's user_prompt or from input parameter
+    if let Some(user_prompt) = &agent.user_prompt {
+        messages.push(Message::user(user_prompt.clone()));
+    } else if let Some(user_input) = input {
+        messages.push(Message::user(user_input));
+    }
+
+    // If no messages at all, return empty result
+    if messages.is_empty() {
         logger.log(
             LogLevel::Debug,
             "agent",
-            "Agent has output schema, enabling JSON mode",
+            "No prompts provided, returning empty result",
         );
-        let default_instructions = "You must respond with JSON matching this schema:";
-        let instructions = agent
-            .output_instructions
-            .as_deref()
-            .unwrap_or(default_instructions);
-        format!(
-            "{}\n\n{}\n{}",
-            agent.prompt,
-            instructions,
-            serde_json::to_string_pretty(&schema.to_json_schema())
-                .unwrap_or_else(|_| "<schema>".to_string())
-        )
-    } else {
-        agent.prompt.clone()
-    };
-
-    let mut messages = vec![Message::system(&system_prompt)];
-    if let Some(user_input) = input {
-        messages.push(Message::user(user_input));
+        return Ok(String::new());
     }
 
     for step in 0..max_steps {
@@ -182,9 +200,27 @@ pub async fn run_agent_full(
     input: Option<String>,
     llm: &dyn LLMClient,
 ) -> GentResult<LLMResponse> {
-    let mut messages = vec![Message::system(&agent.prompt)];
-    if let Some(user_input) = input {
+    // Build messages based on which prompts are present
+    let mut messages = Vec::new();
+
+    // Add system message if prompt is not empty
+    if !agent.prompt.is_empty() {
+        messages.push(Message::system(&agent.prompt));
+    }
+
+    // Add user message from agent's user_prompt or from input parameter
+    if let Some(user_prompt) = &agent.user_prompt {
+        messages.push(Message::user(user_prompt.clone()));
+    } else if let Some(user_input) = input {
         messages.push(Message::user(user_input));
+    }
+
+    // If no messages at all, return empty response
+    if messages.is_empty() {
+        return Ok(LLMResponse {
+            content: Some(String::new()),
+            tool_calls: vec![],
+        });
     }
 
     let model = agent.model.as_deref();
