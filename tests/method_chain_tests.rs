@@ -1,4 +1,17 @@
+use gent::interpreter::evaluate;
+use gent::logging::NullLogger;
 use gent::parser::parse;
+use gent::runtime::{MockLLMClient, ToolRegistry};
+
+async fn run_program(source: &str) -> Result<(), String> {
+    let program = parse(source).map_err(|e| e.to_string())?;
+    let llm = MockLLMClient::new();
+    let mut tools = ToolRegistry::new();
+    let logger = NullLogger;
+    evaluate(&program, &llm, &mut tools, &logger)
+        .await
+        .map_err(|e| e.to_string())
+}
 
 // ============================================
 // Method Chain Syntax Parsing Tests
@@ -76,4 +89,38 @@ fn test_parse_invoke_without_prompt() {
     "#;
     let result = parse(source);
     assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+}
+
+// ============================================
+// Method Chain Evaluation Tests
+// ============================================
+
+#[tokio::test]
+async fn test_eval_simple_invoke() {
+    let source = r#"
+        agent Test { systemPrompt: "Say hi" model: "gpt-4o-mini" }
+        let result = Test.invoke()
+    "#;
+    let result = run_program(source).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_eval_user_prompt_invoke() {
+    let source = r#"
+        agent Test { systemPrompt: "Be helpful" model: "gpt-4o-mini" }
+        let result = Test.userPrompt("Hello").invoke()
+    "#;
+    let result = run_program(source).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_eval_chained_invoke() {
+    let source = r#"
+        agent Test { model: "gpt-4o-mini" }
+        let result = Test.systemPrompt("Be helpful").userPrompt("Hi").invoke()
+    "#;
+    let result = run_program(source).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
