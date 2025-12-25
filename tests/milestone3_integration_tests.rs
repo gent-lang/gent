@@ -17,11 +17,11 @@ async fn test_simple_user_tool() {
         }
 
         agent Bot {
-            prompt: "You are a bot"
+            systemPrompt: "You are a bot"
             model: "gpt-4o-mini"
         }
 
-        Bot
+        let result = Bot.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -43,11 +43,11 @@ async fn test_tool_with_arithmetic() {
         }
 
         agent Calculator {
-            prompt: "You are a calculator"
+            systemPrompt: "You are a calculator"
             model: "gpt-4o-mini"
         }
 
-        Calculator
+        let result = Calculator.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -73,11 +73,11 @@ async fn test_tool_with_conditional() {
         }
 
         agent WeatherBot {
-            prompt: "You classify weather"
+            systemPrompt: "You classify weather"
             model: "gpt-4o-mini"
         }
 
-        WeatherBot
+        let result = WeatherBot.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -100,11 +100,11 @@ async fn test_tool_with_let_binding() {
         }
 
         agent Formatter {
-            prompt: "You format names"
+            systemPrompt: "You format names"
             model: "gpt-4o-mini"
         }
 
-        Formatter
+        let result = Formatter.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -134,11 +134,11 @@ async fn test_multiple_tools() {
         }
 
         agent MultiTool {
-            prompt: "You have multiple tools"
+            systemPrompt: "You have multiple tools"
             model: "gpt-4o-mini"
         }
 
-        MultiTool
+        let result = MultiTool.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -168,11 +168,11 @@ async fn test_parse_full_expression() {
         }
 
         agent ComplexBot {
-            prompt: "You do complex calculations"
+            systemPrompt: "You do complex calculations"
             model: "gpt-4o-mini"
         }
 
-        ComplexBot
+        let result = ComplexBot.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -198,13 +198,13 @@ async fn test_tool_with_agent_fields() {
         }
 
         agent MathBot {
-            prompt: "You are a math expert"
-            max_steps: 10
+            systemPrompt: "You are a math expert"
+            maxSteps: 10
             model: "gpt-4o"
             use web_fetch
         }
 
-        MathBot
+        let result = MathBot.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -226,11 +226,11 @@ async fn test_tool_with_run_input() {
         }
 
         agent Processor {
-            prompt: "You process data"
+            systemPrompt: "You process data"
             model: "gpt-4o-mini"
         }
 
-        Processor("test input")
+        let result = Processor.userPrompt("test input").invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -264,11 +264,11 @@ async fn test_tool_nested_conditionals() {
         }
 
         agent Grader {
-            prompt: "You grade students"
+            systemPrompt: "You grade students"
             model: "gpt-4o-mini"
         }
 
-        Grader
+        let result = Grader.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -293,11 +293,11 @@ async fn test_tool_multiple_let_bindings() {
         }
 
         agent MessageBuilder {
-            prompt: "You build messages"
+            systemPrompt: "You build messages"
             model: "gpt-4o-mini"
         }
 
-        MessageBuilder
+        let result = MessageBuilder.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -324,11 +324,11 @@ async fn test_tool_all_arithmetic_operators() {
         }
 
         agent AllMath {
-            prompt: "You do all math operations"
+            systemPrompt: "You do all math operations"
             model: "gpt-4o-mini"
         }
 
-        AllMath
+        let result = AllMath.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -358,11 +358,11 @@ async fn test_tool_comparison_operators() {
         }
 
         agent Comparator {
-            prompt: "You compare numbers"
+            systemPrompt: "You compare numbers"
             model: "gpt-4o-mini"
         }
 
-        Comparator
+        let result = Comparator.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -386,11 +386,11 @@ async fn test_tool_string_concatenation() {
         }
 
         agent URLBuilder {
-            prompt: "You build URLs"
+            systemPrompt: "You build URLs"
             model: "gpt-4o-mini"
         }
 
-        URLBuilder
+        let result = URLBuilder.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -416,11 +416,11 @@ async fn test_tool_no_return_type() {
         }
 
         agent Logger {
-            prompt: "You log messages"
+            systemPrompt: "You log messages"
             model: "gpt-4o-mini"
         }
 
-        Logger
+        let result = Logger.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -442,11 +442,11 @@ async fn test_tool_no_parameters() {
         }
 
         agent SimpleBot {
-            prompt: "You greet people"
+            systemPrompt: "You greet people"
             model: "gpt-4o-mini"
         }
 
-        SimpleBot
+        let result = SimpleBot.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -468,17 +468,17 @@ async fn test_multiple_agents_with_tools() {
         }
 
         agent Bot1 {
-            prompt: "You are Bot1"
+            systemPrompt: "You are Bot1"
             model: "gpt-4o-mini"
         }
 
         agent Bot2 {
-            prompt: "You are Bot2"
+            systemPrompt: "You are Bot2"
             model: "gpt-4o-mini"
-            max_steps: 5
+            maxSteps: 5
         }
 
-        Bot1
+        let result = Bot1.invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -518,13 +518,13 @@ async fn test_full_milestone3_program() {
         }
 
         agent ShoppingAssistant {
-            prompt: "You help customers with shopping"
+            systemPrompt: "You help customers with shopping"
             use web_fetch, read_file
-            max_steps: 20
+            maxSteps: 20
             model: "gpt-4o-mini"
         }
 
-        ShoppingAssistant("Calculate my savings")
+        let result = ShoppingAssistant.userPrompt("Calculate my savings").invoke()
     "#;
 
     let program = parse(source).unwrap();

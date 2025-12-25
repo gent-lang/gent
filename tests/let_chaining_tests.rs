@@ -30,10 +30,10 @@ fn test_parse_top_level_let_with_number() {
 }
 
 #[test]
-fn test_parse_top_level_let_with_agent_call() {
+fn test_parse_top_level_let_with_agent_invoke() {
     let source = r#"
-        agent Greeter { prompt: "Say hi" model: "gpt-4o-mini" }
-        let greeting = Greeter("Hello")
+        agent Greeter { systemPrompt: "Say hi" model: "gpt-4o-mini" }
+        let greeting = Greeter.userPrompt("Hello").invoke()
     "#;
     let result = parse(source);
     assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
@@ -44,10 +44,10 @@ fn test_parse_top_level_let_with_agent_call() {
 #[test]
 fn test_parse_chained_agent_calls() {
     let source = r#"
-        agent Summarizer { prompt: "Summarize" model: "gpt-4o-mini" }
-        agent Translator { prompt: "Translate to French" model: "gpt-4o-mini" }
-        let summary = Summarizer("Long text here")
-        let french = Translator(summary)
+        agent Summarizer { systemPrompt: "Summarize" model: "gpt-4o-mini" }
+        agent Translator { systemPrompt: "Translate to French" model: "gpt-4o-mini" }
+        let summary = Summarizer.userPrompt("Long text here").invoke()
+        let french = Translator.userPrompt(summary).invoke()
     "#;
     let result = parse(source);
     assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
@@ -82,10 +82,10 @@ async fn test_eval_top_level_let_number() {
 }
 
 #[tokio::test]
-async fn test_eval_let_with_agent_call() {
+async fn test_eval_let_with_agent_invoke() {
     let source = r#"
-        agent Echo { prompt: "Echo back the input" model: "gpt-4o-mini" }
-        let result = Echo("test input")
+        agent Echo { systemPrompt: "Echo back the input" model: "gpt-4o-mini" }
+        let result = Echo.userPrompt("test input").invoke()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
@@ -94,10 +94,10 @@ async fn test_eval_let_with_agent_call() {
 #[tokio::test]
 async fn test_eval_chained_agents() {
     let source = r#"
-        agent First { prompt: "Process step 1" model: "gpt-4o-mini" }
-        agent Second { prompt: "Process step 2" model: "gpt-4o-mini" }
-        let step1 = First("initial input")
-        let step2 = Second(step1)
+        agent First { systemPrompt: "Process step 1" model: "gpt-4o-mini" }
+        agent Second { systemPrompt: "Process step 2" model: "gpt-4o-mini" }
+        let step1 = First.userPrompt("initial input").invoke()
+        let step2 = Second.userPrompt(step1).invoke()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
@@ -106,9 +106,9 @@ async fn test_eval_chained_agents() {
 #[tokio::test]
 async fn test_eval_variable_in_expression() {
     let source = r#"
-        agent Greeter { prompt: "Greet the user" model: "gpt-4o-mini" }
+        agent Greeter { systemPrompt: "Greet the user" model: "gpt-4o-mini" }
         let name = "Alice"
-        Greeter(name)
+        let result = Greeter.userPrompt(name).invoke()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
@@ -117,8 +117,8 @@ async fn test_eval_variable_in_expression() {
 #[tokio::test]
 async fn test_eval_undefined_variable_error() {
     let source = r#"
-        agent Greeter { prompt: "Greet" model: "gpt-4o-mini" }
-        Greeter(undefined_var)
+        agent Greeter { systemPrompt: "Greet" model: "gpt-4o-mini" }
+        let result = Greeter.userPrompt(undefined_var).invoke()
     "#;
     let result = run_program(source).await;
     assert!(result.is_err(), "Should fail with undefined variable");
@@ -134,8 +134,8 @@ async fn test_eval_undefined_variable_error() {
 async fn test_let_mixed_with_other_statements() {
     let source = r#"
         let prefix = "Hello"
-        agent Greeter { prompt: "Be friendly" model: "gpt-4o-mini" }
-        let result = Greeter(prefix)
+        agent Greeter { systemPrompt: "Be friendly" model: "gpt-4o-mini" }
+        let result = Greeter.userPrompt(prefix).invoke()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
@@ -144,11 +144,11 @@ async fn test_let_mixed_with_other_statements() {
 #[tokio::test]
 async fn test_multiple_lets_and_agents() {
     let source = r#"
-        agent A { prompt: "Agent A" model: "gpt-4o-mini" }
-        agent B { prompt: "Agent B" model: "gpt-4o-mini" }
-        let x = A("input 1")
-        let y = B("input 2")
-        let z = A(y)
+        agent A { systemPrompt: "Agent A" model: "gpt-4o-mini" }
+        agent B { systemPrompt: "Agent B" model: "gpt-4o-mini" }
+        let x = A.userPrompt("input 1").invoke()
+        let y = B.userPrompt("input 2").invoke()
+        let z = A.userPrompt(y).invoke()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());

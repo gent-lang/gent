@@ -154,8 +154,14 @@ async fn evaluate_statement_with_output(
                 &format!("Evaluating let '{}'", stmt.name),
             );
             let value = evaluate_expr_with_env(&stmt.value, env, llm, tools, logger).await?;
+            // Capture string outputs (e.g., from agent invocations)
+            let output = if let Value::String(s) = &value {
+                Some(s.clone())
+            } else {
+                None
+            };
             env.define(&stmt.name, value);
-            Ok(None)
+            Ok(output)
         }
     }
 }

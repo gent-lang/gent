@@ -6,11 +6,11 @@ use gent::runtime::{MockLLMClient, ToolRegistry};
 async fn test_evaluate_agent_with_max_steps() {
     let source = r#"
         agent Bot {
-            prompt: "Hello"
+            systemPrompt: "Hello"
             model: "gpt-4o-mini"
-            max_steps: 5
+            maxSteps: 5
         }
-        Bot
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -23,10 +23,10 @@ async fn test_evaluate_agent_with_max_steps() {
 async fn test_evaluate_agent_with_model() {
     let source = r#"
         agent Bot {
-            prompt: "Hello"
+            systemPrompt: "Hello"
             model: "gpt-4o"
         }
-        Bot
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -39,11 +39,11 @@ async fn test_evaluate_agent_with_model() {
 async fn test_evaluate_agent_with_tools() {
     let source = r#"
         agent Bot {
-            prompt: "Hello"
+            systemPrompt: "Hello"
             model: "gpt-4o-mini"
             use web_fetch, read_file
         }
-        Bot
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -56,12 +56,12 @@ async fn test_evaluate_agent_with_tools() {
 async fn test_evaluate_agent_all_fields() {
     let source = r#"
         agent Bot {
-            prompt: "Hello"
+            systemPrompt: "Hello"
             use web_fetch
-            max_steps: 20
+            maxSteps: 20
             model: "gpt-4o-mini"
         }
-        Bot
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();

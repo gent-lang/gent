@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use gent::config::Config;
 use gent::errors::{ErrorReporter, GentError};
-use gent::interpreter::evaluate;
+use gent::interpreter::evaluate_with_output;
 use gent::logging::{GentLogger, LogLevel, Logger};
 use gent::parser::parse;
 use gent::runtime::{MockLLMClient, OpenAIClient, ToolRegistry};
@@ -96,20 +96,25 @@ async fn run(cli: &Cli, source: &str, logger: &dyn Logger) -> Result<(), GentErr
 
     let mut tools = ToolRegistry::with_builtins();
 
-    if cli.mock {
+    let outputs = if cli.mock {
         logger.log(LogLevel::Info, "cli", "Using mock LLM");
         let llm = if let Some(response) = &cli.mock_response {
             MockLLMClient::with_response(response)
         } else {
             MockLLMClient::new()
         };
-        evaluate(&program, &llm, &mut tools, logger).await?;
+        evaluate_with_output(&program, &llm, &mut tools).await?
     } else {
         let config = Config::load();
         let api_key = config.require_openai_key()?;
         logger.log(LogLevel::Debug, "cli", "Using OpenAI LLM");
         let llm = OpenAIClient::new(api_key.to_string());
-        evaluate(&program, &llm, &mut tools, logger).await?;
+        evaluate_with_output(&program, &llm, &mut tools).await?
+    };
+
+    // Print outputs
+    for output in outputs {
+        println!("{}", output);
     }
 
     Ok(())

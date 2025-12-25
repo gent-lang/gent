@@ -251,25 +251,6 @@ fn test_agent_decl_with_newlines() {
 }
 
 // ============================================
-// Agent Call Tests
-// ============================================
-
-#[test]
-fn test_agent_call_simple() {
-    assert!(parse_rule(Rule::agent_call, "Hello"));
-}
-
-#[test]
-fn test_agent_call_with_input() {
-    assert!(parse_rule(Rule::agent_call, "Hello(\"Hi there!\")"));
-}
-
-#[test]
-fn test_agent_call_with_identifier_input() {
-    assert!(parse_rule(Rule::agent_call, "Hello(userInput)"));
-}
-
-// ============================================
 // Program Tests
 // ============================================
 
@@ -284,30 +265,34 @@ fn test_program_single_agent() {
 }
 
 #[test]
-fn test_program_single_agent_call() {
-    assert!(parse_rule(Rule::program, "Hello"));
+fn test_program_with_let() {
+    // Top-level let statements invoke agents via method chaining
+    assert!(parse_rule(
+        Rule::program,
+        "let result = Hello.userPrompt(\"Hi\").invoke()"
+    ));
 }
 
 #[test]
-fn test_program_agent_and_call() {
-    let input = r#"agent Hello { prompt: "You are friendly." }
-Hello"#;
+fn test_program_agent_and_invoke() {
+    let input = r#"agent Hello { systemPrompt: "You are friendly." }
+let result = Hello.invoke()"#;
     assert!(parse_rule(Rule::program, input));
 }
 
 #[test]
 fn test_program_with_comments() {
     let input = r#"// This is a comment
-agent Hello { prompt: "Hi" }
-// Call the agent
-Hello"#;
+agent Hello { systemPrompt: "Hi" }
+// Invoke the agent
+let result = Hello.invoke()"#;
     assert!(parse_rule(Rule::program, input));
 }
 
 #[test]
 fn test_program_hello_world() {
-    let input = r#"agent Hello { prompt: "You are friendly." }
-Hello"#;
+    let input = r#"agent Hello { systemPrompt: "You are friendly." }
+let result = Hello.invoke()"#;
     assert!(parse_rule(Rule::program, input));
 }
 

@@ -19,7 +19,7 @@ async fn test_evaluate_empty_program() {
 #[tokio::test]
 async fn test_evaluate_agent_declaration() {
     let program =
-        parse(r#"agent Hello { prompt: "You are friendly." model: "gpt-4o-mini" }"#).unwrap();
+        parse(r#"agent Hello { systemPrompt: "You are friendly." model: "gpt-4o-mini" }"#).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
     let result = evaluate_with_output(&program, &llm, &mut tools).await;
@@ -30,8 +30,8 @@ async fn test_evaluate_agent_declaration() {
 #[tokio::test]
 async fn test_evaluate_run_statement() {
     let source = r#"
-        agent Hello { prompt: "You are friendly." model: "gpt-4o-mini" }
-        Hello
+        agent Hello { systemPrompt: "You are friendly." model: "gpt-4o-mini" }
+        let result = Hello.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello there!");
@@ -46,8 +46,8 @@ async fn test_evaluate_run_statement() {
 #[tokio::test]
 async fn test_evaluate_run_with_input() {
     let source = r#"
-        agent Greeter { prompt: "You greet people." model: "gpt-4o-mini" }
-        Greeter("Hi!")
+        agent Greeter { systemPrompt: "You greet people." model: "gpt-4o-mini" }
+        let result = Greeter.userPrompt("Hi!").invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello! Nice to meet you!");
@@ -63,8 +63,8 @@ async fn test_evaluate_run_with_input() {
 
 #[tokio::test]
 async fn test_evaluate_hello_world() {
-    let source = r#"agent Hello { prompt: "You are friendly." model: "gpt-4o-mini" }
-Hello"#;
+    let source = r#"agent Hello { systemPrompt: "You are friendly." model: "gpt-4o-mini" }
+let result = Hello.invoke()"#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
@@ -81,7 +81,7 @@ Hello"#;
 
 #[tokio::test]
 async fn test_evaluate_undefined_agent() {
-    let source = "NonExistent";
+    let source = "let result = NonExistent.invoke()";
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
@@ -96,7 +96,7 @@ async fn test_evaluate_missing_model() {
     // Prompt is now optional, but model is still required
     let source = r#"
         agent Empty { }
-        Empty
+        let result = Empty.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -114,10 +114,10 @@ async fn test_evaluate_missing_model() {
 #[tokio::test]
 async fn test_evaluate_multiple_agents() {
     let source = r#"
-        agent First { prompt: "You are first." model: "gpt-4o-mini" }
-        agent Second { prompt: "You are second." model: "gpt-4o-mini" }
-        First
-        Second
+        agent First { systemPrompt: "You are first." model: "gpt-4o-mini" }
+        agent Second { systemPrompt: "You are second." model: "gpt-4o-mini" }
+        let r1 = First.invoke()
+        let r2 = Second.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Response");
@@ -130,9 +130,9 @@ async fn test_evaluate_multiple_agents() {
 #[tokio::test]
 async fn test_evaluate_same_agent_twice() {
     let source = r#"
-        agent Bot { prompt: "You help." model: "gpt-4o-mini" }
-        Bot
-        Bot
+        agent Bot { systemPrompt: "You help." model: "gpt-4o-mini" }
+        let r1 = Bot.invoke()
+        let r2 = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Help!");
@@ -151,8 +151,8 @@ async fn test_evaluate_same_agent_twice() {
 #[tokio::test]
 async fn test_evaluate_number_field() {
     let source = r#"
-        agent Bot { prompt: "Help." model: "gpt-4o-mini" timeout: 30 }
-        Bot
+        agent Bot { systemPrompt: "Help." model: "gpt-4o-mini" timeout: 30 }
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
@@ -165,8 +165,8 @@ async fn test_evaluate_number_field() {
 #[tokio::test]
 async fn test_evaluate_boolean_field() {
     let source = r#"
-        agent Bot { prompt: "Help." model: "gpt-4o-mini" verbose: true }
-        Bot
+        agent Bot { systemPrompt: "Help." model: "gpt-4o-mini" verbose: true }
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
@@ -182,10 +182,10 @@ async fn test_evaluate_boolean_field() {
 #[tokio::test]
 async fn test_evaluate_complex_program() {
     let source = r#"
-        agent Researcher { prompt: "You research topics." model: "gpt-4o-mini" }
-        agent Writer { prompt: "You write content." model: "gpt-4o-mini" }
-        Researcher("Find info about Rust")
-        Writer("Write about programming")
+        agent Researcher { systemPrompt: "You research topics." model: "gpt-4o-mini" }
+        agent Writer { systemPrompt: "You write content." model: "gpt-4o-mini" }
+        let r1 = Researcher.userPrompt("Find info about Rust").invoke()
+        let r2 = Writer.userPrompt("Write about programming").invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Done!");
@@ -199,9 +199,9 @@ async fn test_evaluate_complex_program() {
 async fn test_evaluate_with_comments() {
     let source = r#"
         // Define an agent
-        agent Helper { prompt: "You help." model: "gpt-4o-mini" }
+        agent Helper { systemPrompt: "You help." model: "gpt-4o-mini" }
         // Run the agent
-        Helper
+        let result = Helper.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Helping!");
@@ -218,8 +218,8 @@ async fn test_evaluate_with_comments() {
 #[tokio::test]
 async fn test_evaluate_empty_prompt() {
     let source = r#"
-        agent Empty { prompt: "" model: "gpt-4o-mini" }
-        Empty
+        agent Empty { systemPrompt: "" model: "gpt-4o-mini" }
+        let result = Empty.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Response");
@@ -232,7 +232,7 @@ async fn test_evaluate_empty_prompt() {
 async fn test_evaluate_long_prompt() {
     let long_text = "You are helpful. ".repeat(50);
     let source = format!(
-        r#"agent Long {{ prompt: "{}" model: "gpt-4o-mini" }} Long"#,
+        r#"agent Long {{ systemPrompt: "{}" model: "gpt-4o-mini" }} let result = Long.invoke()"#,
         long_text
     );
     let program = parse(&source).unwrap();
@@ -245,8 +245,8 @@ async fn test_evaluate_long_prompt() {
 #[tokio::test]
 async fn test_evaluate_special_characters_in_prompt() {
     let source = r#"
-        agent Special { prompt: "Say \"hello\" and use 'quotes'." model: "gpt-4o-mini" }
-        Special
+        agent Special { systemPrompt: "Say \"hello\" and use 'quotes'." model: "gpt-4o-mini" }
+        let result = Special.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
@@ -267,12 +267,12 @@ async fn test_tool_declaration_registers() {
         }
 
         agent Greeter {
-            prompt: "Greet users"
+            systemPrompt: "Greet users"
             model: "gpt-4o-mini"
             use greet
         }
 
-        Greeter("test")
+        let result = Greeter.userPrompt("test").invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -295,12 +295,12 @@ async fn test_multiple_tool_declarations() {
         }
 
         agent Calculator {
-            prompt: "Do math"
+            systemPrompt: "Do math"
             model: "gpt-4o-mini"
             use add
         }
 
-        Calculator("2 + 2")
+        let result = Calculator.userPrompt("2 + 2").invoke()
     "#;
 
     let program = parse(source).unwrap();

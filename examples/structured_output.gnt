@@ -43,7 +43,7 @@ struct IssueClassification {
 
 // Classifier returns typed classification data
 agent EmailClassifier {
-    prompt: "You are an email classifier. Classify emails into categories:
+    systemPrompt: "You are an email classifier. Classify emails into categories:
 - inquiry: questions about products/services
 - support: technical issues or complaints
 - sales: purchase requests or negotiations
@@ -56,7 +56,7 @@ Analyze the email and return your classification with confidence (0-1) and reaso
 
 // Extractor pulls structured data from text
 agent ContactExtractor {
-    prompt: "You are a contact information extractor. Extract the following from the provided text:
+    systemPrompt: "You are a contact information extractor. Extract the following from the provided text:
 - name: person's full name
 - email: email address
 - company: organization name
@@ -69,7 +69,7 @@ If any field is not found, use 'unknown'."
 
 // Analyzer with named output type
 agent SentimentAnalyzer {
-    prompt: "Analyze the sentiment of the given text. Return:
+    systemPrompt: "Analyze the sentiment of the given text. Return:
 - sentiment: 'positive', 'negative', or 'neutral'
 - score: -1.0 (very negative) to 1.0 (very positive)
 - keywords: list of words that influenced your analysis"
@@ -79,7 +79,7 @@ agent SentimentAnalyzer {
 
 // Agent with multi-line inline output type
 agent MeetingExtractor {
-    prompt: "Extract meeting details from the text. Find the date, time, attendees, and agenda items."
+    systemPrompt: "Extract meeting details from the text. Find the date, time, attendees, and agenda items."
     model: "gpt-4o-mini"
     output: {
         date: string
@@ -92,18 +92,18 @@ agent MeetingExtractor {
 
 // Agent with retries configured and inline output
 agent StrictClassifier {
-    prompt: "Classify the input into exactly one of: bug, feature, question, documentation. Be precise."
+    systemPrompt: "Classify the input into exactly one of: bug, feature, question, documentation. Be precise."
     model: "gpt-4o"
     output: { type: string, confidence: number }
-    output_retries: 3
+    outputRetries: 3
 }
 
 // ============================================
 // Example Runs
 // ============================================
 
-EmailClassifier("Hi, I've been having trouble logging into my account for the past 3 days. I've tried resetting my password but it still doesn't work. Can someone please help? - John")
+let email_result = EmailClassifier.userPrompt("Hi, I've been having trouble logging into my account for the past 3 days. I've tried resetting my password but it still doesn't work. Can someone please help? - John").invoke()
 
-ContactExtractor("Please reach out to Sarah Johnson at sarah.j@techcorp.io. She's the Head of Engineering at TechCorp and would be the right person to discuss the integration.")
+let contact_result = ContactExtractor.userPrompt("Please reach out to Sarah Johnson at sarah.j@techcorp.io. She's the Head of Engineering at TechCorp and would be the right person to discuss the integration.").invoke()
 
-SentimentAnalyzer("I absolutely love this product! It has completely transformed how our team works. The customer support is also fantastic - they responded within minutes.")
+let sentiment_result = SentimentAnalyzer.userPrompt("I absolutely love this product! It has completely transformed how our team works. The customer support is also fantastic - they responded within minutes.").invoke()

@@ -63,34 +63,45 @@ fn test_parse_agent_multiple_fields() {
 }
 
 #[test]
-fn test_parse_agent_call_simple() {
-    let result = parse("Hello");
+fn test_parse_top_level_let() {
+    let result = parse("let result = Hello.invoke()");
     assert!(result.is_ok());
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::AgentCall(call) => {
-            assert_eq!(call.agent_name, "Hello");
-            assert!(call.input.is_none());
+        Statement::LetStmt(let_stmt) => {
+            assert_eq!(let_stmt.name, "result");
+            // Value should be a method call expression
+            match &let_stmt.value {
+                Expression::Call(callee, _, _) => {
+                    // Callee should be Hello.invoke member expression
+                    match callee.as_ref() {
+                        Expression::Member(base, method, _) => {
+                            assert_eq!(method, "invoke");
+                            match base.as_ref() {
+                                Expression::Identifier(name, _) => assert_eq!(name, "Hello"),
+                                _ => panic!("Expected Identifier base"),
+                            }
+                        }
+                        _ => panic!("Expected Member expression"),
+                    }
+                }
+                _ => panic!("Expected Call expression"),
+            }
         }
-        _ => panic!("Expected AgentCall"),
+        _ => panic!("Expected LetStmt"),
     }
 }
 
 #[test]
-fn test_parse_agent_call_with_input() {
-    let result = parse(r#"Hello("Hi there!")"#);
+fn test_parse_top_level_let_with_user_prompt() {
+    let result = parse(r#"let result = Hello.userPrompt("Hi there!").invoke()"#);
     assert!(result.is_ok());
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::AgentCall(call) => {
-            assert_eq!(call.agent_name, "Hello");
-            assert!(call.input.is_some());
-            match call.input.as_ref().unwrap() {
-                Expression::String(s, _) => assert_eq!(s, "Hi there!"),
-                _ => panic!("Expected String"),
-            }
+        Statement::LetStmt(let_stmt) => {
+            assert_eq!(let_stmt.name, "result");
         }
-        _ => panic!("Expected AgentCall"),
+        _ => panic!("Expected LetStmt"),
     }
 }
 
@@ -100,8 +111,8 @@ fn test_parse_agent_call_with_input() {
 
 #[test]
 fn test_parse_hello_world() {
-    let source = r#"agent Hello { prompt: "You are friendly." }
-Hello"#;
+    let source = r#"agent Hello { systemPrompt: "You are friendly." }
+let result = Hello.invoke()"#;
     let result = parse(source);
     assert!(result.is_ok());
     let program = result.unwrap();
@@ -116,12 +127,12 @@ Hello"#;
         _ => panic!("Expected AgentDecl"),
     }
 
-    // Second statement: agent call
+    // Second statement: let statement with agent invoke
     match &program.statements[1] {
-        Statement::AgentCall(call) => {
-            assert_eq!(call.agent_name, "Hello");
+        Statement::LetStmt(let_stmt) => {
+            assert_eq!(let_stmt.name, "result");
         }
-        _ => panic!("Expected AgentCall"),
+        _ => panic!("Expected LetStmt"),
     }
 }
 
@@ -264,15 +275,15 @@ fn test_parse_span_agent() {
 }
 
 #[test]
-fn test_parse_span_agent_call() {
-    let result = parse("Hello");
+fn test_parse_span_let_stmt() {
+    let result = parse("let x = Hello.invoke()");
     let program = result.unwrap();
     match &program.statements[0] {
-        Statement::AgentCall(call) => {
-            assert_eq!(call.span.start, 0);
-            assert_eq!(call.span.end, 5);
+        Statement::LetStmt(let_stmt) => {
+            assert_eq!(let_stmt.span.start, 0);
+            assert_eq!(let_stmt.span.end, 22);
         }
-        _ => panic!("Expected AgentCall"),
+        _ => panic!("Expected LetStmt"),
     }
 }
 
@@ -305,9 +316,9 @@ fn test_parse_error_unclosed_string() {
 #[test]
 fn test_parse_with_comments() {
     let source = r#"// Comment
-agent Hello { prompt: "Hi" }
+agent Hello { systemPrompt: "Hi" }
 // Another comment
-Hello"#;
+let result = Hello.invoke()"#;
     let result = parse(source);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().statements.len(), 2);
@@ -322,9 +333,9 @@ fn test_parse_with_extra_whitespace() {
 #[test]
 fn test_parse_multiline() {
     let source = r#"agent Hello {
-    prompt: "You are friendly."
+    systemPrompt: "You are friendly."
 }
-Hello"#;
+let result = Hello.invoke()"#;
     let result = parse(source);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().statements.len(), 2);

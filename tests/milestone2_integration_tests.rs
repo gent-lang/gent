@@ -7,11 +7,11 @@ use gent::runtime::{MockLLMClient, ToolRegistry};
 async fn test_agent_with_tools_parses() {
     let source = r#"
         agent Bot {
-            prompt: "Hello"
+            systemPrompt: "Hello"
             model: "gpt-4o-mini"
             use web_fetch, read_file
         }
-        Bot
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -26,11 +26,11 @@ async fn test_agent_with_tools_parses() {
 async fn test_agent_with_max_steps() {
     let source = r#"
         agent Bot {
-            prompt: "Hello"
+            systemPrompt: "Hello"
             model: "gpt-4o-mini"
-            max_steps: 3
+            maxSteps: 3
         }
-        Bot
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -45,10 +45,10 @@ async fn test_agent_with_max_steps() {
 async fn test_agent_with_model() {
     let source = r#"
         agent Bot {
-            prompt: "Hello"
+            systemPrompt: "Hello"
             model: "gpt-4o"
         }
-        Bot
+        let result = Bot.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -63,12 +63,12 @@ async fn test_agent_with_model() {
 async fn test_full_researcher_example() {
     let source = r#"
         agent Researcher {
-            prompt: "You help research topics."
+            systemPrompt: "You help research topics."
             model: "gpt-4o-mini"
             use web_fetch
-            max_steps: 5
+            maxSteps: 5
         }
-        Researcher("Tell me about Rust")
+        let result = Researcher.userPrompt("Tell me about Rust").invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Rust is a systems programming language.");
@@ -83,17 +83,17 @@ async fn test_full_researcher_example() {
 async fn test_multiple_agents_with_different_tools() {
     let source = r#"
         agent Reader {
-            prompt: "Read files"
+            systemPrompt: "Read files"
             model: "gpt-4o-mini"
             use read_file
         }
         agent Writer {
-            prompt: "Write files"
+            systemPrompt: "Write files"
             model: "gpt-4o-mini"
             use write_file
         }
-        Reader
-        Writer
+        let r1 = Reader.invoke()
+        let r2 = Writer.invoke()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();

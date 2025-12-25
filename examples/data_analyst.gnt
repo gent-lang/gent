@@ -132,7 +132,7 @@ tool is_positive(value: number) -> string {
 // ============================================
 
 agent DataAnalyst {
-    prompt: "You are a data analyst assistant. You help analyze business metrics,
+    systemPrompt: "You are a data analyst assistant. You help analyze business metrics,
 calculate statistics, and generate reports. Use the available tools to:
 - Calculate percentages and growth rates
 - Classify risk levels based on scores
@@ -147,11 +147,11 @@ When given data, analyze it thoroughly and provide insights."
     use build_metric_report, format_comparison, generate_status
     use validate_range, is_positive
     use read_file, write_file
-    max_steps: 20
+    maxSteps: 20
 }
 
 agent ReportWriter {
-    prompt: "You are a business report writer. You take analysis results and
+    systemPrompt: "You are a business report writer. You take analysis results and
 create clear, professional summaries. Focus on:
 - Key findings and trends
 - Actionable recommendations
@@ -161,20 +161,20 @@ Write concise but comprehensive reports."
     model: "gpt-4o-mini"
     use build_metric_report, format_comparison, format_currency
     use classify_risk, generate_status
-    max_steps: 10
+    maxSteps: 10
 }
 
 agent QuickCalculator {
-    prompt: "You are a quick calculation assistant. Perform mathematical
+    systemPrompt: "You are a quick calculation assistant. Perform mathematical
 operations and return results efficiently."
     model: "gpt-4o-mini"
     use calculate_percentage, calculate_growth, calculate_average
     use calculate_margin, validate_range
-    max_steps: 5
+    maxSteps: 5
 }
 
 // ============================================
 // Run Analysis
 // ============================================
 
-DataAnalyst("Analyze Q4 performance: Revenue $150000, Costs $95000, Previous quarter revenue $120000. Calculate margin, growth rate, and risk classification based on a profitability score of 65.")
+let result = DataAnalyst.userPrompt("Analyze Q4 performance: Revenue $150000, Costs $95000, Previous quarter revenue $120000. Calculate margin, growth rate, and risk classification based on a profitability score of 65.").invoke()

@@ -8,11 +8,11 @@ use gent::runtime::{MockLLMClient, ToolRegistry};
 async fn test_agent_with_inline_structured_output() {
     let source = r#"
         agent Classifier {
-            prompt: "Classify the input"
+            systemPrompt: "Classify the input"
             model: "gpt-4o"
             output: { category: string, confidence: number }
         }
-        Classifier("test input")
+        let result = Classifier.userPrompt("test input").invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -38,11 +38,11 @@ async fn test_agent_with_named_struct_output() {
         }
 
         agent Classifier {
-            prompt: "Classify the input"
+            systemPrompt: "Classify the input"
             model: "gpt-4o"
             output: Classification
         }
-        Classifier("test input")
+        let result = Classifier.userPrompt("test input").invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -64,10 +64,10 @@ async fn test_agent_without_output_schema() {
     // Agent without output field should work normally
     let source = r#"
         agent Simple {
-            prompt: "Just respond"
+            systemPrompt: "Just respond"
             model: "gpt-4o"
         }
-        Simple("hello")
+        let result = Simple.userPrompt("hello").invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -95,11 +95,11 @@ async fn test_struct_with_nested_output() {
         }
 
         agent Extractor {
-            prompt: "Extract data"
+            systemPrompt: "Extract data"
             model: "gpt-4o"
             output: DataOutput
         }
-        Extractor("extract from this")
+        let result = Extractor.userPrompt("extract from this").invoke()
     "#;
 
     let program = parse(source).unwrap();
@@ -126,11 +126,11 @@ async fn test_struct_with_array_output() {
         }
 
         agent TagExtractor {
-            prompt: "Extract tags"
+            systemPrompt: "Extract tags"
             model: "gpt-4o"
             output: TagList
         }
-        TagExtractor("find tags")
+        let result = TagExtractor.userPrompt("find tags").invoke()
     "#;
 
     let program = parse(source).unwrap();

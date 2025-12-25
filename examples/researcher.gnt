@@ -1,8 +1,8 @@
 agent Researcher {
-    prompt: "You are a helpful research assistant. Use the web_fetch tool to find information."
+    systemPrompt: "You are a helpful research assistant. Use the web_fetch tool to find information."
     use web_fetch
     model: "gpt-4o"
-    max_steps: 5
+    maxSteps: 5
 }
 
-Researcher("What is the capital of France?")
+let result = Researcher.userPrompt("What is the capital of France?").invoke()

@@ -32,8 +32,8 @@ async fn expect_failure(source: &str, expected_substring: &str) {
 async fn test_hello_world() {
     let result = run_program(
         r#"
-        agent Hello { prompt: "You are friendly." model: "gpt-4o-mini" }
-        Hello
+        agent Hello { systemPrompt: "You are friendly." model: "gpt-4o-mini" }
+        let result = Hello.invoke()
     "#,
     )
     .await;
@@ -42,7 +42,7 @@ async fn test_hello_world() {
 
 #[tokio::test]
 async fn test_minimal_agent() {
-    let result = run_program(r#"agent A { prompt: "x" model: "gpt-4o-mini" } A"#).await;
+    let result = run_program(r#"agent A { systemPrompt: "x" model: "gpt-4o-mini" } let r = A.invoke()"#).await;
     assert!(result.is_ok());
 }
 
@@ -51,12 +51,12 @@ async fn test_agent_with_many_fields() {
     let result = run_program(
         r#"
         agent Complex {
-            prompt: "Be helpful"
+            systemPrompt: "Be helpful"
             model: "gpt-4"
-            max_steps: 10
+            maxSteps: 10
             verbose: true
         }
-        Complex
+        let result = Complex.invoke()
     "#,
     )
     .await;
@@ -67,13 +67,13 @@ async fn test_agent_with_many_fields() {
 async fn test_multiple_agents_multiple_runs() {
     let result = run_program(
         r#"
-        agent A { prompt: "Agent A" model: "gpt-4o-mini" }
-        agent B { prompt: "Agent B" model: "gpt-4o-mini" }
-        agent C { prompt: "Agent C" model: "gpt-4o-mini" }
-        A
-        B
-        C
-        A
+        agent A { systemPrompt: "Agent A" model: "gpt-4o-mini" }
+        agent B { systemPrompt: "Agent B" model: "gpt-4o-mini" }
+        agent C { systemPrompt: "Agent C" model: "gpt-4o-mini" }
+        let r1 = A.invoke()
+        let r2 = B.invoke()
+        let r3 = C.invoke()
+        let r4 = A.invoke()
     "#,
     )
     .await;
@@ -84,8 +84,8 @@ async fn test_multiple_agents_multiple_runs() {
 async fn test_run_with_string_input() {
     let result = run_program(
         r#"
-        agent Echo { prompt: "Echo things" model: "gpt-4o-mini" }
-        Echo("Hello there")
+        agent Echo { systemPrompt: "Echo things" model: "gpt-4o-mini" }
+        let result = Echo.userPrompt("Hello there").invoke()
     "#,
     )
     .await;
@@ -98,11 +98,11 @@ async fn test_comments_everywhere() {
         r#"
         // Comment at start
         agent Test { // Inline comment
-            prompt: "Test" // Field comment
+            systemPrompt: "Test" // Field comment
             model: "gpt-4o-mini"
         } // End of agent
         // Before run
-        Test // After run
+        let result = Test.invoke() // After run
         // Final comment
     "#,
     )
@@ -113,7 +113,7 @@ async fn test_comments_everywhere() {
 #[tokio::test]
 async fn test_whitespace_variations() {
     let result =
-        run_program("agent   A   {   prompt  :   \"x\"   model: \"gpt-4o-mini\"  }   A")
+        run_program("agent   A   {   systemPrompt  :   \"x\"   model: \"gpt-4o-mini\"  }   let r = A.invoke()")
             .await;
     assert!(result.is_ok());
 }
@@ -125,12 +125,12 @@ async fn test_newlines_in_various_places() {
 agent
 Test
 {
-prompt
+systemPrompt
 :
 "value"
 model: "gpt-4o-mini"
 }
-Test
+let result = Test.invoke()
 "#,
     )
     .await;
@@ -141,14 +141,14 @@ Test
 
 #[tokio::test]
 async fn test_error_undefined_agent() {
-    expect_failure("Ghost", "Undefined agent").await;
+    expect_failure("let r = Ghost.invoke()", "Undefined").await;
 }
 
 #[tokio::test]
 async fn test_error_missing_model() {
     // Prompt is now optional, but model is still required
     expect_failure(
-        r#"agent NoModel { prompt: "Hello" } NoModel"#,
+        r#"agent NoModel { systemPrompt: "Hello" } let r = NoModel.invoke()"#,
         "model",
     )
     .await;
@@ -156,19 +156,19 @@ async fn test_error_missing_model() {
 
 #[tokio::test]
 async fn test_error_syntax_missing_brace() {
-    expect_failure(r#"agent Broken { prompt: "x""#, "Syntax error").await;
+    expect_failure(r#"agent Broken { systemPrompt: "x""#, "Syntax error").await;
 }
 
 #[tokio::test]
 async fn test_error_syntax_missing_name() {
-    expect_failure(r#"agent { prompt: "x" }"#, "Syntax error").await;
+    expect_failure(r#"agent { systemPrompt: "x" }"#, "Syntax error").await;
 }
 
 #[tokio::test]
 async fn test_error_run_before_define() {
     expect_failure(
-        r#"Later agent Later { prompt: "x" model: "gpt-4o-mini" }"#,
-        "Undefined agent",
+        r#"let r = Later.invoke() agent Later { systemPrompt: "x" model: "gpt-4o-mini" }"#,
+        "Undefined",
     )
     .await;
 }
@@ -197,15 +197,15 @@ async fn test_only_comments() {
 #[tokio::test]
 async fn test_agent_with_empty_body() {
     // Empty body means no prompt - should fail at runtime
-    expect_failure("agent Empty { } Empty", "missing").await;
+    expect_failure("agent Empty { } let r = Empty.invoke()", "missing").await;
 }
 
 #[tokio::test]
 async fn test_agent_name_with_numbers() {
     let result = run_program(
         r#"
-        agent Agent123 { prompt: "Test" model: "gpt-4o-mini" }
-        Agent123
+        agent Agent123 { systemPrompt: "Test" model: "gpt-4o-mini" }
+        let r = Agent123.invoke()
     "#,
     )
     .await;
@@ -216,8 +216,8 @@ async fn test_agent_name_with_numbers() {
 async fn test_agent_name_with_underscore() {
     let result = run_program(
         r#"
-        agent my_agent { prompt: "Test" model: "gpt-4o-mini" }
-        my_agent
+        agent my_agent { systemPrompt: "Test" model: "gpt-4o-mini" }
+        let r = my_agent.invoke()
     "#,
     )
     .await;
@@ -228,7 +228,7 @@ async fn test_agent_name_with_underscore() {
 async fn test_long_prompt() {
     let long_prompt = "x".repeat(5000);
     let source = format!(
-        r#"agent Long {{ prompt: "{}" model: "gpt-4o-mini" }} Long"#,
+        r#"agent Long {{ systemPrompt: "{}" model: "gpt-4o-mini" }} let r = Long.invoke()"#,
         long_prompt
     );
     let result = run_program(&source).await;
@@ -239,8 +239,8 @@ async fn test_long_prompt() {
 async fn test_special_chars_in_prompt() {
     let result = run_program(
         r#"
-        agent Special { prompt: "Hello! How are you? I'm fine. @#$%^&*()" model: "gpt-4o-mini" }
-        Special
+        agent Special { systemPrompt: "Hello! How are you? I'm fine. @#$%^&*()" model: "gpt-4o-mini" }
+        let r = Special.invoke()
     "#,
     )
     .await;
@@ -251,9 +251,9 @@ async fn test_special_chars_in_prompt() {
 async fn test_redefine_agent() {
     let result = run_program(
         r#"
-        agent Bot { prompt: "First version" model: "gpt-4o-mini" }
-        agent Bot { prompt: "Second version" model: "gpt-4o-mini" }
-        Bot
+        agent Bot { systemPrompt: "First version" model: "gpt-4o-mini" }
+        agent Bot { systemPrompt: "Second version" model: "gpt-4o-mini" }
+        let r = Bot.invoke()
     "#,
     )
     .await;
@@ -264,10 +264,10 @@ async fn test_redefine_agent() {
 async fn test_case_sensitive_names() {
     expect_failure(
         r#"
-            agent Hello { prompt: "Hi" model: "gpt-4o-mini" }
-            hello
+            agent Hello { systemPrompt: "Hi" model: "gpt-4o-mini" }
+            let r = hello.invoke()
         "#,
-        "Undefined agent",
+        "Undefined",
     )
     .await;
 }
@@ -277,13 +277,13 @@ async fn test_numeric_fields() {
     let result = run_program(
         r#"
         agent Bot {
-            prompt: "Test"
+            systemPrompt: "Test"
             model: "gpt-4o-mini"
-            max_steps: 100
+            maxSteps: 100
             temperature: 0.7
             timeout: -1
         }
-        Bot
+        let r = Bot.invoke()
     "#,
     )
     .await;
@@ -295,12 +295,12 @@ async fn test_boolean_fields() {
     let result = run_program(
         r#"
         agent Bot {
-            prompt: "Test"
+            systemPrompt: "Test"
             model: "gpt-4o-mini"
             verbose: true
             debug: false
         }
-        Bot
+        let r = Bot.invoke()
     "#,
     )
     .await;

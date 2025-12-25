@@ -1,4 +1,4 @@
-use gent::parser::{AgentDecl, AgentField, Expression, Program, AgentCall, Statement};
+use gent::parser::{AgentDecl, AgentField, Expression, LetStmt, Program, Statement};
 use gent::Span;
 
 // ============================================
@@ -210,43 +210,46 @@ fn test_agent_decl_equality() {
 }
 
 // ============================================
-// AgentCall Tests
+// LetStmt Tests
 // ============================================
 
 #[test]
-fn test_run_stmt_simple() {
-    let run = AgentCall {
-        agent_name: "Hello".to_string(),
-        input: None,
+fn test_let_stmt_simple() {
+    let let_stmt = LetStmt {
+        name: "result".to_string(),
+        value: Expression::Identifier("Hello".to_string(), Span::new(4, 9)),
         span: Span::new(0, 9),
     };
-    assert_eq!(run.agent_name, "Hello");
-    assert!(run.input.is_none());
+    assert_eq!(let_stmt.name, "result");
 }
 
 #[test]
-fn test_run_stmt_with_input() {
-    let run = AgentCall {
-        agent_name: "Greeter".to_string(),
-        input: Some(Expression::String(
-            "Hi there!".to_string(),
-            Span::new(17, 28),
-        )),
+fn test_let_stmt_with_call() {
+    let let_stmt = LetStmt {
+        name: "output".to_string(),
+        value: Expression::Call(
+            Box::new(Expression::Member(
+                Box::new(Expression::Identifier("Hello".to_string(), Span::new(0, 5))),
+                "invoke".to_string(),
+                Span::new(0, 12),
+            )),
+            vec![],
+            Span::new(0, 14),
+        ),
         span: Span::new(0, 28),
     };
-    assert_eq!(run.agent_name, "Greeter");
-    assert!(run.input.is_some());
+    assert_eq!(let_stmt.name, "output");
 }
 
 #[test]
-fn test_run_stmt_equality() {
-    let r1 = AgentCall {
-        agent_name: "Test".to_string(),
-        input: None,
+fn test_let_stmt_equality() {
+    let l1 = LetStmt {
+        name: "x".to_string(),
+        value: Expression::Number(42.0, Span::new(0, 2)),
         span: Span::new(0, 8),
     };
-    let r2 = r1.clone();
-    assert_eq!(r1, r2);
+    let l2 = l1.clone();
+    assert_eq!(l1, l2);
 }
 
 // ============================================
@@ -269,23 +272,23 @@ fn test_statement_agent_decl() {
 }
 
 #[test]
-fn test_statement_run_stmt() {
-    let stmt = Statement::AgentCall(AgentCall {
-        agent_name: "Hello".to_string(),
-        input: None,
+fn test_statement_let_stmt() {
+    let stmt = Statement::LetStmt(LetStmt {
+        name: "result".to_string(),
+        value: Expression::Number(42.0, Span::new(0, 2)),
         span: Span::new(0, 9),
     });
     match stmt {
-        Statement::AgentCall(r) => assert_eq!(r.agent_name, "Hello"),
-        _ => panic!("Expected AgentCall"),
+        Statement::LetStmt(l) => assert_eq!(l.name, "result"),
+        _ => panic!("Expected LetStmt"),
     }
 }
 
 #[test]
 fn test_statement_equality() {
-    let s1 = Statement::AgentCall(AgentCall {
-        agent_name: "X".to_string(),
-        input: None,
+    let s1 = Statement::LetStmt(LetStmt {
+        name: "x".to_string(),
+        value: Expression::Number(1.0, Span::new(0, 1)),
         span: Span::new(0, 5),
     });
     let s2 = s1.clone();
@@ -308,9 +311,9 @@ fn test_program_empty() {
 #[test]
 fn test_program_single_statement() {
     let program = Program {
-        statements: vec![Statement::AgentCall(AgentCall {
-            agent_name: "Hello".to_string(),
-            input: None,
+        statements: vec![Statement::LetStmt(LetStmt {
+            name: "result".to_string(),
+            value: Expression::Number(42.0, Span::new(0, 2)),
             span: Span::new(0, 9),
         })],
         span: Span::new(0, 9),
@@ -329,9 +332,9 @@ fn test_program_multiple_statements() {
                 output: None,
                 span: Span::new(0, 10),
             }),
-            Statement::AgentCall(AgentCall {
-                agent_name: "Hello".to_string(),
-                input: None,
+            Statement::LetStmt(LetStmt {
+                name: "result".to_string(),
+                value: Expression::Identifier("Hello".to_string(), Span::new(11, 16)),
                 span: Span::new(11, 20),
             }),
         ],
@@ -366,13 +369,13 @@ fn test_program_debug() {
 
 #[test]
 fn test_hello_world_ast() {
-    // Represents: agent Hello { prompt: "You are friendly." } run Hello
+    // Represents: agent Hello { systemPrompt: "You are friendly." } let result = Hello.invoke()
     let program = Program {
         statements: vec![
             Statement::AgentDecl(AgentDecl {
                 name: "Hello".to_string(),
                 fields: vec![AgentField {
-                    name: "prompt".to_string(),
+                    name: "systemPrompt".to_string(),
                     value: Expression::String("You are friendly.".to_string(), Span::new(22, 41)),
                     span: Span::new(14, 41),
                 }],
@@ -380,13 +383,21 @@ fn test_hello_world_ast() {
                 output: None,
                 span: Span::new(0, 43),
             }),
-            Statement::AgentCall(AgentCall {
-                agent_name: "Hello".to_string(),
-                input: None,
-                span: Span::new(44, 53),
+            Statement::LetStmt(LetStmt {
+                name: "result".to_string(),
+                value: Expression::Call(
+                    Box::new(Expression::Member(
+                        Box::new(Expression::Identifier("Hello".to_string(), Span::new(44, 49))),
+                        "invoke".to_string(),
+                        Span::new(44, 56),
+                    )),
+                    vec![],
+                    Span::new(44, 58),
+                ),
+                span: Span::new(44, 58),
             }),
         ],
-        span: Span::new(0, 53),
+        span: Span::new(0, 58),
     };
 
     assert_eq!(program.statements.len(), 2);
@@ -396,18 +407,17 @@ fn test_hello_world_ast() {
         Statement::AgentDecl(agent) => {
             assert_eq!(agent.name, "Hello");
             assert_eq!(agent.fields.len(), 1);
-            assert_eq!(agent.fields[0].name, "prompt");
+            assert_eq!(agent.fields[0].name, "systemPrompt");
         }
         _ => panic!("Expected AgentDecl"),
     }
 
-    // Verify second statement is run stmt
+    // Verify second statement is let stmt with method call
     match &program.statements[1] {
-        Statement::AgentCall(run) => {
-            assert_eq!(run.agent_name, "Hello");
-            assert!(run.input.is_none());
+        Statement::LetStmt(let_stmt) => {
+            assert_eq!(let_stmt.name, "result");
         }
-        _ => panic!("Expected AgentCall"),
+        _ => panic!("Expected LetStmt"),
     }
 }
 
@@ -466,7 +476,7 @@ fn test_ast_type_name_variants() {
 // Block and BlockStmt Tests
 // ============================================
 
-use gent::parser::{Block, BlockStmt, IfStmt, LetStmt, ReturnStmt};
+use gent::parser::{Block, BlockStmt, IfStmt, ReturnStmt};
 
 #[test]
 fn test_block_creation() {
