@@ -25,4 +25,4 @@ agent Assistant {
     max_steps: 5
 }
 
-run Assistant("Hello! What's 25 degrees like?")
+Assistant("Hello! What's 25 degrees like?")
