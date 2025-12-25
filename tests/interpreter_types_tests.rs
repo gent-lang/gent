@@ -1,5 +1,7 @@
 use gent::interpreter::{AgentValue, Value};
-use gent::interpreter::types::{UserToolValue, ToolParam, TypeName};
+use gent::interpreter::types::UserToolValue;
+use gent::parser::ast::{Block, Param, TypeName};
+use gent::Span;
 use std::collections::HashMap;
 
 // ============================================
@@ -413,7 +415,10 @@ fn test_tool_value_creation() {
         name: "greet".to_string(),
         params: vec![],
         return_type: None,
-        body: vec![],
+        body: Block {
+            statements: vec![],
+            span: Span::new(0, 0),
+        },
     };
     let val = Value::Tool(tool);
     assert!(matches!(val, Value::Tool(_)));
@@ -425,7 +430,10 @@ fn test_tool_display() {
         name: "greet".to_string(),
         params: vec![],
         return_type: None,
-        body: vec![],
+        body: Block {
+            statements: vec![],
+            span: Span::new(0, 0),
+        },
     };
     let val = Value::Tool(tool);
     assert_eq!(format!("{}", val), "<tool greet>");
@@ -437,7 +445,10 @@ fn test_tool_type_name() {
         name: "greet".to_string(),
         params: vec![],
         return_type: None,
-        body: vec![],
+        body: Block {
+            statements: vec![],
+            span: Span::new(0, 0),
+        },
     };
     let val = Value::Tool(tool);
     assert_eq!(val.type_name(), "Tool");
@@ -449,7 +460,10 @@ fn test_tool_is_truthy() {
         name: "greet".to_string(),
         params: vec![],
         return_type: None,
-        body: vec![],
+        body: Block {
+            statements: vec![],
+            span: Span::new(0, 0),
+        },
     };
     let val = Value::Tool(tool);
     assert!(val.is_truthy());
@@ -460,12 +474,67 @@ fn test_tool_with_params() {
     let tool = UserToolValue {
         name: "add".to_string(),
         params: vec![
-            ToolParam { name: "a".to_string(), type_name: TypeName::Number },
-            ToolParam { name: "b".to_string(), type_name: TypeName::Number },
+            Param {
+                name: "a".to_string(),
+                type_name: TypeName::Number,
+                span: Span::new(0, 0),
+            },
+            Param {
+                name: "b".to_string(),
+                type_name: TypeName::Number,
+                span: Span::new(0, 0),
+            },
         ],
         return_type: Some(TypeName::Number),
-        body: vec![],
+        body: Block {
+            statements: vec![],
+            span: Span::new(0, 0),
+        },
     };
     let val = Value::Tool(tool.clone());
     assert_eq!(val.as_tool().unwrap().params.len(), 2);
+}
+
+#[test]
+fn test_tool_with_ast_block() {
+    use gent::parser::ast::{BlockStmt, Expression, LetStmt, ReturnStmt};
+
+    // Create a tool with a real AST block containing statements
+    let tool = UserToolValue {
+        name: "calculate".to_string(),
+        params: vec![
+            Param {
+                name: "x".to_string(),
+                type_name: TypeName::Number,
+                span: Span::new(0, 1),
+            },
+        ],
+        return_type: Some(TypeName::Number),
+        body: Block {
+            statements: vec![
+                // let result = x + 10
+                BlockStmt::Let(LetStmt {
+                    name: "result".to_string(),
+                    value: Expression::Number(42.0, Span::new(10, 12)),
+                    span: Span::new(5, 12),
+                }),
+                // return result
+                BlockStmt::Return(ReturnStmt {
+                    value: Some(Expression::Identifier("result".to_string(), Span::new(20, 26))),
+                    span: Span::new(15, 26),
+                }),
+            ],
+            span: Span::new(0, 30),
+        },
+    };
+
+    let val = Value::Tool(tool.clone());
+
+    // Verify the tool has the correct structure
+    assert_eq!(val.as_tool().unwrap().name, "calculate");
+    assert_eq!(val.as_tool().unwrap().params.len(), 1);
+    assert_eq!(val.as_tool().unwrap().params[0].name, "x");
+    assert_eq!(val.as_tool().unwrap().body.statements.len(), 2);
+    assert!(matches!(val.as_tool().unwrap().body.statements[0], BlockStmt::Let(_)));
+    assert!(matches!(val.as_tool().unwrap().body.statements[1], BlockStmt::Return(_)));
 }

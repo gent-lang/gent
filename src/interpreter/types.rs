@@ -2,36 +2,15 @@
 
 use std::collections::HashMap;
 use std::fmt;
-
-/// Type names in GENT
-#[derive(Debug, Clone, PartialEq)]
-pub enum TypeName {
-    String,
-    Number,
-    Boolean,
-    Object,
-    Array,
-    Any,
-}
-
-/// Parameter for a user-defined tool
-#[derive(Debug, Clone, PartialEq)]
-pub struct ToolParam {
-    pub name: String,
-    pub type_name: TypeName,
-}
-
-/// Reference to a block statement (placeholder - will be replaced with actual AST)
-#[derive(Debug, Clone, PartialEq)]
-pub struct BlockStmtRef;
+use crate::parser::ast::{Block, Param, TypeName as ParserTypeName};
 
 /// Represents a user-defined tool at runtime
 #[derive(Debug, Clone, PartialEq)]
 pub struct UserToolValue {
     pub name: String,
-    pub params: Vec<ToolParam>,
-    pub return_type: Option<TypeName>,
-    pub body: Vec<BlockStmtRef>,
+    pub params: Vec<Param>,
+    pub return_type: Option<ParserTypeName>,
+    pub body: Block,
 }
 
 /// Runtime values in GENT
