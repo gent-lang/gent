@@ -46,7 +46,7 @@ async fn run(cli: &Cli) -> Result<(), GentError> {
     })?;
 
     let program = parse(&source)?;
-    let tools = ToolRegistry::with_builtins();
+    let mut tools = ToolRegistry::with_builtins();
 
     if cli.mock {
         let llm = if let Some(response) = &cli.mock_response {
@@ -54,12 +54,12 @@ async fn run(cli: &Cli) -> Result<(), GentError> {
         } else {
             MockLLMClient::new()
         };
-        evaluate(&program, &llm, &tools).await?;
+        evaluate(&program, &llm, &mut tools).await?;
     } else {
         let config = Config::load();
         let api_key = config.require_openai_key()?;
         let llm = OpenAIClient::new(api_key.to_string());
-        evaluate(&program, &llm, &tools).await?;
+        evaluate(&program, &llm, &mut tools).await?;
     }
 
     Ok(())
