@@ -27,6 +27,9 @@ field_type_object = { "{" ~ struct_body ~ "}" }
 field_type_named = { identifier }
 field_type_base = { "string" | "number" | "boolean" | identifier }
 
+// === Output Type (for agent output field) ===
+output_type = { field_type_object | identifier }
+
 // === Block & Statements ===
 block = { "{" ~ block_stmt* ~ "}" }
 block_stmt = { let_stmt | return_stmt | if_stmt | expr_stmt }
