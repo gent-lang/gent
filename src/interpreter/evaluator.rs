@@ -3,7 +3,8 @@
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::{AgentValue, Environment, UserToolValue, Value};
 use crate::parser::{AgentDecl, Expression, Program, Statement, ToolDecl};
-use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry};
+use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
+use std::sync::Arc;
 
 /// Evaluate a GENT program
 ///
@@ -17,7 +18,7 @@ use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry};
 pub async fn evaluate(
     program: &Program,
     llm: &dyn LLMClient,
-    tools: &ToolRegistry,
+    tools: &mut ToolRegistry,
 ) -> GentResult<()> {
     let mut env = Environment::new();
 
@@ -32,7 +33,7 @@ pub async fn evaluate(
 pub async fn evaluate_with_output(
     program: &Program,
     llm: &dyn LLMClient,
-    tools: &ToolRegistry,
+    tools: &mut ToolRegistry,
 ) -> GentResult<Vec<String>> {
     let mut env = Environment::new();
     let mut outputs = Vec::new();
@@ -52,7 +53,7 @@ async fn evaluate_statement(
     statement: &Statement,
     env: &mut Environment,
     llm: &dyn LLMClient,
-    tools: &ToolRegistry,
+    tools: &mut ToolRegistry,
 ) -> GentResult<()> {
     match statement {
         Statement::AgentDecl(decl) => {
@@ -63,7 +64,7 @@ async fn evaluate_statement(
             println!("{}", output);
         }
         Statement::ToolDecl(decl) => {
-            evaluate_tool_decl(decl, env)?;
+            evaluate_tool_decl(decl, env, tools)?;
         }
     }
     Ok(())
@@ -73,7 +74,7 @@ async fn evaluate_statement_with_output(
     statement: &Statement,
     env: &mut Environment,
     llm: &dyn LLMClient,
-    tools: &ToolRegistry,
+    tools: &mut ToolRegistry,
 ) -> GentResult<Option<String>> {
     match statement {
         Statement::AgentDecl(decl) => {
@@ -85,7 +86,7 @@ async fn evaluate_statement_with_output(
             Ok(Some(output))
         }
         Statement::ToolDecl(decl) => {
-            evaluate_tool_decl(decl, env)?;
+            evaluate_tool_decl(decl, env, tools)?;
             Ok(None)
         }
     }
@@ -179,7 +180,7 @@ fn evaluate_agent_decl(decl: &AgentDecl, env: &mut Environment) -> GentResult<()
     Ok(())
 }
 
-fn evaluate_tool_decl(decl: &ToolDecl, env: &mut Environment) -> GentResult<()> {
+fn evaluate_tool_decl(decl: &ToolDecl, env: &mut Environment, tools: &mut ToolRegistry) -> GentResult<()> {
     let tool_value = UserToolValue {
         name: decl.name.clone(),
         params: decl.params.clone(),
@@ -187,7 +188,12 @@ fn evaluate_tool_decl(decl: &ToolDecl, env: &mut Environment) -> GentResult<()> 
         body: decl.body.clone(),
     };
 
-    env.define(&decl.name, Value::Tool(tool_value));
+    // Store in environment for potential future use
+    env.define(&decl.name, Value::Tool(tool_value.clone()));
+
+    // Register in tool registry so LLM can call it
+    let wrapper = UserToolWrapper::new(tool_value, Arc::new(env.clone()));
+    tools.register(Box::new(wrapper));
 
     Ok(())
 }

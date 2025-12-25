@@ -10,4 +10,4 @@ pub use llm::{
     LLMClient, LLMResponse, Message, MockLLMClient, Role, ToolCall, ToolDefinition, ToolResult,
 };
 pub use providers::OpenAIClient;
-pub use tools::{Tool, ToolRegistry};
+pub use tools::{Tool, ToolRegistry, UserToolWrapper};
