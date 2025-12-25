@@ -6,7 +6,7 @@ use super::GentError;
 pub struct ErrorReporter<'a> {
     source: &'a str,
     filename: &'a str,
-    use_colors: bool,
+    pub use_colors: bool,
 }
 
 impl<'a> ErrorReporter<'a> {
