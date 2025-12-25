@@ -47,7 +47,7 @@ async fn test_evaluate_run_statement() {
 async fn test_evaluate_run_with_input() {
     let source = r#"
         agent Greeter { prompt: "You greet people." model: "gpt-4o-mini" }
-        run Greeter with "Hi!"
+        run Greeter("Hi!")
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello! Nice to meet you!");
@@ -183,8 +183,8 @@ async fn test_evaluate_complex_program() {
     let source = r#"
         agent Researcher { prompt: "You research topics." model: "gpt-4o-mini" }
         agent Writer { prompt: "You write content." model: "gpt-4o-mini" }
-        run Researcher with "Find info about Rust"
-        run Writer with "Write about programming"
+        run Researcher("Find info about Rust")
+        run Writer("Write about programming")
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Done!");
@@ -271,7 +271,7 @@ async fn test_tool_declaration_registers() {
             use greet
         }
 
-        run Greeter with "test"
+        run Greeter("test")
     "#;
 
     let program = parse(source).unwrap();
@@ -299,7 +299,7 @@ async fn test_multiple_tool_declarations() {
             use add
         }
 
-        run Calculator with "2 + 2"
+        run Calculator("2 + 2")
     "#;
 
     let program = parse(source).unwrap();
