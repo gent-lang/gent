@@ -42,6 +42,7 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
+        Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
         Rule::run_stmt => Ok(Statement::RunStmt(parse_run_stmt(inner)?)),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected rule: {:?}", inner.as_rule()),
@@ -171,6 +172,137 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
             span,
         }),
     }
+}
+
+fn parse_tool_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<ToolDecl> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let mut params = Vec::new();
+    let mut return_type = None;
+    let mut body = None;
+
+    for item in inner {
+        match item.as_rule() {
+            Rule::param_list => {
+                params = parse_param_list(item)?;
+            }
+            Rule::return_type => {
+                let type_pair = item.into_inner().next().unwrap();
+                return_type = Some(parse_type_name(type_pair)?);
+            }
+            Rule::block => {
+                body = Some(parse_block(item)?);
+            }
+            _ => {}
+        }
+    }
+
+    Ok(ToolDecl {
+        name,
+        params,
+        return_type,
+        body: body.unwrap_or_else(|| Block {
+            statements: vec![],
+            span: span.clone(),
+        }),
+        span,
+    })
+}
+
+fn parse_param_list(pair: pest::iterators::Pair<Rule>) -> GentResult<Vec<Param>> {
+    let mut params = Vec::new();
+    for param_pair in pair.into_inner() {
+        if param_pair.as_rule() == Rule::param {
+            params.push(parse_param(param_pair)?);
+        }
+    }
+    Ok(params)
+}
+
+fn parse_param(pair: pest::iterators::Pair<Rule>) -> GentResult<Param> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let type_pair = inner.next().unwrap();
+    let type_name = parse_type_name(type_pair)?;
+
+    Ok(Param { name, type_name, span })
+}
+
+fn parse_type_name(pair: pest::iterators::Pair<Rule>) -> GentResult<TypeName> {
+    match pair.as_str() {
+        "string" => Ok(TypeName::String),
+        "number" => Ok(TypeName::Number),
+        "boolean" => Ok(TypeName::Boolean),
+        "object" => Ok(TypeName::Object),
+        "array" => Ok(TypeName::Array),
+        "any" => Ok(TypeName::Any),
+        other => Err(GentError::SyntaxError {
+            message: format!("Unknown type: {}", other),
+            span: Span::new(pair.as_span().start(), pair.as_span().end()),
+        }),
+    }
+}
+
+fn parse_block(pair: pest::iterators::Pair<Rule>) -> GentResult<Block> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut statements = Vec::new();
+
+    for stmt_pair in pair.into_inner() {
+        if stmt_pair.as_rule() == Rule::block_stmt {
+            statements.push(parse_block_stmt(stmt_pair)?);
+        }
+    }
+
+    Ok(Block { statements, span })
+}
+
+fn parse_block_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<BlockStmt> {
+    let inner = pair.into_inner().next().unwrap();
+    match inner.as_rule() {
+        Rule::let_stmt => Ok(BlockStmt::Let(parse_let_stmt(inner)?)),
+        Rule::return_stmt => Ok(BlockStmt::Return(parse_return_stmt(inner)?)),
+        Rule::if_stmt => Ok(BlockStmt::If(parse_if_stmt(inner)?)),
+        Rule::expr_stmt => {
+            let expr_pair = inner.into_inner().next().unwrap();
+            Ok(BlockStmt::Expr(parse_expression(expr_pair)?))
+        }
+        _ => Err(GentError::SyntaxError {
+            message: format!("Unexpected block statement: {:?}", inner.as_rule()),
+            span: Span::new(0, 0),
+        }),
+    }
+}
+
+fn parse_let_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<LetStmt> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let value = parse_expression(inner.next().unwrap())?;
+
+    Ok(LetStmt { name, value, span })
+}
+
+fn parse_return_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<ReturnStmt> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let value = pair.into_inner().next().map(|p| parse_expression(p)).transpose()?;
+
+    Ok(ReturnStmt { value, span })
+}
+
+fn parse_if_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<IfStmt> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let condition = parse_expression(inner.next().unwrap())?;
+    let then_block = parse_block(inner.next().unwrap())?;
+    let else_block = inner.next().map(|p| parse_block(p)).transpose()?;
+
+    Ok(IfStmt { condition, then_block, else_block, span })
 }
 
 fn unescape_string(s: &str) -> String {

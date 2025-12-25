@@ -1,4 +1,4 @@
-use gent::parser::{parse, Expression, Statement};
+use gent::parser::{parse, Expression, Statement, TypeName};
 
 // ============================================
 // Basic Parsing Tests
@@ -328,4 +328,64 @@ run Hello"#;
     let result = parse(source);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().statements.len(), 2);
+}
+
+// ============================================
+// Tool Declaration Tests
+// ============================================
+
+#[test]
+fn test_parse_simple_tool() {
+    let source = r#"
+        tool greet(name: string) -> string {
+            return "hello"
+        }
+    "#;
+    let program = parse(source).unwrap();
+    assert_eq!(program.statements.len(), 1);
+    match &program.statements[0] {
+        Statement::ToolDecl(tool) => {
+            assert_eq!(tool.name, "greet");
+            assert_eq!(tool.params.len(), 1);
+            assert_eq!(tool.params[0].name, "name");
+            assert_eq!(tool.params[0].type_name, TypeName::String);
+            assert_eq!(tool.return_type, Some(TypeName::String));
+        }
+        _ => panic!("Expected ToolDecl"),
+    }
+}
+
+#[test]
+fn test_parse_tool_no_params() {
+    let source = r#"
+        tool noop() {
+            return null
+        }
+    "#;
+    let program = parse(source).unwrap();
+    match &program.statements[0] {
+        Statement::ToolDecl(tool) => {
+            assert_eq!(tool.params.len(), 0);
+            assert_eq!(tool.return_type, None);
+        }
+        _ => panic!("Expected ToolDecl"),
+    }
+}
+
+#[test]
+fn test_parse_tool_multiple_params() {
+    let source = r#"
+        tool add(a: number, b: number) -> number {
+            return a
+        }
+    "#;
+    let program = parse(source).unwrap();
+    match &program.statements[0] {
+        Statement::ToolDecl(tool) => {
+            assert_eq!(tool.params.len(), 2);
+            assert_eq!(tool.params[0].type_name, TypeName::Number);
+            assert_eq!(tool.params[1].type_name, TypeName::Number);
+        }
+        _ => panic!("Expected ToolDecl"),
+    }
 }
