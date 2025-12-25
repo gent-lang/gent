@@ -122,28 +122,19 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
     let span = Span::new(pair.as_span().start(), pair.as_span().end());
 
     match pair.as_rule() {
-        // For most intermediate expression rules, descend to the inner pair
-        Rule::expression | Rule::logical_or | Rule::logical_and | Rule::equality |
-        Rule::comparison | Rule::additive | Rule::multiplicative |
-        Rule::postfix | Rule::primary => {
+        Rule::expression => {
             let inner = pair.into_inner().next().unwrap();
             parse_expression(inner)
         }
-        // Special handling for unary to support negative numbers
-        Rule::unary => {
-            let full_text = pair.as_str().trim();
-            // Check if it starts with a negation and looks like a number
-            if full_text.starts_with('-') && full_text.len() > 1 {
-                let rest = &full_text[1..].trim_start();
-                // Check if the rest is a valid number
-                if rest.chars().next().map_or(false, |c| c.is_ascii_digit()) {
-                    // Try to parse as a negative number
-                    if let Ok(num) = full_text.parse::<f64>() {
-                        return Ok(Expression::Number(num, span));
-                    }
-                }
-            }
-            // Otherwise, descend normally (will handle ! and other cases in future)
+        Rule::logical_or => parse_binary_left(pair, &[BinaryOp::Or]),
+        Rule::logical_and => parse_binary_left(pair, &[BinaryOp::And]),
+        Rule::equality => parse_binary_left(pair, &[BinaryOp::Eq, BinaryOp::Ne]),
+        Rule::comparison => parse_binary_left(pair, &[BinaryOp::Lt, BinaryOp::Le, BinaryOp::Gt, BinaryOp::Ge]),
+        Rule::additive => parse_binary_left(pair, &[BinaryOp::Add, BinaryOp::Sub]),
+        Rule::multiplicative => parse_binary_left(pair, &[BinaryOp::Mul, BinaryOp::Div, BinaryOp::Mod]),
+        Rule::unary => parse_unary(pair),
+        Rule::postfix => parse_postfix(pair),
+        Rule::primary => {
             let inner = pair.into_inner().next().unwrap();
             parse_expression(inner)
         }
@@ -165,13 +156,221 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
             let val = pair.as_str() == "true";
             Ok(Expression::Boolean(val, span))
         }
+        Rule::null_literal => Ok(Expression::Null(span)),
         Rule::identifier => Ok(Expression::Identifier(pair.as_str().to_string(), span)),
-        Rule::null_literal => Ok(Expression::Identifier("null".to_string(), span)), // Temporary: treat null as identifier
+        Rule::array_literal => parse_array_literal(pair),
+        Rule::object_literal => parse_object_literal(pair),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected expression: {:?}", pair.as_rule()),
             span,
         }),
     }
+}
+
+/// Parse binary left-associative operators
+/// The grammar is: level = { next_level ~ ((op1 | op2 | ...) ~ next_level)* }
+/// Pest gives us all children at next_level, so we need to extract operators from source positions
+fn parse_binary_left(pair: pest::iterators::Pair<Rule>, ops: &[BinaryOp]) -> GentResult<Expression> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let source = pair.as_str();
+    let base_pos = pair.as_span().start();
+
+    let inner = pair.into_inner();
+    let pairs: Vec<_> = inner.collect();
+
+    // If there's only one element, it's not a binary operation
+    if pairs.len() == 1 {
+        return parse_expression(pairs[0].clone());
+    }
+
+    // Parse first operand
+    let mut left = parse_expression(pairs[0].clone())?;
+    let mut last_end = pairs[0].as_span().end() - base_pos;
+
+    // Process remaining operands
+    for i in 1..pairs.len() {
+        let right_pair = &pairs[i];
+        let right_start = right_pair.as_span().start() - base_pos;
+
+        // Extract operator from the text between last operand and next operand
+        let between = &source[last_end..right_start];
+        let op_str = between.trim();
+
+        let op = match op_str {
+            "||" => BinaryOp::Or,
+            "&&" => BinaryOp::And,
+            "==" => BinaryOp::Eq,
+            "!=" => BinaryOp::Ne,
+            "<" => BinaryOp::Lt,
+            "<=" => BinaryOp::Le,
+            ">" => BinaryOp::Gt,
+            ">=" => BinaryOp::Ge,
+            "+" => BinaryOp::Add,
+            "-" => BinaryOp::Sub,
+            "*" => BinaryOp::Mul,
+            "/" => BinaryOp::Div,
+            "%" => BinaryOp::Mod,
+            _ => return Err(GentError::SyntaxError {
+                message: format!("Unknown operator: {}", op_str),
+                span: span.clone(),
+            }),
+        };
+
+        // Verify this operator is in the expected set
+        if !ops.contains(&op) {
+            return Err(GentError::SyntaxError {
+                message: format!("Unexpected operator: {} (expected one of {:?})", op_str, ops),
+                span: span.clone(),
+            });
+        }
+
+        let right = parse_expression(right_pair.clone())?;
+        left = Expression::Binary(op, Box::new(left), Box::new(right), span.clone());
+        last_end = right_pair.as_span().end() - base_pos;
+    }
+
+    Ok(left)
+}
+
+/// Parse unary operators
+fn parse_unary(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let source = pair.as_str();
+    let base_pos = pair.as_span().start();
+
+    // Special case: Check if this is a negative number literal
+    let full_text = source.trim();
+    if full_text.starts_with('-') && full_text.len() > 1 {
+        let rest = full_text[1..].trim();
+        // Check if it's purely a number (no operators, just digits and maybe a decimal point)
+        if rest.chars().all(|c| c.is_ascii_digit() || c == '.') {
+            if let Ok(num) = full_text.parse::<f64>() {
+                return Ok(Expression::Number(num, span));
+            }
+        }
+    }
+
+    let inner = pair.into_inner();
+    let pairs: Vec<_> = inner.collect();
+
+    // If there's only one child, no unary operators
+    if pairs.len() == 1 {
+        return parse_expression(pairs[0].clone());
+    }
+
+    // Collect unary operators from the source text
+    let mut ops = Vec::new();
+
+    // The last pair is the operand, everything before are unary operators
+    let operand_pair = &pairs[pairs.len() - 1];
+    let operand_start = operand_pair.as_span().start() - base_pos;
+
+    // Extract operators from the text before the operand
+    let op_text = &source[..operand_start].trim();
+    for ch in op_text.chars() {
+        match ch {
+            '!' => ops.push(UnaryOp::Not),
+            '-' => ops.push(UnaryOp::Neg),
+            _ => {}
+        }
+    }
+
+    let mut expr = parse_expression(operand_pair.clone())?;
+
+    // Apply operators right-to-left (from the innermost to outermost)
+    for op in ops.into_iter().rev() {
+        expr = Expression::Unary(op, Box::new(expr), span.clone());
+    }
+
+    Ok(expr)
+}
+
+/// Parse postfix expressions (call, member, index)
+fn parse_postfix(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let mut expr = parse_expression(inner.next().unwrap())?;
+
+    for postfix_pair in inner {
+        match postfix_pair.as_rule() {
+            Rule::call_expr => {
+                let args = parse_arg_list(postfix_pair)?;
+                expr = Expression::Call(Box::new(expr), args, span.clone());
+            }
+            Rule::member_expr => {
+                let member_inner = postfix_pair.into_inner().next().unwrap();
+                let member_name = member_inner.as_str().to_string();
+                expr = Expression::Member(Box::new(expr), member_name, span.clone());
+            }
+            Rule::index_expr => {
+                let index_inner = postfix_pair.into_inner().next().unwrap();
+                let index = parse_expression(index_inner)?;
+                expr = Expression::Index(Box::new(expr), Box::new(index), span.clone());
+            }
+            _ => {}
+        }
+    }
+
+    Ok(expr)
+}
+
+/// Parse argument list for function calls
+fn parse_arg_list(pair: pest::iterators::Pair<Rule>) -> GentResult<Vec<Expression>> {
+    let mut args = Vec::new();
+
+    for inner in pair.into_inner() {
+        if inner.as_rule() == Rule::arg_list {
+            for arg_pair in inner.into_inner() {
+                args.push(parse_expression(arg_pair)?);
+            }
+        }
+    }
+
+    Ok(args)
+}
+
+/// Parse array literal [1, 2, 3]
+fn parse_array_literal(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut elements = Vec::new();
+
+    for inner in pair.into_inner() {
+        elements.push(parse_expression(inner)?);
+    }
+
+    Ok(Expression::Array(elements, span))
+}
+
+/// Parse object literal {key: value, ...}
+fn parse_object_literal(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut fields = Vec::new();
+
+    for field_pair in pair.into_inner() {
+        if field_pair.as_rule() == Rule::object_field {
+            let mut field_inner = field_pair.into_inner();
+
+            let key_pair = field_inner.next().unwrap();
+            let key = match key_pair.as_rule() {
+                Rule::identifier => key_pair.as_str().to_string(),
+                Rule::string_literal => {
+                    let raw = key_pair.as_str();
+                    let content = &raw[1..raw.len() - 1];
+                    unescape_string(content)
+                }
+                _ => return Err(GentError::SyntaxError {
+                    message: format!("Expected identifier or string for object key"),
+                    span: Span::new(key_pair.as_span().start(), key_pair.as_span().end()),
+                }),
+            };
+
+            let value = parse_expression(field_inner.next().unwrap())?;
+            fields.push((key, value));
+        }
+    }
+
+    Ok(Expression::Object(fields, span))
 }
 
 fn parse_tool_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<ToolDecl> {

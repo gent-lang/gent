@@ -389,3 +389,78 @@ fn test_parse_tool_multiple_params() {
         _ => panic!("Expected ToolDecl"),
     }
 }
+
+// ============================================
+// Full Expression Parsing Tests
+// ============================================
+
+#[test]
+fn test_parse_binary_expression() {
+    let source = r#"
+        tool calc() -> number {
+            return 1 + 2 * 3
+        }
+    "#;
+    let program = parse(source).unwrap();
+    match &program.statements[0] {
+        Statement::ToolDecl(tool) => {
+            assert_eq!(tool.body.statements.len(), 1);
+        }
+        _ => panic!("Expected ToolDecl"),
+    }
+}
+
+#[test]
+fn test_parse_member_expression() {
+    let source = r#"
+        tool get_temp() -> number {
+            return data.main.temp
+        }
+    "#;
+    let program = parse(source).unwrap();
+    assert!(program.statements.len() > 0);
+}
+
+#[test]
+fn test_parse_call_expression() {
+    let source = r#"
+        tool wrapper() -> string {
+            return foo(1, 2)
+        }
+    "#;
+    let program = parse(source).unwrap();
+    assert!(program.statements.len() > 0);
+}
+
+#[test]
+fn test_parse_array_literal_in_tool() {
+    let source = r#"
+        tool make_arr() -> array {
+            return [1, 2, 3]
+        }
+    "#;
+    let program = parse(source).unwrap();
+    assert!(program.statements.len() > 0);
+}
+
+#[test]
+fn test_parse_object_literal_in_tool() {
+    let source = r#"
+        tool make_obj() -> object {
+            return {name: "test", value: 42}
+        }
+    "#;
+    let program = parse(source).unwrap();
+    assert!(program.statements.len() > 0);
+}
+
+#[test]
+fn test_parse_index_expression() {
+    let source = r#"
+        tool first() -> any {
+            return items[0]
+        }
+    "#;
+    let program = parse(source).unwrap();
+    assert!(program.statements.len() > 0);
+}
