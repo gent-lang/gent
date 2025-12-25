@@ -2,4 +2,4 @@ agent Hello {
     prompt: "You are friendly. also say how are you doing"
     model: "gpt-4o-mini"
 }
-run Hello
+Hello
