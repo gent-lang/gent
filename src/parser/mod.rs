@@ -2,7 +2,7 @@
 
 pub mod ast;
 
-pub use ast::{BinaryOp, UnaryOp, Program, Statement, AgentDecl, AgentField, RunStmt, Expression};
+pub use ast::{BinaryOp, UnaryOp, TypeName, Program, Statement, AgentDecl, AgentField, RunStmt, Expression};
 
 use crate::errors::{GentError, GentResult, Span};
 use crate::lexer::{GentParser, Rule};

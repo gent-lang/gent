@@ -30,6 +30,17 @@ pub enum UnaryOp {
     Neg, // -
 }
 
+/// Type names in GENT
+#[derive(Debug, Clone, PartialEq)]
+pub enum TypeName {
+    String,
+    Number,
+    Boolean,
+    Object,
+    Array,
+    Any,
+}
+
 /// A complete GENT program
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {

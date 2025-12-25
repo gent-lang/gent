@@ -435,3 +435,22 @@ fn test_unary_op_variants() {
     let ops = vec![UnaryOp::Not, UnaryOp::Neg];
     assert_eq!(ops.len(), 2);
 }
+
+// ============================================
+// TypeName Enum Tests
+// ============================================
+
+use gent::parser::TypeName as AstTypeName;
+
+#[test]
+fn test_ast_type_name_variants() {
+    let types = vec![
+        AstTypeName::String,
+        AstTypeName::Number,
+        AstTypeName::Boolean,
+        AstTypeName::Object,
+        AstTypeName::Array,
+        AstTypeName::Any,
+    ];
+    assert_eq!(types.len(), 6);
+}
