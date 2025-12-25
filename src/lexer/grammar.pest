@@ -1,6 +1,6 @@
 // === Program Structure ===
 program = { SOI ~ statement* ~ EOI }
-statement = { struct_decl | tool_decl | agent_decl | run_stmt }
+statement = { struct_decl | tool_decl | agent_decl | agent_call }
 
 // === Tool Declaration ===
 tool_decl = {
@@ -51,9 +51,9 @@ use_stmt = { "use" ~ identifier ~ ("," ~ identifier)* }
 output_field = { "output" ~ ":" ~ output_type }
 agent_field = { identifier ~ ":" ~ expression }
 
-// === Run Statement ===
-run_stmt = { "run" ~ identifier ~ run_args? }
-run_args = { "(" ~ expression ~ ")" }
+// === Agent Call ===
+agent_call = { identifier ~ call_args? }
+call_args = { "(" ~ expression ~ ")" }
 
 // === Expressions (EXPANDED) ===
 expression = { logical_or }
