@@ -14,8 +14,8 @@ async fn test_evaluate_agent_with_max_steps() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }
 
@@ -30,8 +30,8 @@ async fn test_evaluate_agent_with_model() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }
 
@@ -47,8 +47,8 @@ async fn test_evaluate_agent_with_tools() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }
 
@@ -65,7 +65,7 @@ async fn test_evaluate_agent_all_fields() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }

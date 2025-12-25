@@ -6,8 +6,8 @@ use gent::runtime::{llm::MockLLMClient, ToolRegistry};
 async fn run_program(source: &str) -> Result<(), String> {
     let program = parse(source).map_err(|e| e.to_string())?;
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::new();
-    evaluate(&program, &llm, &tools)
+    let mut tools = ToolRegistry::new();
+    evaluate(&program, &llm, &mut tools)
         .await
         .map_err(|e| e.to_string())
 }

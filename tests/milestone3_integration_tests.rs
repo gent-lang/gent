@@ -26,8 +26,8 @@ async fn test_simple_user_tool() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Program should parse and evaluate without errors");
 }
@@ -49,8 +49,8 @@ async fn test_tool_with_arithmetic() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Arithmetic tool should parse and evaluate without errors");
 }
@@ -76,8 +76,8 @@ async fn test_tool_with_conditional() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with conditional should parse and evaluate without errors");
 }
@@ -100,8 +100,8 @@ async fn test_tool_with_let_binding() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with let binding should parse and evaluate without errors");
 }
@@ -131,8 +131,8 @@ async fn test_multiple_tools() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Multiple tools should parse and evaluate without errors");
 }
@@ -162,8 +162,8 @@ async fn test_parse_full_expression() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Complex tool with all features should parse and evaluate without errors");
 }
@@ -191,8 +191,8 @@ async fn test_tool_with_agent_fields() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with fully configured agent should parse and evaluate without errors");
 }
@@ -214,8 +214,8 @@ async fn test_tool_with_run_input() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with run input should parse and evaluate without errors");
 }
@@ -249,8 +249,8 @@ async fn test_tool_nested_conditionals() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with nested conditionals should parse and evaluate without errors");
 }
@@ -275,8 +275,8 @@ async fn test_tool_multiple_let_bindings() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with multiple let bindings should parse and evaluate without errors");
 }
@@ -303,8 +303,8 @@ async fn test_tool_all_arithmetic_operators() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with all arithmetic operators should parse and evaluate without errors");
 }
@@ -334,8 +334,8 @@ async fn test_tool_comparison_operators() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with comparison operators should parse and evaluate without errors");
 }
@@ -359,8 +359,8 @@ async fn test_tool_string_concatenation() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with string concatenation should parse and evaluate without errors");
 }
@@ -386,8 +386,8 @@ async fn test_tool_no_return_type() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool without return type should parse and evaluate without errors");
 }
@@ -409,8 +409,8 @@ async fn test_tool_no_parameters() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Tool with no parameters should parse and evaluate without errors");
 }
@@ -438,8 +438,8 @@ async fn test_multiple_agents_with_tools() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Multiple agents with tools should parse and evaluate without errors");
 }
@@ -481,8 +481,8 @@ async fn test_full_milestone3_program() {
 
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("I'll help you calculate your savings!");
-    let tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &tools).await;
+    let mut tools = ToolRegistry::with_builtins();
+    let result = evaluate_with_output(&program, &llm, &mut tools).await;
 
     assert!(result.is_ok(), "Full Milestone 3 program should parse and evaluate without errors");
     let outputs = result.unwrap();

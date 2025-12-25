@@ -14,9 +14,9 @@ async fn test_agent_with_tools_parses() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
+    let mut tools = ToolRegistry::with_builtins();
 
-    let result = evaluate(&program, &llm, &tools).await;
+    let result = evaluate(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }
 
@@ -32,9 +32,9 @@ async fn test_agent_with_max_steps() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::new();
+    let mut tools = ToolRegistry::new();
 
-    let result = evaluate(&program, &llm, &tools).await;
+    let result = evaluate(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }
 
@@ -49,9 +49,9 @@ async fn test_agent_with_model() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::new();
+    let mut tools = ToolRegistry::new();
 
-    let result = evaluate(&program, &llm, &tools).await;
+    let result = evaluate(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }
 
@@ -68,9 +68,9 @@ async fn test_full_researcher_example() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Rust is a systems programming language.");
-    let tools = ToolRegistry::with_builtins();
+    let mut tools = ToolRegistry::with_builtins();
 
-    let result = evaluate(&program, &llm, &tools).await;
+    let result = evaluate(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }
 
@@ -92,9 +92,9 @@ async fn test_multiple_agents_with_different_tools() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let tools = ToolRegistry::with_builtins();
+    let mut tools = ToolRegistry::with_builtins();
 
-    let result = evaluate(&program, &llm, &tools).await;
+    let result = evaluate(&program, &llm, &mut tools).await;
     assert!(result.is_ok());
 }
 
