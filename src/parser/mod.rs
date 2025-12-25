@@ -192,13 +192,60 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
             parse_expression(inner)
         }
         Rule::string_literal => {
-            let raw = pair.as_str();
-            // Remove quotes and handle escapes
-            let content = &raw[1..raw.len() - 1];
-            let unescaped = unescape_string(content);
-            // For now, wrap plain strings in a single Literal part
-            // Interpolation parsing will be added in a later task
-            Ok(Expression::String(vec![StringPart::Literal(unescaped)], span))
+            let mut parts = Vec::new();
+
+            for inner in pair.into_inner() {
+                match inner.as_rule() {
+                    Rule::string_chars => {
+                        let text = inner.as_str()
+                            .replace("\\n", "\n")
+                            .replace("\\r", "\r")
+                            .replace("\\t", "\t")
+                            .replace("\\\"", "\"")
+                            .replace("\\\\", "\\")
+                            .replace("\\{", "{")
+                            .replace("\\}", "}");
+                        parts.push(StringPart::Literal(text));
+                    }
+                    Rule::interpolation => {
+                        let expr_pair = inner.into_inner().next().unwrap();
+                        let expr = parse_expression(expr_pair)?;
+                        parts.push(StringPart::Expr(Box::new(expr)));
+                    }
+                    Rule::string_part => {
+                        // Handle nested string_part if needed
+                        for sub in inner.into_inner() {
+                            match sub.as_rule() {
+                                Rule::string_chars => {
+                                    let text = sub.as_str()
+                                        .replace("\\n", "\n")
+                                        .replace("\\r", "\r")
+                                        .replace("\\t", "\t")
+                                        .replace("\\\"", "\"")
+                                        .replace("\\\\", "\\")
+                                        .replace("\\{", "{")
+                                        .replace("\\}", "}");
+                                    parts.push(StringPart::Literal(text));
+                                }
+                                Rule::interpolation => {
+                                    let expr_pair = sub.into_inner().next().unwrap();
+                                    let expr = parse_expression(expr_pair)?;
+                                    parts.push(StringPart::Expr(Box::new(expr)));
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // If no parts, it's an empty string
+            if parts.is_empty() {
+                parts.push(StringPart::Literal(String::new()));
+            }
+
+            Ok(Expression::String(parts, span))
         }
         Rule::number_literal => {
             let num: f64 = pair.as_str().parse().map_err(|_| GentError::SyntaxError {
