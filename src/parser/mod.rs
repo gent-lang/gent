@@ -197,14 +197,7 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
             for inner in pair.into_inner() {
                 match inner.as_rule() {
                     Rule::string_chars => {
-                        let text = inner.as_str()
-                            .replace("\\n", "\n")
-                            .replace("\\r", "\r")
-                            .replace("\\t", "\t")
-                            .replace("\\\"", "\"")
-                            .replace("\\\\", "\\")
-                            .replace("\\{", "{")
-                            .replace("\\}", "}");
+                        let text = unescape_string(inner.as_str());
                         parts.push(StringPart::Literal(text));
                     }
                     Rule::interpolation => {
@@ -217,14 +210,7 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
                         for sub in inner.into_inner() {
                             match sub.as_rule() {
                                 Rule::string_chars => {
-                                    let text = sub.as_str()
-                                        .replace("\\n", "\n")
-                                        .replace("\\r", "\r")
-                                        .replace("\\t", "\t")
-                                        .replace("\\\"", "\"")
-                                        .replace("\\\\", "\\")
-                                        .replace("\\{", "{")
-                                        .replace("\\}", "}");
+                                    let text = unescape_string(sub.as_str());
                                     parts.push(StringPart::Literal(text));
                                 }
                                 Rule::interpolation => {
@@ -727,6 +713,14 @@ fn unescape_string(s: &str) -> String {
                     }
                     't' => {
                         result.push('\t');
+                        chars.next();
+                    }
+                    '{' => {
+                        result.push('{');
+                        chars.next();
+                    }
+                    '}' => {
+                        result.push('}');
                         chars.next();
                     }
                     _ => result.push(c),
