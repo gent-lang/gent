@@ -1,4 +1,5 @@
 use gent::interpreter::{AgentValue, Value};
+use gent::interpreter::types::{UserToolValue, ToolParam, TypeName};
 use std::collections::HashMap;
 
 // ============================================
@@ -400,4 +401,71 @@ fn test_object_is_truthy() {
     let non_empty = Value::Object(map);
     assert!(!empty.is_truthy());
     assert!(non_empty.is_truthy());
+}
+
+// ============================================
+// Tool Tests
+// ============================================
+
+#[test]
+fn test_tool_value_creation() {
+    let tool = UserToolValue {
+        name: "greet".to_string(),
+        params: vec![],
+        return_type: None,
+        body: vec![],
+    };
+    let val = Value::Tool(tool);
+    assert!(matches!(val, Value::Tool(_)));
+}
+
+#[test]
+fn test_tool_display() {
+    let tool = UserToolValue {
+        name: "greet".to_string(),
+        params: vec![],
+        return_type: None,
+        body: vec![],
+    };
+    let val = Value::Tool(tool);
+    assert_eq!(format!("{}", val), "<tool greet>");
+}
+
+#[test]
+fn test_tool_type_name() {
+    let tool = UserToolValue {
+        name: "greet".to_string(),
+        params: vec![],
+        return_type: None,
+        body: vec![],
+    };
+    let val = Value::Tool(tool);
+    assert_eq!(val.type_name(), "Tool");
+}
+
+#[test]
+fn test_tool_is_truthy() {
+    let tool = UserToolValue {
+        name: "greet".to_string(),
+        params: vec![],
+        return_type: None,
+        body: vec![],
+    };
+    let val = Value::Tool(tool);
+    assert!(val.is_truthy());
+}
+
+#[test]
+fn test_tool_with_params() {
+    let tool = UserToolValue {
+        name: "add".to_string(),
+        params: vec![
+            ToolParam { name: "a".to_string(), type_name: TypeName::Number },
+            ToolParam { name: "b".to_string(), type_name: TypeName::Number },
+        ],
+        return_type: Some(TypeName::Number),
+        body: vec![],
+    };
+    let val = Value::Tool(tool.clone());
+    assert_eq!(val.as_tool().unwrap().params.len(), 2);
 }

@@ -3,6 +3,37 @@
 use std::collections::HashMap;
 use std::fmt;
 
+/// Type names in GENT
+#[derive(Debug, Clone, PartialEq)]
+pub enum TypeName {
+    String,
+    Number,
+    Boolean,
+    Object,
+    Array,
+    Any,
+}
+
+/// Parameter for a user-defined tool
+#[derive(Debug, Clone, PartialEq)]
+pub struct ToolParam {
+    pub name: String,
+    pub type_name: TypeName,
+}
+
+/// Reference to a block statement (placeholder - will be replaced with actual AST)
+#[derive(Debug, Clone, PartialEq)]
+pub struct BlockStmtRef;
+
+/// Represents a user-defined tool at runtime
+#[derive(Debug, Clone, PartialEq)]
+pub struct UserToolValue {
+    pub name: String,
+    pub params: Vec<ToolParam>,
+    pub return_type: Option<TypeName>,
+    pub body: Vec<BlockStmtRef>,
+}
+
 /// Runtime values in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -20,6 +51,8 @@ pub enum Value {
     Array(Vec<Value>),
     /// Object value (key-value map)
     Object(HashMap<String, Value>),
+    /// User-defined tool
+    Tool(UserToolValue),
 }
 
 /// Represents a defined agent at runtime
@@ -93,6 +126,7 @@ impl fmt::Display for Value {
                     .collect();
                 write!(f, "{{{}}}", formatted.join(", "))
             }
+            Value::Tool(t) => write!(f, "<tool {}>", t.name),
         }
     }
 }
@@ -114,6 +148,7 @@ impl Value {
             Value::Agent(_) => true,
             Value::Array(items) => !items.is_empty(),
             Value::Object(map) => !map.is_empty(),
+            Value::Tool(_) => true,
         }
     }
 
@@ -127,6 +162,7 @@ impl Value {
             Value::Agent(_) => "Agent",
             Value::Array(_) => "Array",
             Value::Object(_) => "Object",
+            Value::Tool(_) => "Tool",
         }
     }
 
@@ -158,6 +194,14 @@ impl Value {
     pub fn as_object(&self) -> Option<&HashMap<String, Value>> {
         match self {
             Value::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    /// Try to get as tool
+    pub fn as_tool(&self) -> Option<&UserToolValue> {
+        match self {
+            Value::Tool(t) => Some(t),
             _ => None,
         }
     }
