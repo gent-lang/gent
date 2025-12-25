@@ -1,12 +1,13 @@
 use gent::interpreter::evaluate;
 use gent::parser::parse;
-use gent::runtime::llm::MockLLMClient;
+use gent::runtime::{llm::MockLLMClient, ToolRegistry};
 
 // Helper to run a program and check success
 async fn run_program(source: &str) -> Result<(), String> {
     let program = parse(source).map_err(|e| e.to_string())?;
     let llm = MockLLMClient::new();
-    evaluate(&program, &llm).await.map_err(|e| e.to_string())
+    let tools = ToolRegistry::new();
+    evaluate(&program, &llm, &tools).await.map_err(|e| e.to_string())
 }
 
 // Helper to run and expect failure

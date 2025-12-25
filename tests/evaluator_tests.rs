@@ -1,6 +1,6 @@
 use gent::interpreter::evaluate_with_output;
 use gent::parser::parse;
-use gent::runtime::MockLLMClient;
+use gent::runtime::{MockLLMClient, ToolRegistry};
 
 // ============================================
 // Basic Evaluation Tests
@@ -10,7 +10,8 @@ use gent::runtime::MockLLMClient;
 async fn test_evaluate_empty_program() {
     let program = parse("").unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty());
 }
@@ -19,7 +20,8 @@ async fn test_evaluate_empty_program() {
 async fn test_evaluate_agent_declaration() {
     let program = parse(r#"agent Hello { prompt: "You are friendly." }"#).unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty()); // No output from just declaring
 }
@@ -32,7 +34,8 @@ async fn test_evaluate_run_statement() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello there!");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 1);
@@ -47,7 +50,8 @@ async fn test_evaluate_run_with_input() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello! Nice to meet you!");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap()[0], "Hello! Nice to meet you!");
 }
@@ -62,7 +66,8 @@ async fn test_evaluate_hello_world() {
 run Hello"#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 1);
@@ -78,7 +83,8 @@ async fn test_evaluate_undefined_agent() {
     let source = "run NonExistent";
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.to_string().contains("Undefined"));
@@ -92,7 +98,8 @@ async fn test_evaluate_missing_prompt() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.to_string().contains("prompt"));
@@ -112,7 +119,8 @@ async fn test_evaluate_multiple_agents() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Response");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
@@ -126,7 +134,8 @@ async fn test_evaluate_same_agent_twice() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Help!");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 2);
@@ -145,7 +154,8 @@ async fn test_evaluate_number_field() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     // Should succeed - extra fields are ignored
     assert!(result.is_ok());
 }
@@ -158,7 +168,8 @@ async fn test_evaluate_boolean_field() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
 }
 
@@ -176,7 +187,8 @@ async fn test_evaluate_complex_program() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Done!");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
@@ -191,7 +203,8 @@ async fn test_evaluate_with_comments() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Helping!");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap()[0], "Helping!");
 }
@@ -208,7 +221,8 @@ async fn test_evaluate_empty_prompt() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Response");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
 }
 
@@ -218,7 +232,8 @@ async fn test_evaluate_long_prompt() {
     let source = format!(r#"agent Long {{ prompt: "{}" }} run Long"#, long_text);
     let program = parse(&source).unwrap();
     let llm = MockLLMClient::with_response("OK");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
 }
 
@@ -230,6 +245,7 @@ async fn test_evaluate_special_characters_in_prompt() {
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("OK");
-    let result = evaluate_with_output(&program, &llm).await;
+    let tools = ToolRegistry::new();
+    let result = evaluate_with_output(&program, &llm, &tools).await;
     assert!(result.is_ok());
 }

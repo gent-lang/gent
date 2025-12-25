@@ -1,25 +1,25 @@
-//! GENT - A programming language for AI agents
+//! GENT CLI - A programming language for AI agents
 
 use clap::Parser;
 use std::fs;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+use gent::config::Config;
 use gent::errors::GentError;
 use gent::interpreter::evaluate;
 use gent::parser::parse;
-use gent::runtime::MockLLMClient;
+use gent::runtime::{MockLLMClient, OpenAIClient, ToolRegistry};
 
-/// GENT - A programming language for AI agents
 #[derive(Parser, Debug)]
 #[command(name = "gent")]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about = "A programming language for AI agents", long_about = None)]
 struct Cli {
     /// Path to the .gnt file to execute
     file: PathBuf,
 
     /// Use mock LLM (for testing)
-    #[arg(long, default_value = "true")]
+    #[arg(long)]
     mock: bool,
 
     /// Custom mock response
@@ -40,24 +40,27 @@ async fn main() -> ExitCode {
 }
 
 async fn run(cli: &Cli) -> Result<(), GentError> {
-    // Read the source file
     let source = fs::read_to_string(&cli.file).map_err(|e| GentError::FileReadError {
         path: cli.file.display().to_string(),
         source: e,
     })?;
 
-    // Parse the source
     let program = parse(&source)?;
+    let tools = ToolRegistry::with_builtins();
 
-    // Create LLM client
-    let llm = if let Some(response) = &cli.mock_response {
-        MockLLMClient::with_response(response)
+    if cli.mock {
+        let llm = if let Some(response) = &cli.mock_response {
+            MockLLMClient::with_response(response)
+        } else {
+            MockLLMClient::new()
+        };
+        evaluate(&program, &llm, &tools).await?;
     } else {
-        MockLLMClient::new()
-    };
-
-    // Evaluate the program
-    evaluate(&program, &llm).await?;
+        let config = Config::load();
+        let api_key = config.require_openai_key()?;
+        let llm = OpenAIClient::new(api_key.to_string());
+        evaluate(&program, &llm, &tools).await?;
+    }
 
     Ok(())
 }
