@@ -27,17 +27,31 @@ pub async fn run_agent_with_tools(
     let tool_defs = tools.definitions_for(&agent.tools);
     let model = agent.model.as_deref();
 
+    // Debug: Show what tools the agent requested
+    eprintln!("\n[DEBUG] Agent '{}' requested tools: {:?}", agent.name, agent.tools);
+    eprintln!("[DEBUG] Tool definitions provided to LLM: {}", tool_defs.len());
+    for def in &tool_defs {
+        eprintln!("  - {} : {}", def.name, def.description);
+    }
+
     let mut messages = vec![
         Message::system(&agent.prompt),
         Message::user(input.unwrap_or_else(|| "Hello!".to_string())),
     ];
 
-    for _step in 0..max_steps {
+    for step in 0..max_steps {
+        eprintln!("\n[DEBUG] Step {}/{}", step + 1, max_steps);
         let response = llm.chat(messages.clone(), tool_defs.clone(), model).await?;
 
         // If no tool calls, return the response content
         if response.tool_calls.is_empty() {
+            eprintln!("[DEBUG] No tool calls, returning response");
             return Ok(response.content.unwrap_or_default());
+        }
+
+        eprintln!("[DEBUG] LLM made {} tool call(s):", response.tool_calls.len());
+        for call in &response.tool_calls {
+            eprintln!("  - {}({})", call.name, call.arguments);
         }
 
         // Add assistant message with tool calls
@@ -49,22 +63,31 @@ pub async fn run_agent_with_tools(
         for call in &response.tool_calls {
             let result = match tools.get(&call.name) {
                 Some(tool) => match tool.execute(call.arguments.clone()).await {
-                    Ok(output) => ToolResult {
+                    Ok(output) => {
+                        eprintln!("[DEBUG] Tool '{}' returned: {}", call.name, output);
+                        ToolResult {
+                            call_id: call.id.clone(),
+                            content: output,
+                            is_error: false,
+                        }
+                    }
+                    Err(error) => {
+                        eprintln!("[DEBUG] Tool '{}' error: {}", call.name, error);
+                        ToolResult {
+                            call_id: call.id.clone(),
+                            content: error,
+                            is_error: true,
+                        }
+                    }
+                },
+                None => {
+                    eprintln!("[DEBUG] Unknown tool: {}", call.name);
+                    ToolResult {
                         call_id: call.id.clone(),
-                        content: output,
-                        is_error: false,
-                    },
-                    Err(error) => ToolResult {
-                        call_id: call.id.clone(),
-                        content: error,
+                        content: format!("Unknown tool: {}", call.name),
                         is_error: true,
-                    },
-                },
-                None => ToolResult {
-                    call_id: call.id.clone(),
-                    content: format!("Unknown tool: {}", call.name),
-                    is_error: true,
-                },
+                    }
+                }
             };
 
             messages.push(Message::tool_result(result));
