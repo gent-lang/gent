@@ -111,6 +111,15 @@ async fn evaluate_statement(
             // Struct declarations are handled during parsing/validation
             // No runtime action needed
         }
+        Statement::LetStmt(stmt) => {
+            logger.log(
+                LogLevel::Debug,
+                "eval",
+                &format!("Evaluating let '{}'", stmt.name),
+            );
+            let value = evaluate_expr_with_env(&stmt.value, env, llm, tools, logger).await?;
+            env.define(&stmt.name, value);
+        }
     }
     Ok(())
 }
@@ -154,6 +163,16 @@ async fn evaluate_statement_with_output(
         Statement::StructDecl(_) => {
             // Struct declarations are handled during parsing/validation
             // No runtime action needed
+            Ok(None)
+        }
+        Statement::LetStmt(stmt) => {
+            logger.log(
+                LogLevel::Debug,
+                "eval",
+                &format!("Evaluating let '{}'", stmt.name),
+            );
+            let value = evaluate_expr_with_env(&stmt.value, env, llm, tools, logger).await?;
+            env.define(&stmt.name, value);
             Ok(None)
         }
     }
@@ -337,9 +356,9 @@ async fn evaluate_agent_call(
         }
     };
 
-    // Evaluate input expression if present
+    // Evaluate input expression if present (using env for variable lookups)
     let input = if let Some(expr) = &call.input {
-        let value = evaluate_expression(expr)?;
+        let value = evaluate_expr_with_env(expr, env, llm, tools, logger).await?;
         match value {
             Value::String(s) => Some(s),
             other => Some(format!("{}", other)),
@@ -350,6 +369,57 @@ async fn evaluate_agent_call(
 
     // Run the agent with tools
     run_agent_with_tools(agent, input, llm, tools, logger).await
+}
+
+/// Evaluate an expression with environment access and async agent call support
+fn evaluate_expr_with_env<'a>(
+    expr: &'a Expression,
+    env: &'a Environment,
+    llm: &'a dyn LLMClient,
+    tools: &'a ToolRegistry,
+    logger: &'a dyn Logger,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
+    Box::pin(async move {
+        match expr {
+            Expression::String(s, _) => Ok(Value::String(s.clone())),
+            Expression::Number(n, _) => Ok(Value::Number(*n)),
+            Expression::Boolean(b, _) => Ok(Value::Boolean(*b)),
+            Expression::Identifier(name, span) => {
+                // Look up variable in environment
+                env.get(name).cloned().ok_or_else(|| GentError::SyntaxError {
+                    message: format!("Undefined variable: {}", name),
+                    span: span.clone(),
+                })
+            }
+            Expression::Null(_) => Ok(Value::String("null".to_string())),
+            Expression::Call(callee, args, span) => {
+                // Check if callee is an agent
+                if let Expression::Identifier(name, _) = callee.as_ref() {
+                    if let Some(Value::Agent(agent)) = env.get(name) {
+                        // This is an agent call - execute it
+                        let input = if !args.is_empty() {
+                            let arg_value = evaluate_expr_with_env(&args[0], env, llm, tools, logger).await?;
+                            match arg_value {
+                                Value::String(s) => Some(s),
+                                other => Some(format!("{}", other)),
+                            }
+                        } else {
+                            None
+                        };
+                        let output = run_agent_with_tools(agent, input, llm, tools, logger).await?;
+                        return Ok(Value::String(output));
+                    }
+                }
+                // Not an agent call - not yet supported
+                Err(GentError::SyntaxError {
+                    message: "Function calls not yet implemented".to_string(),
+                    span: span.clone(),
+                })
+            }
+            // For other expression types, delegate to the simple evaluator
+            other => evaluate_expression(other),
+        }
+    })
 }
 
 fn evaluate_expression(expr: &Expression) -> GentResult<Value> {
