@@ -2,12 +2,12 @@ use gent::errors::{ErrorReporter, GentError, Span};
 
 #[test]
 fn test_format_undefined_agent() {
-    let source = "run Ghost";
+    let source = "Ghost";
     let reporter = ErrorReporter::new(source, "test.gnt");
 
     let error = GentError::UndefinedAgent {
         name: "Ghost".to_string(),
-        span: Span::new(4, 9),
+        span: Span::new(0, 5),
     };
 
     let formatted = reporter.format(&error);
@@ -15,8 +15,8 @@ fn test_format_undefined_agent() {
     assert!(formatted.contains("error:"));
     assert!(formatted.contains("Undefined agent"));
     assert!(formatted.contains("Ghost"));
-    assert!(formatted.contains("test.gnt:1:5"));
-    assert!(formatted.contains("run Ghost"));
+    assert!(formatted.contains("test.gnt:1:1"));
+    assert!(formatted.contains("Ghost"));
     assert!(formatted.contains("^^^^^"));
 }
 
@@ -56,7 +56,7 @@ fn test_format_missing_field() {
 
 #[test]
 fn test_format_error_without_span() {
-    let source = "run Agent";
+    let source = "Agent";
     let reporter = ErrorReporter::new(source, "test.gnt");
 
     let error = GentError::ApiError {
@@ -73,29 +73,29 @@ fn test_format_error_without_span() {
 
 #[test]
 fn test_format_multiline_source() {
-    let source = "agent A {\n    prompt: \"x\"\n    model: \"y\"\n}\nrun B";
+    let source = "agent A {\n    prompt: \"x\"\n    model: \"y\"\n}\nB";
     let reporter = ErrorReporter::new(source, "test.gnt");
 
     let error = GentError::UndefinedAgent {
         name: "B".to_string(),
-        span: Span::new(47, 48), // Position of 'B' in "run B"
+        span: Span::new(43, 44), // Position of 'B'
     };
 
     let formatted = reporter.format(&error);
 
-    assert!(formatted.contains("test.gnt:5:5"));
-    assert!(formatted.contains("run B"));
+    assert!(formatted.contains("test.gnt:5:1"));
+    assert!(formatted.contains("B"));
 }
 
 #[test]
 fn test_no_colors_when_disabled() {
-    let source = "run Ghost";
+    let source = "Ghost";
     let mut reporter = ErrorReporter::new(source, "test.gnt");
     reporter.use_colors = false;
 
     let error = GentError::UndefinedAgent {
         name: "Ghost".to_string(),
-        span: Span::new(4, 9),
+        span: Span::new(0, 5),
     };
 
     let formatted = reporter.format(&error);
