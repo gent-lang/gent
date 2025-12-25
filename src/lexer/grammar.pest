@@ -47,7 +47,9 @@ agent_body = { agent_item* }
 agent_item = { use_stmt | output_field | agent_field }
 
 // === Use Statement ===
-use_stmt = { "use" ~ identifier ~ ("," ~ identifier)* }
+// use_keyword is atomic to ensure "use" is a complete word (not prefix of "userPrompt")
+use_keyword = @{ "use" ~ !ASCII_ALPHANUMERIC }
+use_stmt = { use_keyword ~ identifier ~ ("," ~ identifier)* }
 
 // === Agent Field ===
 // output_field must come before agent_field since "output" would also match as identifier
