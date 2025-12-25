@@ -163,6 +163,8 @@ pub enum Expression {
     Member(Box<Expression>, String, Span),
     /// Index access: `arr[0]`
     Index(Box<Expression>, Box<Expression>, Span),
+    /// Range expression (start..end)
+    Range(Box<Expression>, Box<Expression>, Span),
 }
 
 impl Expression {
@@ -181,6 +183,7 @@ impl Expression {
             Expression::Call(_, _, span) => span,
             Expression::Member(_, _, span) => span,
             Expression::Index(_, _, span) => span,
+            Expression::Range(_, _, span) => span,
         }
     }
 }
@@ -198,6 +201,7 @@ pub enum BlockStmt {
     Let(LetStmt),
     Return(ReturnStmt),
     If(IfStmt),
+    For(ForStmt),
     Expr(Expression),
 }
 
@@ -222,5 +226,18 @@ pub struct IfStmt {
     pub condition: Expression,
     pub then_block: Block,
     pub else_block: Option<Block>,
+    pub span: Span,
+}
+
+/// For loop statement
+#[derive(Debug, Clone, PartialEq)]
+pub struct ForStmt {
+    /// Loop variable name
+    pub variable: String,
+    /// Expression to iterate over
+    pub iterable: Expression,
+    /// Loop body
+    pub body: Block,
+    /// Source location
     pub span: Span,
 }

@@ -147,6 +147,13 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
             got: "function call (requires async context)".to_string(),
             span: span.clone(),
         }),
+
+        // Range expressions - evaluated during for loop iteration
+        Expression::Range(_, _, span) => Err(GentError::TypeError {
+            expected: "iterable expression".to_string(),
+            got: "range expression (use in for loop)".to_string(),
+            span: span.clone(),
+        }),
     }
 }
 

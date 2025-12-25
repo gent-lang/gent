@@ -547,5 +547,12 @@ fn evaluate_expression(expr: &Expression) -> GentResult<Value> {
                 span: span.clone(),
             })
         }
+        Expression::Range(_, _, span) => {
+            // TODO: Implement range expression evaluation in Task 11
+            Err(GentError::SyntaxError {
+                message: "Range expressions not yet implemented".to_string(),
+                span: span.clone(),
+            })
+        }
     }
 }

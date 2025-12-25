@@ -69,6 +69,14 @@ pub fn evaluate_block<'a>(
                     }
                 }
 
+                BlockStmt::For(_for_stmt) => {
+                    // TODO: Implement for loop evaluation in Task 11
+                    return Err(GentError::SyntaxError {
+                        message: "for loops not yet implemented".to_string(),
+                        span: block.span.clone(),
+                    });
+                }
+
                 BlockStmt::Expr(expr) => {
                     // Evaluate the expression for side effects, discarding the result
                     evaluate_expr_async(expr, env, tools).await?;
