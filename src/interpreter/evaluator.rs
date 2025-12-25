@@ -62,6 +62,9 @@ async fn evaluate_statement(
             let output = evaluate_run_stmt(run, env, llm, tools).await?;
             println!("{}", output);
         }
+        Statement::ToolDecl(_) => {
+            // TODO: Implement tool declaration evaluation
+        }
     }
     Ok(())
 }
@@ -80,6 +83,10 @@ async fn evaluate_statement_with_output(
         Statement::RunStmt(run) => {
             let output = evaluate_run_stmt(run, env, llm, tools).await?;
             Ok(Some(output))
+        }
+        Statement::ToolDecl(_) => {
+            // TODO: Implement tool declaration evaluation
+            Ok(None)
         }
     }
 }
@@ -217,6 +224,59 @@ fn evaluate_expression(expr: &Expression) -> GentResult<Value> {
             // In the future, this could look up variables
             Err(GentError::SyntaxError {
                 message: format!("Undefined variable: {}", name),
+                span: span.clone(),
+            })
+        }
+        Expression::Null(_) => {
+            // TODO: Implement null evaluation
+            Ok(Value::String("null".to_string()))
+        }
+        Expression::Array(_, span) => {
+            // TODO: Implement array evaluation
+            Err(GentError::SyntaxError {
+                message: "Array expressions not yet implemented".to_string(),
+                span: span.clone(),
+            })
+        }
+        Expression::Object(_, span) => {
+            // TODO: Implement object evaluation
+            Err(GentError::SyntaxError {
+                message: "Object expressions not yet implemented".to_string(),
+                span: span.clone(),
+            })
+        }
+        Expression::Binary(_, _, _, span) => {
+            // TODO: Implement binary operation evaluation
+            Err(GentError::SyntaxError {
+                message: "Binary operations not yet implemented".to_string(),
+                span: span.clone(),
+            })
+        }
+        Expression::Unary(_, _, span) => {
+            // TODO: Implement unary operation evaluation
+            Err(GentError::SyntaxError {
+                message: "Unary operations not yet implemented".to_string(),
+                span: span.clone(),
+            })
+        }
+        Expression::Call(_, _, span) => {
+            // TODO: Implement function call evaluation
+            Err(GentError::SyntaxError {
+                message: "Function calls not yet implemented".to_string(),
+                span: span.clone(),
+            })
+        }
+        Expression::Member(_, _, span) => {
+            // TODO: Implement member access evaluation
+            Err(GentError::SyntaxError {
+                message: "Member access not yet implemented".to_string(),
+                span: span.clone(),
+            })
+        }
+        Expression::Index(_, _, span) => {
+            // TODO: Implement index access evaluation
+            Err(GentError::SyntaxError {
+                message: "Index access not yet implemented".to_string(),
                 span: span.clone(),
             })
         }

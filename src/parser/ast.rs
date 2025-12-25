@@ -52,6 +52,7 @@ pub struct Program {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     AgentDecl(AgentDecl),
+    ToolDecl(ToolDecl),
     RunStmt(RunStmt),
 }
 
@@ -69,6 +70,24 @@ pub struct AgentDecl {
 pub struct AgentField {
     pub name: String,
     pub value: Expression,
+    pub span: Span,
+}
+
+/// Tool declaration: `tool name(params) -> return_type { body }`
+#[derive(Debug, Clone, PartialEq)]
+pub struct ToolDecl {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<TypeName>,
+    pub body: Block,
+    pub span: Span,
+}
+
+/// Parameter in a tool declaration
+#[derive(Debug, Clone, PartialEq)]
+pub struct Param {
+    pub name: String,
+    pub type_name: TypeName,
     pub span: Span,
 }
 
@@ -91,6 +110,22 @@ pub enum Expression {
     Boolean(bool, Span),
     /// Identifier reference: `varName`
     Identifier(String, Span),
+    /// Null literal: `null`
+    Null(Span),
+    /// Array literal: `[1, 2, 3]`
+    Array(Vec<Expression>, Span),
+    /// Object literal: `{key: value}`
+    Object(Vec<(String, Expression)>, Span),
+    /// Binary operation: `a + b`
+    Binary(BinaryOp, Box<Expression>, Box<Expression>, Span),
+    /// Unary operation: `-x`, `!x`
+    Unary(UnaryOp, Box<Expression>, Span),
+    /// Function call: `foo(args)`
+    Call(Box<Expression>, Vec<Expression>, Span),
+    /// Member access: `obj.prop`
+    Member(Box<Expression>, String, Span),
+    /// Index access: `arr[0]`
+    Index(Box<Expression>, Box<Expression>, Span),
 }
 
 impl Expression {
@@ -101,6 +136,14 @@ impl Expression {
             Expression::Number(_, span) => span,
             Expression::Boolean(_, span) => span,
             Expression::Identifier(_, span) => span,
+            Expression::Null(span) => span,
+            Expression::Array(_, span) => span,
+            Expression::Object(_, span) => span,
+            Expression::Binary(_, _, _, span) => span,
+            Expression::Unary(_, _, span) => span,
+            Expression::Call(_, _, span) => span,
+            Expression::Member(_, _, span) => span,
+            Expression::Index(_, _, span) => span,
         }
     }
 }

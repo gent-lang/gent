@@ -505,3 +505,129 @@ fn test_block_stmt_expr_variant() {
     let stmt = BlockStmt::Expr(Expression::Number(42.0, Span::new(0, 2)));
     assert!(matches!(stmt, BlockStmt::Expr(_)));
 }
+
+// ============================================
+// ToolDecl and Param Tests
+// ============================================
+
+use gent::parser::{ToolDecl, Param};
+
+#[test]
+fn test_tool_decl_creation() {
+    let tool = ToolDecl {
+        name: "greet".to_string(),
+        params: vec![Param {
+            name: "name".to_string(),
+            type_name: AstTypeName::String,
+            span: Span::new(0, 12),
+        }],
+        return_type: Some(AstTypeName::String),
+        body: Block { statements: vec![], span: Span::new(0, 2) },
+        span: Span::new(0, 50),
+    };
+    assert_eq!(tool.name, "greet");
+    assert_eq!(tool.params.len(), 1);
+}
+
+#[test]
+fn test_statement_tool_decl_variant() {
+    let tool = ToolDecl {
+        name: "test".to_string(),
+        params: vec![],
+        return_type: None,
+        body: Block { statements: vec![], span: Span::new(0, 2) },
+        span: Span::new(0, 20),
+    };
+    let stmt = Statement::ToolDecl(tool);
+    assert!(matches!(stmt, Statement::ToolDecl(_)));
+}
+
+#[test]
+fn test_param_creation() {
+    let param = Param {
+        name: "x".to_string(),
+        type_name: AstTypeName::Number,
+        span: Span::new(0, 10),
+    };
+    assert_eq!(param.name, "x");
+    assert_eq!(param.type_name, AstTypeName::Number);
+}
+
+// ============================================
+// Extended Expression Tests (Task 11)
+// ============================================
+
+#[test]
+fn test_expression_null() {
+    let expr = Expression::Null(Span::new(0, 4));
+    assert!(matches!(expr, Expression::Null(_)));
+}
+
+#[test]
+fn test_expression_array() {
+    let expr = Expression::Array(
+        vec![Expression::Number(1.0, Span::new(1, 2))],
+        Span::new(0, 3),
+    );
+    assert!(matches!(expr, Expression::Array(_, _)));
+}
+
+#[test]
+fn test_expression_object() {
+    let expr = Expression::Object(
+        vec![("key".to_string(), Expression::String("value".to_string(), Span::new(0, 5)))],
+        Span::new(0, 15),
+    );
+    assert!(matches!(expr, Expression::Object(_, _)));
+}
+
+#[test]
+fn test_expression_binary() {
+    let expr = Expression::Binary(
+        BinaryOp::Add,
+        Box::new(Expression::Number(1.0, Span::new(0, 1))),
+        Box::new(Expression::Number(2.0, Span::new(4, 5))),
+        Span::new(0, 5),
+    );
+    assert!(matches!(expr, Expression::Binary(_, _, _, _)));
+}
+
+#[test]
+fn test_expression_unary() {
+    let expr = Expression::Unary(
+        UnaryOp::Neg,
+        Box::new(Expression::Number(5.0, Span::new(1, 2))),
+        Span::new(0, 2),
+    );
+    assert!(matches!(expr, Expression::Unary(_, _, _)));
+}
+
+#[test]
+fn test_expression_call() {
+    let expr = Expression::Call(
+        Box::new(Expression::Identifier("foo".to_string(), Span::new(0, 3))),
+        vec![Expression::Number(1.0, Span::new(4, 5))],
+        Span::new(0, 6),
+    );
+    assert!(matches!(expr, Expression::Call(_, _, _)));
+}
+
+#[test]
+fn test_expression_member() {
+    let expr = Expression::Member(
+        Box::new(Expression::Identifier("obj".to_string(), Span::new(0, 3))),
+        "prop".to_string(),
+        Span::new(0, 8),
+    );
+    assert!(matches!(expr, Expression::Member(_, _, _)));
+}
+
+#[test]
+fn test_expression_index() {
+    let expr = Expression::Index(
+        Box::new(Expression::Identifier("arr".to_string(), Span::new(0, 3))),
+        Box::new(Expression::Number(0.0, Span::new(4, 5))),
+        Span::new(0, 6),
+    );
+    assert!(matches!(expr, Expression::Index(_, _, _)));
+}
