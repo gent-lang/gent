@@ -9,11 +9,13 @@ use crate::runtime::llm::ToolDefinition;
 
 mod json_parse;
 mod read_file;
+mod user_tool;
 mod web_fetch;
 mod write_file;
 
 pub use json_parse::JsonParseTool;
 pub use read_file::ReadFileTool;
+pub use user_tool::UserToolWrapper;
 pub use web_fetch::WebFetchTool;
 pub use write_file::WriteFileTool;
 
