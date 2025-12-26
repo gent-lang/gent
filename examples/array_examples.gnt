@@ -1,0 +1,176 @@
+// Array Methods Examples
+// Demonstrates all array methods with lambda and function reference syntax
+
+// ============================================
+// Basic array creation
+// ============================================
+let numbers = [1, 2, 3, 4, 5]
+let words = ["apple", "banana", "cherry"]
+
+println("Original numbers:", numbers)
+println("Original words:", words)
+println()
+
+// ============================================
+// length() - Get the number of elements
+// ============================================
+println("=== length() ===")
+println("numbers.length():", numbers.length())
+println("words.length():", words.length())
+println()
+
+// ============================================
+// map() - Transform each element with a lambda
+// ============================================
+println("=== map() with lambda ===")
+let doubled = numbers.map((x) => x * 2)
+println("numbers.map((x) => x * 2):", doubled)
+
+let squared = numbers.map((n) => n * n)
+println("numbers.map((n) => n * n):", squared)
+
+// Note: Calling methods like toUpperCase() inside lambdas requires
+// the lambda to be in an async context (inside a function/tool).
+// For simple transformations, use arithmetic or direct operations.
+println()
+
+// ============================================
+// filter() - Keep elements that match a condition
+// ============================================
+println("=== filter() with lambda ===")
+let evens = numbers.filter((x) => x % 2 == 0)
+println("numbers.filter((x) => x % 2 == 0):", evens)
+
+let odds = numbers.filter((x) => x % 2 != 0)
+println("numbers.filter((x) => x % 2 != 0):", odds)
+
+let greaterThan2 = numbers.filter((n) => n > 2)
+println("numbers.filter((n) => n > 2):", greaterThan2)
+
+// Note: w.length() inside lambda requires async context
+println()
+
+// ============================================
+// reduce() - Combine all elements into a single value
+// ============================================
+println("=== reduce() with lambda ===")
+let sum = numbers.reduce((acc, x) => acc + x, 0)
+println("numbers.reduce((acc, x) => acc + x, 0):", sum)
+
+let product = numbers.reduce((acc, x) => acc * x, 1)
+println("numbers.reduce((acc, x) => acc * x, 1):", product)
+
+// Note: String operations inside lambdas work, but method calls
+// like trim() on the result require async context at top level
+println()
+
+// ============================================
+// find() - Find the first element matching a condition
+// ============================================
+println("=== find() with lambda ===")
+let firstEven = numbers.find((x) => x % 2 == 0)
+println("numbers.find((x) => x % 2 == 0):", firstEven)
+
+let firstGreaterThan3 = numbers.find((n) => n > 3)
+println("numbers.find((n) => n > 3):", firstGreaterThan3)
+
+let notFound = numbers.find((n) => n > 100)
+println("numbers.find((n) => n > 100):", notFound)
+println()
+
+// ============================================
+// indexOf() - Find the index of an element
+// ============================================
+println("=== indexOf() ===")
+println("numbers.indexOf(3):", numbers.indexOf(3))
+println("numbers.indexOf(99):", numbers.indexOf(99))
+println("words.indexOf('banana'):", words.indexOf("banana"))
+println()
+
+// ============================================
+// join() - Join elements into a string
+// ============================================
+println("=== join() ===")
+println("numbers.join(', '):", numbers.join(", "))
+println("numbers.join(' - '):", numbers.join(" - "))
+println("words.join(' | '):", words.join(" | "))
+println()
+
+// ============================================
+// slice() - Get a portion of the array
+// ============================================
+println("=== slice() ===")
+println("numbers.slice(1, 4):", numbers.slice(1, 4))
+println("numbers.slice(0, 2):", numbers.slice(0, 2))
+println("numbers.slice(2, 5):", numbers.slice(2, 5))
+println()
+
+// ============================================
+// concat() - Combine two arrays
+// ============================================
+println("=== concat() ===")
+let moreNumbers = [6, 7, 8]
+let combined = numbers.concat(moreNumbers)
+println("numbers.concat([6, 7, 8]):", combined)
+
+let moreWords = ["date", "elderberry"]
+let allWords = words.concat(moreWords)
+println("words.concat(['date', 'elderberry']):", allWords)
+println()
+
+// ============================================
+// Function references as callbacks
+// ============================================
+println("=== Function references as callbacks ===")
+
+fn isEven(n: number) -> boolean {
+    return n % 2 == 0
+}
+
+fn double(n: number) -> number {
+    return n * 2
+}
+
+fn addNumbers(acc: number, n: number) -> number {
+    return acc + n
+}
+
+// Using function references instead of lambdas
+let evensWithFn = numbers.filter(isEven)
+println("numbers.filter(isEven):", evensWithFn)
+
+let doubledWithFn = numbers.map(double)
+println("numbers.map(double):", doubledWithFn)
+
+let sumWithFn = numbers.reduce(addNumbers, 0)
+println("numbers.reduce(addNumbers, 0):", sumWithFn)
+
+let foundWithFn = numbers.find(isEven)
+println("numbers.find(isEven):", foundWithFn)
+println()
+
+// ============================================
+// Chaining array methods
+// ============================================
+println("=== Chaining array methods ===")
+let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+// Filter evens, then double them
+let result = data.filter((x) => x % 2 == 0).map((x) => x * 2)
+println("data.filter(even).map(double):", result)
+
+// Get sum of squares of odd numbers
+let oddSquaresSum = data.filter((x) => x % 2 != 0).map((x) => x * x).reduce((a, b) => a + b, 0)
+println("Sum of squares of odds:", oddSquaresSum)
+println()
+
+// ============================================
+// push() and pop() - Array mutation notes
+// ============================================
+println("=== push() and pop() ===")
+println("Note: push() and pop() currently have limitations in GENT.")
+println("Arrays passed to functions are cloned, so mutation doesn't persist.")
+println("For now, prefer using map/filter/concat for transformations.")
+println()
+
+println("=== Array examples complete! ===")

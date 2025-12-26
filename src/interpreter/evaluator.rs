@@ -641,8 +641,37 @@ fn evaluate_expr_with_env<'a>(
                             }
                             return call_string_method(&s, method, &arg_values);
                         }
+                        Value::Array(mut arr) => {
+                            // Array method call - evaluate arguments and dispatch
+                            let mut arg_values = Vec::new();
+                            for arg in args {
+                                let val = evaluate_expr_with_env(arg, env, llm, tools, logger).await?;
+                                arg_values.push(val);
+                            }
+
+                            // Check if this is a callback method (map, filter, reduce, find)
+                            if crate::interpreter::array_methods::is_callback_method(method) {
+                                let callback = arg_values.first().ok_or_else(|| GentError::TypeError {
+                                    expected: "callback function or lambda".to_string(),
+                                    got: "missing argument".to_string(),
+                                    span: span.clone(),
+                                })?;
+                                let extra_args = if arg_values.len() > 1 { &arg_values[1..] } else { &[] };
+                                return crate::interpreter::array_methods::call_array_method_with_callback(
+                                    &arr,
+                                    method,
+                                    callback,
+                                    extra_args,
+                                    env,
+                                    tools,
+                                ).await;
+                            }
+
+                            // Otherwise, call non-callback array method
+                            return crate::interpreter::array_methods::call_array_method(&mut arr, method, &arg_values);
+                        }
                         _ => {
-                            // Not an agent or string - method calls not yet supported
+                            // Not an agent, string, or array - method calls not yet supported
                             return Err(GentError::SyntaxError {
                                 message: format!("Method calls on {} not yet implemented", obj_value.type_name()),
                                 span: span.clone(),
@@ -714,117 +743,9 @@ fn evaluate_expr_with_env<'a>(
                     span: span.clone(),
                 })
             }
-            // For other expression types, delegate to the simple evaluator
-            other => evaluate_expression(other),
+            // For other expression types, delegate to expr_eval which supports
+            // arrays, objects, binary ops, etc.
+            other => evaluate_expr(other, env),
         }
     })
-}
-
-fn evaluate_expression(expr: &Expression) -> GentResult<Value> {
-    match expr {
-        Expression::String(parts, span) => {
-            // For synchronous evaluation, only support literal parts
-            let mut result = String::new();
-            for part in parts {
-                match part {
-                    StringPart::Literal(s) => result.push_str(s),
-                    StringPart::Expr(_) => {
-                        return Err(GentError::SyntaxError {
-                            message: "String interpolation not supported in this context".to_string(),
-                            span: span.clone(),
-                        });
-                    }
-                }
-            }
-            Ok(Value::String(result))
-        }
-        Expression::Number(n, _) => Ok(Value::Number(*n)),
-        Expression::Boolean(b, _) => Ok(Value::Boolean(*b)),
-        Expression::Identifier(name, span) => {
-            // For now, identifiers in expressions are treated as undefined
-            // In the future, this could look up variables
-            Err(GentError::SyntaxError {
-                message: format!("Undefined variable: {}", name),
-                span: span.clone(),
-            })
-        }
-        Expression::Null(_) => {
-            // TODO: Implement null evaluation
-            Ok(Value::String("null".to_string()))
-        }
-        Expression::Array(_, span) => {
-            // TODO: Implement array evaluation
-            Err(GentError::SyntaxError {
-                message: "Array expressions not yet implemented".to_string(),
-                span: span.clone(),
-            })
-        }
-        Expression::Object(_, span) => {
-            // TODO: Implement object evaluation
-            Err(GentError::SyntaxError {
-                message: "Object expressions not yet implemented".to_string(),
-                span: span.clone(),
-            })
-        }
-        Expression::Binary(_, _, _, span) => {
-            // TODO: Implement binary operation evaluation
-            Err(GentError::SyntaxError {
-                message: "Binary operations not yet implemented".to_string(),
-                span: span.clone(),
-            })
-        }
-        Expression::Unary(_, _, span) => {
-            // TODO: Implement unary operation evaluation
-            Err(GentError::SyntaxError {
-                message: "Unary operations not yet implemented".to_string(),
-                span: span.clone(),
-            })
-        }
-        Expression::Call(_, _, span) => {
-            // TODO: Implement function call evaluation
-            Err(GentError::SyntaxError {
-                message: "Function calls not yet implemented".to_string(),
-                span: span.clone(),
-            })
-        }
-        Expression::Member(_, _, span) => {
-            // TODO: Implement member access evaluation
-            Err(GentError::SyntaxError {
-                message: "Member access not yet implemented".to_string(),
-                span: span.clone(),
-            })
-        }
-        Expression::Index(_, _, span) => {
-            // TODO: Implement index access evaluation
-            Err(GentError::SyntaxError {
-                message: "Index access not yet implemented".to_string(),
-                span: span.clone(),
-            })
-        }
-        Expression::Range(start, end, span) => {
-            let start_val = evaluate_expression(start)?;
-            let end_val = evaluate_expression(end)?;
-
-            match (start_val, end_val) {
-                (Value::Number(s), Value::Number(e)) => {
-                    let range: Vec<Value> = (s as i64..e as i64)
-                        .map(|n| Value::Number(n as f64))
-                        .collect();
-                    Ok(Value::Array(range))
-                }
-                _ => Err(GentError::TypeError {
-                    expected: "Number".to_string(),
-                    got: "non-number".to_string(),
-                    span: span.clone(),
-                }),
-            }
-        }
-        Expression::Lambda(lambda) => {
-            // Lambda expressions are not evaluated directly in this context
-            Err(GentError::SyntaxError {
-                message: "Lambda expressions not yet implemented".to_string(),
-                span: lambda.span.clone(),
-            })
-        }
-    }
 }

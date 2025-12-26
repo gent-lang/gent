@@ -17,27 +17,14 @@ pub fn is_builtin(name: &str) -> bool {
 ///
 /// # Arguments
 /// * `name` - The built-in function name
-/// * `args` - Arguments to the function (must all be strings)
+/// * `args` - Arguments to the function (converted to strings automatically)
 /// * `span` - Source span for error reporting
 ///
 /// # Returns
 /// * `Ok(Value::Null)` on success
-/// * `Err(TypeError)` if any argument is not a string
 pub fn call_builtin(name: &str, args: &[Value], span: &Span) -> GentResult<Value> {
-    // Validate all arguments are strings and collect them
-    let mut strings = Vec::with_capacity(args.len());
-    for arg in args.iter() {
-        match arg {
-            Value::String(s) => strings.push(s.as_str()),
-            other => {
-                return Err(GentError::TypeError {
-                    expected: "string".to_string(),
-                    got: other.type_name().to_string(),
-                    span: span.clone(),
-                });
-            }
-        }
-    }
+    // Convert all arguments to their string representation
+    let strings: Vec<String> = args.iter().map(|arg| arg.to_string()).collect();
 
     // Join with spaces
     let output = strings.join(" ");
