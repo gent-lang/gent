@@ -84,6 +84,15 @@ pub struct UserToolValue {
     pub body: Block,
 }
 
+/// Represents a user-defined function at runtime (pure, no agent access)
+#[derive(Debug, Clone, PartialEq)]
+pub struct FnValue {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<ParserTypeName>,
+    pub body: Block,
+}
+
 /// Runtime values in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -103,6 +112,8 @@ pub enum Value {
     Object(HashMap<String, Value>),
     /// User-defined tool
     Tool(UserToolValue),
+    /// User-defined function (pure, no agent access)
+    Function(FnValue),
 }
 
 /// Represents a defined agent at runtime
@@ -220,6 +231,7 @@ impl fmt::Display for Value {
                 write!(f, "{{{}}}", formatted.join(", "))
             }
             Value::Tool(t) => write!(f, "<tool {}>", t.name),
+            Value::Function(func) => write!(f, "<fn {}>", func.name),
         }
     }
 }
@@ -242,6 +254,7 @@ impl Value {
             Value::Array(items) => !items.is_empty(),
             Value::Object(map) => !map.is_empty(),
             Value::Tool(_) => true,
+            Value::Function(_) => true,
         }
     }
 
@@ -256,6 +269,7 @@ impl Value {
             Value::Array(_) => "Array",
             Value::Object(_) => "Object",
             Value::Tool(_) => "Tool",
+            Value::Function(_) => "Function",
         }
     }
 
@@ -295,6 +309,14 @@ impl Value {
     pub fn as_tool(&self) -> Option<&UserToolValue> {
         match self {
             Value::Tool(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    /// Try to get as function
+    pub fn as_function(&self) -> Option<&FnValue> {
+        match self {
+            Value::Function(f) => Some(f),
             _ => None,
         }
     }

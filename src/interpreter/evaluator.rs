@@ -3,7 +3,7 @@
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::string_methods::call_string_method;
-use crate::interpreter::{AgentValue, Environment, OutputSchema, UserToolValue, Value};
+use crate::interpreter::{AgentValue, Environment, FnValue, OutputSchema, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
@@ -108,10 +108,15 @@ async fn evaluate_statement(
             logger.log(
                 LogLevel::Debug,
                 "eval",
-                &format!("Declaring function '{}' (not yet implemented)", decl.name),
+                &format!("Declaring function '{}'", decl.name),
             );
-            // Function declarations are parsed but not yet evaluated
-            // This will be implemented in a future task
+            let fn_value = Value::Function(FnValue {
+                name: decl.name.clone(),
+                params: decl.params.clone(),
+                return_type: decl.return_type.clone(),
+                body: decl.body.clone(),
+            });
+            env.define(&decl.name, fn_value);
         }
         Statement::LetStmt(stmt) => {
             logger.log(
@@ -162,10 +167,15 @@ async fn evaluate_statement_with_output(
             logger.log(
                 LogLevel::Debug,
                 "eval",
-                &format!("Declaring function '{}' (not yet implemented)", decl.name),
+                &format!("Declaring function '{}'", decl.name),
             );
-            // Function declarations are parsed but not yet evaluated
-            // This will be implemented in a future task
+            let fn_value = Value::Function(FnValue {
+                name: decl.name.clone(),
+                params: decl.params.clone(),
+                return_type: decl.return_type.clone(),
+                body: decl.body.clone(),
+            });
+            env.define(&decl.name, fn_value);
             Ok(None)
         }
         Statement::LetStmt(stmt) => {
@@ -467,8 +477,9 @@ fn evaluate_expr_with_env<'a>(
                     }
                 }
 
-                // Check if callee is an agent (direct call)
+                // Check if callee is an identifier
                 if let Expression::Identifier(name, _) = callee.as_ref() {
+                    // Check if it's an agent (direct call)
                     if let Some(Value::Agent(agent)) = env.get(name) {
                         // This is an agent call - execute it
                         let input = if !args.is_empty() {
@@ -483,10 +494,49 @@ fn evaluate_expr_with_env<'a>(
                         let output = run_agent_with_tools(agent, input, llm, tools, logger).await?;
                         return Ok(Value::String(output));
                     }
+
+                    // Check if it's a function call
+                    if let Some(Value::Function(fn_val)) = env.get(name) {
+                        // Clone the function value since we need to modify the environment
+                        let fn_val = fn_val.clone();
+
+                        // Evaluate arguments
+                        let mut arg_values = Vec::new();
+                        for arg in args {
+                            let val = evaluate_expr_with_env(arg, env, llm, tools, logger).await?;
+                            arg_values.push(val);
+                        }
+
+                        // Check argument count
+                        if arg_values.len() != fn_val.params.len() {
+                            return Err(GentError::SyntaxError {
+                                message: format!(
+                                    "Function '{}' expects {} arguments, got {}",
+                                    fn_val.name,
+                                    fn_val.params.len(),
+                                    arg_values.len()
+                                ),
+                                span: span.clone(),
+                            });
+                        }
+
+                        // Create a new environment with function scope
+                        let mut fn_env = env.clone();
+                        fn_env.push_scope();
+
+                        // Bind parameters to arguments
+                        for (param, arg_val) in fn_val.params.iter().zip(arg_values.iter()) {
+                            fn_env.define(&param.name, arg_val.clone());
+                        }
+
+                        // Evaluate the function body using block evaluator
+                        let result = crate::interpreter::evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                        return Ok(result);
+                    }
                 }
-                // Not an agent call - not yet supported
+                // Not a known callable type
                 Err(GentError::SyntaxError {
-                    message: "Function calls not yet implemented".to_string(),
+                    message: "Unknown function or agent".to_string(),
                     span: span.clone(),
                 })
             }

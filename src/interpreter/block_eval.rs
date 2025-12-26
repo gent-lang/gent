@@ -320,34 +320,64 @@ pub fn evaluate_expr_async<'a>(
                     });
                 }
 
-                // Evaluate the callee
-                let callee = evaluate_expr(callee_expr, env)?;
-
-                // Get the tool name
-                let tool_name = if let Expression::Identifier(name, _) = callee_expr.as_ref() {
+                // Get the callable name
+                let callable_name = if let Expression::Identifier(name, _) = callee_expr.as_ref() {
                     name.clone()
                 } else {
+                    let callee = evaluate_expr(callee_expr, env)?;
                     return Err(GentError::TypeError {
-                        expected: "tool name".to_string(),
+                        expected: "function or tool name".to_string(),
                         got: callee.type_name().to_string(),
                         span: span.clone(),
                     });
                 };
 
-                // Look up the tool in the registry
-                let tool = tools
-                    .get(&tool_name)
-                    .ok_or_else(|| GentError::UnknownTool {
-                        name: tool_name.clone(),
-                        span: span.clone(),
-                    })?;
-
-                // Evaluate arguments recursively
+                // Evaluate arguments first (needed for both functions and tools)
                 let mut arg_values = Vec::new();
                 for arg in args {
                     let val = evaluate_expr_async(arg, env, tools).await?;
                     arg_values.push(val);
                 }
+
+                // Check if it's a function in the environment
+                if let Some(Value::Function(fn_val)) = env.get(&callable_name) {
+                    // Clone the function value since we need to borrow env mutably later
+                    let fn_val = fn_val.clone();
+
+                    // Check argument count
+                    if arg_values.len() != fn_val.params.len() {
+                        return Err(GentError::SyntaxError {
+                            message: format!(
+                                "Function '{}' expects {} arguments, got {}",
+                                fn_val.name,
+                                fn_val.params.len(),
+                                arg_values.len()
+                            ),
+                            span: span.clone(),
+                        });
+                    }
+
+                    // Create a new environment with function scope
+                    let mut fn_env = env.clone();
+                    fn_env.push_scope();
+
+                    // Bind parameters to arguments
+                    for (param, arg_val) in fn_val.params.iter().zip(arg_values.iter()) {
+                        fn_env.define(&param.name, arg_val.clone());
+                    }
+
+                    // Evaluate the function body
+                    let result = evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                    return Ok(result);
+                }
+
+                // Look up the tool in the registry
+                let tool = tools
+                    .get(&callable_name)
+                    .ok_or_else(|| GentError::UnknownTool {
+                        name: callable_name.clone(),
+                        span: span.clone(),
+                    })?;
 
                 // Convert arguments to JSON for tool execution
                 let json_args = args_to_json(&arg_values);
@@ -357,7 +387,7 @@ pub fn evaluate_expr_async<'a>(
                     .execute(json_args)
                     .await
                     .map_err(|e| GentError::ToolError {
-                        tool: tool_name.clone(),
+                        tool: callable_name.clone(),
                         message: e,
                     })?;
 
@@ -395,6 +425,7 @@ fn args_to_json(args: &[Value]) -> serde_json::Value {
             }
             Value::Agent(_) => JsonValue::String("<agent>".to_string()),
             Value::Tool(_) => JsonValue::String("<tool>".to_string()),
+            Value::Function(_) => JsonValue::String("<function>".to_string()),
         }
     }
 
