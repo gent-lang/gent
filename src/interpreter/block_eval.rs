@@ -4,6 +4,7 @@
 //! with let bindings, return statements, if/else, and expression statements.
 
 use crate::errors::{GentError, GentResult};
+use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::{Environment, Value};
@@ -337,6 +338,11 @@ pub fn evaluate_expr_async<'a>(
                 for arg in args {
                     let val = evaluate_expr_async(arg, env, tools).await?;
                     arg_values.push(val);
+                }
+
+                // Check if it's a built-in function
+                if is_builtin(&callable_name) {
+                    return call_builtin(&callable_name, &arg_values, span);
                 }
 
                 // Check if it's a function in the environment
