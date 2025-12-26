@@ -2,25 +2,25 @@
 // Syntax: "text {expression} more text"
 
 // Simple variable interpolation
-let name = "Alice"
-let greeting = "Hello, {name}!"
+let userName = "Alice"
+let greeting = "Hello, {userName}!"
 
 // Number interpolation (auto-converts to string)
-let count = 42
-let message = "You have {count} items in your cart."
+let itemCount = 42
+let message = "You have {itemCount} items in your cart."
 
 // Multiple interpolations in one string
-let first = "John"
-let last = "Doe"
-let fullName = "{first} {last}"
+let firstName = "John"
+let lastName = "Doe"
+let fullName = "{firstName} {lastName}"
 
 // Escaped braces when you need literal {}
-let code = "Use \{curly braces\} for interpolation"
+let codeExample = "Use \{curly braces\} for interpolation"
 
 // Interpolation with agent prompts
 agent Greeter {
     systemPrompt: "You are a friendly greeter."
-    userPrompt: "Please greet {name} warmly."
+    userPrompt: "Please greet {userName} warmly."
     model: "gpt-4o-mini"
 }
 

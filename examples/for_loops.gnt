@@ -2,7 +2,7 @@
 // Syntax: for variable in iterable { ... }
 
 // Iterate over an array
-tool process_items() {
+tool processItems() {
     let items = ["apple", "banana", "cherry"]
     for item in items {
         let msg = "Processing: {item}"
@@ -11,7 +11,7 @@ tool process_items() {
 }
 
 // Iterate over a range (0 to 4, exclusive end)
-tool count_up() {
+tool countUp() {
     for i in 0..5 {
         let msg = "Count: {i}"
     }
@@ -19,7 +19,7 @@ tool count_up() {
 }
 
 // Iterate over string characters
-tool spell_word() {
+tool spellWord() {
     for char in "GENT" {
         let letter = "Letter: {char}"
     }
@@ -27,7 +27,7 @@ tool spell_word() {
 }
 
 // Nested for loops
-tool matrix_example() {
+tool matrixExample() {
     for row in 0..3 {
         for col in 0..3 {
             let cell = "Cell [{row},{col}]"
@@ -42,7 +42,7 @@ agent Summarizer {
     model: "gpt-4o-mini"
 }
 
-tool batch_summarize() {
+tool batchSummarize() {
     let documents = [
         "The quick brown fox jumps over the lazy dog.",
         "To be or not to be, that is the question.",
