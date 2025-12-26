@@ -10,7 +10,7 @@ use crate::interpreter::array_methods::{call_array_method, call_array_method_wit
 use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::types::EnumValue;
 use crate::interpreter::{Environment, Value};
-use crate::parser::ast::{Block, BlockStmt, Expression};
+use crate::parser::ast::{Block, BlockStmt, Expression, MatchBody, MatchPattern};
 use crate::runtime::tools::ToolRegistry;
 
 /// Control flow signal for break/continue/return propagation
@@ -559,6 +559,40 @@ pub fn evaluate_expr_async<'a>(
                 Ok(Value::String(result))
             }
 
+            // Match expression
+            Expression::Match(match_expr) => {
+                let subject = evaluate_expr_async(&match_expr.subject, env, tools).await?;
+
+                for arm in &match_expr.arms {
+                    if let Some(bindings) = match_pattern(&subject, &arm.pattern) {
+                        // Create new scope with bindings
+                        let mut match_env = env.clone();
+                        match_env.push_scope();
+                        for (name, value) in bindings {
+                            match_env.define(&name, value);
+                        }
+
+                        // Evaluate arm body
+                        let result = match &arm.body {
+                            MatchBody::Expression(expr) => {
+                                evaluate_expr_async(expr, &match_env, tools).await?
+                            }
+                            MatchBody::Block(block) => {
+                                evaluate_block(block, &mut match_env, tools).await?
+                            }
+                        };
+
+                        return Ok(result);
+                    }
+                }
+
+                // No match found
+                Err(GentError::SyntaxError {
+                    message: "Non-exhaustive match: no pattern matched".to_string(),
+                    span: match_expr.span.clone(),
+                })
+            }
+
             // All other expressions can be evaluated synchronously
             _ => evaluate_expr(expr, env),
         }
@@ -634,4 +668,26 @@ fn extract_array_method_call(expr: &Expression) -> Option<(String, String, &Vec<
         }
     }
     None
+}
+
+/// Match a value against a pattern, returning bindings if successful
+fn match_pattern(value: &Value, pattern: &MatchPattern) -> Option<Vec<(String, Value)>> {
+    match pattern {
+        MatchPattern::Wildcard => Some(vec![]),
+        MatchPattern::EnumVariant { enum_name, variant_name, bindings } => {
+            if let Value::Enum(enum_val) = value {
+                if enum_val.enum_name == *enum_name && enum_val.variant == *variant_name {
+                    // Bind data to pattern variables
+                    let mut result = Vec::new();
+                    for (i, binding) in bindings.iter().enumerate() {
+                        if let Some(data) = enum_val.data.get(i) {
+                            result.push((binding.clone(), data.clone()));
+                        }
+                    }
+                    return Some(result);
+                }
+            }
+            None
+        }
+    }
 }

@@ -227,3 +227,74 @@ async fn test_enum_is_method_false() {
     let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
+
+// ============================================
+// Match Expression Evaluation Tests
+// ============================================
+
+#[tokio::test]
+async fn test_match_unit_variant() {
+    let source = r#"
+        enum Status { Pending, Active, Completed }
+        fn test() {
+            let s = Status.Active
+            let result = match s {
+                Status.Pending => "waiting"
+                Status.Active => "running"
+                Status.Completed => "done"
+            }
+            return result
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_match_with_binding() {
+    let source = r#"
+        enum Result { Ok(value), Err(msg) }
+        fn test() {
+            let r = Result.Err("oops")
+            let result = match r {
+                Result.Ok(v) => v
+                Result.Err(m) => m
+            }
+            return result
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_match_wildcard() {
+    let source = r#"
+        enum Status { Pending, Active, Completed }
+        fn test() {
+            let s = Status.Completed
+            let result = match s {
+                Status.Pending => "waiting"
+                _ => "other"
+            }
+            return result
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}
