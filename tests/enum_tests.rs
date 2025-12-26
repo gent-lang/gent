@@ -39,3 +39,24 @@ fn test_parse_enum_with_multiple_fields() {
     let result = gent::parser::parse(source);
     assert!(result.is_ok(), "Failed to parse enum with multiple fields: {:?}", result.err());
 }
+
+// ============================================
+// Environment Registration Tests
+// ============================================
+
+#[tokio::test]
+async fn test_enum_definition_registered() {
+    let source = r#"
+        enum Status {
+            Pending
+            Active
+        }
+        println("ok")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}

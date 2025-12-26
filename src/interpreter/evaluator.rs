@@ -40,6 +40,31 @@ pub async fn evaluate(
         }
     }
 
+    // Collect enum definitions
+    for statement in &program.statements {
+        if let Statement::EnumDecl(decl) = statement {
+            let def = crate::interpreter::types::EnumDef {
+                name: decl.name.clone(),
+                variants: decl
+                    .variants
+                    .iter()
+                    .map(|v| crate::interpreter::types::EnumVariantDef {
+                        name: v.name.clone(),
+                        fields: v
+                            .fields
+                            .iter()
+                            .map(|f| crate::interpreter::types::EnumFieldDef {
+                                name: f.name.clone(),
+                                type_name: f.type_name.clone(),
+                            })
+                            .collect(),
+                    })
+                    .collect(),
+            };
+            env.define_enum(def);
+        }
+    }
+
     // Second pass: evaluate statements
     for statement in &program.statements {
         evaluate_statement(statement, &mut env, llm, tools, logger, &structs).await?;
@@ -63,6 +88,31 @@ pub async fn evaluate_with_output(
     for statement in &program.statements {
         if let Statement::StructDecl(decl) = statement {
             structs.insert(decl.name.clone(), decl.fields.clone());
+        }
+    }
+
+    // Collect enum definitions
+    for statement in &program.statements {
+        if let Statement::EnumDecl(decl) = statement {
+            let def = crate::interpreter::types::EnumDef {
+                name: decl.name.clone(),
+                variants: decl
+                    .variants
+                    .iter()
+                    .map(|v| crate::interpreter::types::EnumVariantDef {
+                        name: v.name.clone(),
+                        fields: v
+                            .fields
+                            .iter()
+                            .map(|f| crate::interpreter::types::EnumFieldDef {
+                                name: f.name.clone(),
+                                type_name: f.type_name.clone(),
+                            })
+                            .collect(),
+                    })
+                    .collect(),
+            };
+            env.define_enum(def);
         }
     }
 
@@ -133,6 +183,31 @@ pub async fn evaluate_with_imports(
     for statement in &program.statements {
         if let Statement::StructDecl(decl) = statement {
             structs.insert(decl.name.clone(), decl.fields.clone());
+        }
+    }
+
+    // Collect enum definitions
+    for statement in &program.statements {
+        if let Statement::EnumDecl(decl) = statement {
+            let def = crate::interpreter::types::EnumDef {
+                name: decl.name.clone(),
+                variants: decl
+                    .variants
+                    .iter()
+                    .map(|v| crate::interpreter::types::EnumVariantDef {
+                        name: v.name.clone(),
+                        fields: v
+                            .fields
+                            .iter()
+                            .map(|f| crate::interpreter::types::EnumFieldDef {
+                                name: f.name.clone(),
+                                type_name: f.type_name.clone(),
+                            })
+                            .collect(),
+                    })
+                    .collect(),
+            };
+            env.define_enum(def);
         }
     }
 

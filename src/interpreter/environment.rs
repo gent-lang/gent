@@ -1,5 +1,6 @@
 //! Environment for scoped variable storage
 
+use crate::interpreter::types::EnumDef;
 use crate::interpreter::Value;
 use std::collections::HashMap;
 
@@ -8,6 +9,8 @@ use std::collections::HashMap;
 pub struct Environment {
     /// Stack of scopes (innermost scope is last)
     scopes: Vec<HashMap<String, Value>>,
+    /// Enum type definitions
+    enums: HashMap<String, EnumDef>,
 }
 
 impl Environment {
@@ -15,6 +18,7 @@ impl Environment {
     pub fn new() -> Self {
         Self {
             scopes: vec![HashMap::new()],
+            enums: HashMap::new(),
         }
     }
 
@@ -66,6 +70,16 @@ impl Environment {
     /// Get the current scope depth
     pub fn depth(&self) -> usize {
         self.scopes.len()
+    }
+
+    /// Define an enum type
+    pub fn define_enum(&mut self, def: EnumDef) {
+        self.enums.insert(def.name.clone(), def);
+    }
+
+    /// Get an enum definition
+    pub fn get_enum(&self, name: &str) -> Option<&EnumDef> {
+        self.enums.get(name)
     }
 }
 
