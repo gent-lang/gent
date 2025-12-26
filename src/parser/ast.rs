@@ -108,6 +108,15 @@ pub enum Statement {
     FnDecl(FnDecl),
     StructDecl(StructDecl),
     LetStmt(LetStmt),
+    TopLevelCall(TopLevelCall),
+}
+
+/// A top-level function call: `funcName(args...)`
+#[derive(Debug, Clone, PartialEq)]
+pub struct TopLevelCall {
+    pub name: String,
+    pub args: Vec<Expression>,
+    pub span: Span,
 }
 
 /// An agent declaration: `agent Name { fields... }`

@@ -198,6 +198,9 @@ async fn evaluate_statement(
             let value = evaluate_expr_with_env(&stmt.value, env, llm, tools, logger).await?;
             env.define(&stmt.name, value);
         }
+        Statement::TopLevelCall(_) => {
+            // TODO: Implement in Task 3
+        }
     }
     Ok(())
 }
@@ -269,6 +272,10 @@ async fn evaluate_statement_with_output(
             };
             env.define(&stmt.name, value);
             Ok(output)
+        }
+        Statement::TopLevelCall(_) => {
+            // TODO: Implement in Task 3
+            Ok(None)
         }
     }
 }
