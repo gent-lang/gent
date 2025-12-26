@@ -600,6 +600,14 @@ fn parse_block_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<BlockStmt> 
         Rule::return_stmt => Ok(BlockStmt::Return(parse_return_stmt(inner)?)),
         Rule::if_stmt => Ok(BlockStmt::If(parse_if_stmt(inner)?)),
         Rule::for_stmt => Ok(BlockStmt::For(parse_for_stmt(inner)?)),
+        Rule::break_stmt => {
+            let span = Span::new(inner.as_span().start(), inner.as_span().end());
+            Ok(BlockStmt::Break(span))
+        }
+        Rule::continue_stmt => {
+            let span = Span::new(inner.as_span().start(), inner.as_span().end());
+            Ok(BlockStmt::Continue(span))
+        }
         Rule::expr_stmt => {
             let expr_pair = inner.into_inner().next().unwrap();
             Ok(BlockStmt::Expr(parse_expression(expr_pair)?))
