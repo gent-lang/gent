@@ -405,7 +405,7 @@ pub fn evaluate_expr_async<'a>(
                         return call_string_method(s, method_name, &arg_values);
                     }
 
-                    // Check if this is an enum .is() call
+                    // Check if this is an enum .is() or .data() call
                     if let Value::Enum(ref enum_val) = obj {
                         if method_name == "is" {
                             // Evaluate the argument (should be an EnumValue or EnumConstructor)
@@ -429,6 +429,40 @@ pub fn evaluate_expr_async<'a>(
                             };
 
                             return Ok(Value::Boolean(matches));
+                        }
+
+                        if method_name == "data" {
+                            if args.len() != 1 {
+                                return Err(GentError::TypeError {
+                                    expected: "1 argument for .data()".to_string(),
+                                    got: format!("{} arguments", args.len()),
+                                    span: span.clone(),
+                                });
+                            }
+
+                            let arg = evaluate_expr_async(&args[0], env, tools).await?;
+
+                            match arg {
+                                Value::Number(n) => {
+                                    let idx = n as usize;
+                                    return Ok(enum_val.data.get(idx).cloned().unwrap_or(Value::Null));
+                                }
+                                Value::String(_) => {
+                                    // Named access not yet implemented
+                                    return Err(GentError::TypeError {
+                                        expected: "number index for .data()".to_string(),
+                                        got: "string (named access not yet implemented)".to_string(),
+                                        span: span.clone(),
+                                    });
+                                }
+                                _ => {
+                                    return Err(GentError::TypeError {
+                                        expected: "number index".to_string(),
+                                        got: arg.type_name(),
+                                        span: span.clone(),
+                                    });
+                                }
+                            }
                         }
                     }
 
