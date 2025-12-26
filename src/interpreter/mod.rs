@@ -1,5 +1,6 @@
 //! Interpreter module for GENT
 
+pub mod array_methods;
 pub mod block_eval;
 pub mod builtins;
 pub mod environment;
@@ -9,6 +10,7 @@ pub mod imports;
 pub mod string_methods;
 pub mod types;
 
+pub use array_methods::call_array_method;
 pub use block_eval::{evaluate_block, evaluate_expr_async};
 pub use builtins::{call_builtin, is_builtin};
 pub use environment::Environment;
