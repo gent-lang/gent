@@ -104,6 +104,15 @@ async fn evaluate_statement(
             // Struct declarations are handled during parsing/validation
             // No runtime action needed
         }
+        Statement::FnDecl(decl) => {
+            logger.log(
+                LogLevel::Debug,
+                "eval",
+                &format!("Declaring function '{}' (not yet implemented)", decl.name),
+            );
+            // Function declarations are parsed but not yet evaluated
+            // This will be implemented in a future task
+        }
         Statement::LetStmt(stmt) => {
             logger.log(
                 LogLevel::Debug,
@@ -147,6 +156,16 @@ async fn evaluate_statement_with_output(
         Statement::StructDecl(_) => {
             // Struct declarations are handled during parsing/validation
             // No runtime action needed
+            Ok(None)
+        }
+        Statement::FnDecl(decl) => {
+            logger.log(
+                LogLevel::Debug,
+                "eval",
+                &format!("Declaring function '{}' (not yet implemented)", decl.name),
+            );
+            // Function declarations are parsed but not yet evaluated
+            // This will be implemented in a future task
             Ok(None)
         }
         Statement::LetStmt(stmt) => {

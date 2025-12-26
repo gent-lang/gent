@@ -96,6 +96,7 @@ pub struct Program {
 pub enum Statement {
     AgentDecl(AgentDecl),
     ToolDecl(ToolDecl),
+    FnDecl(FnDecl),
     StructDecl(StructDecl),
     LetStmt(LetStmt),
 }
@@ -128,7 +129,17 @@ pub struct ToolDecl {
     pub span: Span,
 }
 
-/// Parameter in a tool declaration
+/// Function declaration (pure, no agent access): `fn name(params) -> return_type { body }`
+#[derive(Debug, Clone, PartialEq)]
+pub struct FnDecl {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<TypeName>,
+    pub body: Block,
+    pub span: Span,
+}
+
+/// Parameter in a tool or function declaration
 #[derive(Debug, Clone, PartialEq)]
 pub struct Param {
     pub name: String,

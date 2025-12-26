@@ -1,6 +1,6 @@
 // === Program Structure ===
 program = { SOI ~ statement* ~ EOI }
-statement = { struct_decl | tool_decl | agent_decl | top_level_let }
+statement = { struct_decl | fn_decl | tool_decl | agent_decl | top_level_let }
 
 // === Top-Level Let ===
 top_level_let = { "let" ~ identifier ~ "=" ~ expression }
@@ -9,6 +9,12 @@ top_level_let = { "let" ~ identifier ~ "=" ~ expression }
 tool_decl = {
     "tool" ~ identifier ~ "(" ~ param_list? ~ ")" ~ return_type? ~ block
 }
+
+// === Function Declaration (pure, no agent access) ===
+fn_decl = {
+    "fn" ~ identifier ~ "(" ~ param_list? ~ ")" ~ return_type? ~ block
+}
+
 param_list = { param ~ ("," ~ param)* }
 param = { identifier ~ ":" ~ type_name }
 return_type = { "->" ~ type_name }

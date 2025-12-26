@@ -3,7 +3,7 @@
 pub mod ast;
 
 pub use ast::{
-    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, ForStmt, IfStmt,
+    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, FnDecl, ForStmt, IfStmt,
     LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl,
     TryStmt, TypeName, UnaryOp, WhileStmt,
 };
@@ -48,6 +48,7 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
         Rule::struct_decl => Ok(Statement::StructDecl(parse_struct_decl(inner)?)),
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
+        Rule::fn_decl => Ok(Statement::FnDecl(parse_fn_decl(inner)?)),
         Rule::top_level_let => Ok(Statement::LetStmt(parse_top_level_let(inner)?)),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected rule: {:?}", inner.as_rule()),
@@ -529,6 +530,43 @@ fn parse_tool_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<ToolDecl> {
     }
 
     Ok(ToolDecl {
+        name,
+        params,
+        return_type,
+        body: body.unwrap_or_else(|| Block {
+            statements: vec![],
+            span: span.clone(),
+        }),
+        span,
+    })
+}
+
+fn parse_fn_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<FnDecl> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let mut params = Vec::new();
+    let mut return_type = None;
+    let mut body = None;
+
+    for item in inner {
+        match item.as_rule() {
+            Rule::param_list => {
+                params = parse_param_list(item)?;
+            }
+            Rule::return_type => {
+                let type_pair = item.into_inner().next().unwrap();
+                return_type = Some(parse_type_name(type_pair)?);
+            }
+            Rule::block => {
+                body = Some(parse_block(item)?);
+            }
+            _ => {}
+        }
+    }
+
+    Ok(FnDecl {
         name,
         params,
         return_type,
