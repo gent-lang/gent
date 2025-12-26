@@ -2,12 +2,14 @@
 
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::expr_eval::evaluate_expr;
+use crate::interpreter::imports::collect_imports;
 use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::{AgentValue, Environment, FnValue, OutputSchema, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 
 /// Evaluate a GENT program
@@ -75,6 +77,71 @@ pub async fn evaluate_with_output(
     Ok(outputs)
 }
 
+/// Evaluate a program with imports resolved from source file
+pub async fn evaluate_with_imports(
+    program: &Program,
+    source_file: Option<&Path>,
+    llm: &dyn LLMClient,
+    tools: &mut ToolRegistry,
+    logger: &dyn Logger,
+) -> GentResult<()> {
+    let mut env = Environment::new();
+    let mut structs: HashMap<String, Vec<StructField>> = HashMap::new();
+
+    // Process imports if source file is provided
+    if let Some(file) = source_file {
+        let mut visited = std::collections::HashSet::new();
+        let imports = collect_imports(program, file, &mut visited)?;
+
+        for (names, imported_program) in imports {
+            // Collect structs from imported program
+            for stmt in &imported_program.statements {
+                if let Statement::StructDecl(decl) = stmt {
+                    if names.contains(&decl.name) {
+                        structs.insert(decl.name.clone(), decl.fields.clone());
+                    }
+                }
+            }
+
+            // Evaluate imported declarations
+            for stmt in &imported_program.statements {
+                match stmt {
+                    Statement::FnDecl(fn_decl) if names.contains(&fn_decl.name) => {
+                        let fn_value = Value::Function(FnValue {
+                            name: fn_decl.name.clone(),
+                            params: fn_decl.params.clone(),
+                            return_type: fn_decl.return_type.clone(),
+                            body: fn_decl.body.clone(),
+                        });
+                        env.define(&fn_decl.name, fn_value);
+                    }
+                    Statement::AgentDecl(decl) if names.contains(&decl.name) => {
+                        evaluate_agent_decl(decl, &mut env, &structs)?;
+                    }
+                    Statement::ToolDecl(decl) if names.contains(&decl.name) => {
+                        evaluate_tool_decl(decl, &mut env, tools)?;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    // First pass: collect struct declarations from main program
+    for statement in &program.statements {
+        if let Statement::StructDecl(decl) = statement {
+            structs.insert(decl.name.clone(), decl.fields.clone());
+        }
+    }
+
+    // Second pass: evaluate statements
+    for statement in &program.statements {
+        evaluate_statement(statement, &mut env, llm, tools, logger, &structs).await?;
+    }
+
+    Ok(())
+}
+
 async fn evaluate_statement(
     statement: &Statement,
     env: &mut Environment,
@@ -84,6 +151,10 @@ async fn evaluate_statement(
     structs: &HashMap<String, Vec<StructField>>,
 ) -> GentResult<()> {
     match statement {
+        Statement::Import(_) => {
+            // Import statements are handled during a separate import resolution phase
+            // No runtime action needed here
+        }
         Statement::AgentDecl(decl) => {
             logger.log(
                 LogLevel::Debug,
@@ -140,6 +211,11 @@ async fn evaluate_statement_with_output(
     structs: &HashMap<String, Vec<StructField>>,
 ) -> GentResult<Option<String>> {
     match statement {
+        Statement::Import(_) => {
+            // Import statements are handled during a separate import resolution phase
+            // No runtime action needed here
+            Ok(None)
+        }
         Statement::AgentDecl(decl) => {
             logger.log(
                 LogLevel::Debug,

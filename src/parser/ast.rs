@@ -84,6 +84,14 @@ pub enum OutputType {
     Named(String),
 }
 
+/// Import statement: `import { Name1, Name2 } from "./path.gnt"`
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImportStmt {
+    pub names: Vec<String>,
+    pub path: String,
+    pub span: Span,
+}
+
 /// A complete GENT program
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
@@ -94,6 +102,7 @@ pub struct Program {
 /// A statement in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
+    Import(ImportStmt),
     AgentDecl(AgentDecl),
     ToolDecl(ToolDecl),
     FnDecl(FnDecl),

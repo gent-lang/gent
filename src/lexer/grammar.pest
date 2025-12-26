@@ -1,6 +1,10 @@
 // === Program Structure ===
 program = { SOI ~ statement* ~ EOI }
-statement = { struct_decl | fn_decl | tool_decl | agent_decl | top_level_let }
+statement = { import_stmt | struct_decl | fn_decl | tool_decl | agent_decl | top_level_let }
+
+// === Import Statement ===
+import_stmt = { "import" ~ "{" ~ import_list ~ "}" ~ "from" ~ string_literal }
+import_list = { identifier ~ ("," ~ identifier)* }
 
 // === Top-Level Let ===
 top_level_let = { "let" ~ identifier ~ "=" ~ expression }
