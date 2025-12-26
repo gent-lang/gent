@@ -222,6 +222,38 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
                             }
                         }
                     }
+                    Rule::multiline_string => {
+                        // Handle multiline string (triple quotes)
+                        for sub in inner.into_inner() {
+                            match sub.as_rule() {
+                                Rule::multiline_chars => {
+                                    // No unescape needed for multiline - preserve content as-is
+                                    parts.push(StringPart::Literal(sub.as_str().to_string()));
+                                }
+                                Rule::multiline_interpolation => {
+                                    let expr_pair = sub.into_inner().next().unwrap();
+                                    let expr = parse_expression(expr_pair)?;
+                                    parts.push(StringPart::Expr(Box::new(expr)));
+                                }
+                                Rule::multiline_part => {
+                                    for subsub in sub.into_inner() {
+                                        match subsub.as_rule() {
+                                            Rule::multiline_chars => {
+                                                parts.push(StringPart::Literal(subsub.as_str().to_string()));
+                                            }
+                                            Rule::multiline_interpolation => {
+                                                let expr_pair = subsub.into_inner().next().unwrap();
+                                                let expr = parse_expression(expr_pair)?;
+                                                parts.push(StringPart::Expr(Box::new(expr)));
+                                            }
+                                            _ => {}
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }

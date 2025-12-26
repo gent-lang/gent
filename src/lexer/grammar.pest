@@ -95,7 +95,14 @@ object_literal = { "{" ~ (object_field ~ ("," ~ object_field)*)? ~ "}" }
 object_field = { (identifier | string_literal) ~ ":" ~ expression }
 
 // === Literals ===
-string_literal = ${ "\"" ~ string_part* ~ "\"" }
+// Multi-line strings use triple quotes """ and preserve newlines
+multiline_string = ${ "\"\"\"" ~ multiline_part* ~ "\"\"\"" }
+multiline_part = { multiline_interpolation | multiline_chars }
+multiline_interpolation = !{ "{" ~ expression ~ "}" }
+multiline_chars = @{ (!("\"\"\"" | "{") ~ ANY)+ }
+
+// string_literal: multiline_string must come first since """ would otherwise match as "" + "
+string_literal = ${ multiline_string | ("\"" ~ string_part* ~ "\"") }
 string_part = { interpolation | string_chars }
 interpolation = !{ "{" ~ expression ~ "}" }
 string_chars = @{ (!(("\"" | "\\") | "{") ~ ANY | escape_sequence)+ }
