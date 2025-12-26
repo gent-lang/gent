@@ -168,11 +168,13 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
             }
         }
 
-        // Lambda expressions - not yet implemented
-        Expression::Lambda(lambda) => Err(GentError::SyntaxError {
-            message: "Lambda expressions not yet implemented".to_string(),
-            span: lambda.span.clone(),
-        }),
+        // Lambda expressions - evaluate to LambdaValue
+        Expression::Lambda(lambda) => {
+            Ok(Value::Lambda(crate::interpreter::types::LambdaValue {
+                params: lambda.params.clone(),
+                body: lambda.body.clone(),
+            }))
+        }
     }
 }
 
