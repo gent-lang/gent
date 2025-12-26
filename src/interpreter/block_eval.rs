@@ -8,6 +8,7 @@ use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::array_methods::{call_array_method, call_array_method_with_callback, is_callback_method};
 use crate::interpreter::string_methods::call_string_method;
+use crate::interpreter::types::EnumValue;
 use crate::interpreter::{Environment, Value};
 use crate::parser::ast::{Block, BlockStmt, Expression};
 use crate::runtime::tools::ToolRegistry;
@@ -350,8 +351,46 @@ pub fn evaluate_expr_async<'a>(
         match expr {
             // Function/tool calls require async context
             Expression::Call(callee_expr, args, span) => {
-                // Check if this is a method call on a string
+                // Check if this is a method call on a string, array, or enum constructor
                 if let Expression::Member(obj_expr, method_name, _) = callee_expr.as_ref() {
+                    // First check if this could be an enum constructor call: EnumName.Variant(args)
+                    if let Expression::Identifier(name, _) = obj_expr.as_ref() {
+                        if let Some(enum_def) = env.get_enum(name) {
+                            // Find the variant
+                            if let Some(v) = enum_def.variants.iter().find(|v| v.name == *method_name) {
+                                // Evaluate arguments
+                                let mut arg_values = Vec::new();
+                                for arg in args {
+                                    let val = evaluate_expr_async(arg, env, tools).await?;
+                                    arg_values.push(val);
+                                }
+
+                                if arg_values.len() != v.fields.len() {
+                                    return Err(GentError::TypeError {
+                                        expected: format!(
+                                            "Variant '{}' expects {} arguments",
+                                            method_name, v.fields.len()
+                                        ),
+                                        got: format!("{} arguments", arg_values.len()),
+                                        span: span.clone(),
+                                    });
+                                }
+
+                                return Ok(Value::Enum(EnumValue {
+                                    enum_name: name.clone(),
+                                    variant: method_name.clone(),
+                                    data: arg_values,
+                                }));
+                            } else {
+                                return Err(GentError::TypeError {
+                                    expected: format!("valid variant of enum '{}'", name),
+                                    got: method_name.clone(),
+                                    span: span.clone(),
+                                });
+                            }
+                        }
+                    }
+
                     // Evaluate the object expression
                     let obj = evaluate_expr_async(obj_expr, env, tools).await?;
 
@@ -538,6 +577,9 @@ fn args_to_json(args: &[Value]) -> serde_json::Value {
                     map.insert("data".to_string(), JsonValue::Array(data));
                     JsonValue::Object(map)
                 }
+            }
+            Value::EnumConstructor(c) => {
+                JsonValue::String(format!("<enum constructor {}.{}>", c.enum_name, c.variant))
             }
         }
     }

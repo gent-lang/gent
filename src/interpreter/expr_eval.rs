@@ -3,6 +3,7 @@
 //! This module provides synchronous expression evaluation without tool calls.
 
 use crate::errors::{GentError, GentResult};
+use crate::interpreter::types::{EnumConstructor, EnumValue};
 use crate::interpreter::{Environment, Value};
 use crate::parser::ast::{BinaryOp, Expression, StringPart, UnaryOp};
 use std::collections::HashMap;
@@ -71,8 +72,40 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
             evaluate_unary_op(op, val, span)
         }
 
-        // Member access: obj.prop
+        // Member access: obj.prop or EnumName.Variant
         Expression::Member(object_expr, property, span) => {
+            // Check if this is an enum construction: EnumName.Variant
+            if let Expression::Identifier(name, _) = object_expr.as_ref() {
+                if let Some(enum_def) = env.get_enum(name) {
+                    // Find the variant
+                    let variant = enum_def.variants.iter().find(|v| v.name == *property);
+                    if let Some(v) = variant {
+                        if v.fields.is_empty() {
+                            // Unit variant - return EnumValue directly
+                            return Ok(Value::Enum(EnumValue {
+                                enum_name: name.clone(),
+                                variant: property.clone(),
+                                data: vec![],
+                            }));
+                        } else {
+                            // Variant with fields - return a callable constructor
+                            return Ok(Value::EnumConstructor(EnumConstructor {
+                                enum_name: name.clone(),
+                                variant: property.clone(),
+                                expected_fields: v.fields.len(),
+                            }));
+                        }
+                    } else {
+                        return Err(GentError::TypeError {
+                            expected: format!("valid variant of enum '{}'", name),
+                            got: property.clone(),
+                            span: span.clone(),
+                        });
+                    }
+                }
+            }
+
+            // Regular member access
             let object = evaluate_expr(object_expr, env)?;
             match object {
                 Value::Object(map) => {

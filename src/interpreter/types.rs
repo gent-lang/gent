@@ -129,6 +129,14 @@ pub struct EnumValue {
     pub data: Vec<Value>,
 }
 
+/// Intermediate value for enum variant with data (before being called)
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumConstructor {
+    pub enum_name: String,
+    pub variant: String,
+    pub expected_fields: usize,
+}
+
 /// Runtime values in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -154,6 +162,8 @@ pub enum Value {
     Lambda(LambdaValue),
     /// Enum value
     Enum(EnumValue),
+    /// Enum constructor (intermediate value before calling with args)
+    EnumConstructor(EnumConstructor),
 }
 
 /// Represents a defined agent at runtime
@@ -281,6 +291,9 @@ impl fmt::Display for Value {
                     write!(f, "{}.{}({})", e.enum_name, e.variant, data_str.join(", "))
                 }
             }
+            Value::EnumConstructor(c) => {
+                write!(f, "<enum constructor {}.{}>", c.enum_name, c.variant)
+            }
         }
     }
 }
@@ -306,6 +319,7 @@ impl Value {
             Value::Function(_) => true,
             Value::Lambda(_) => true,
             Value::Enum(_) => true,
+            Value::EnumConstructor(_) => true,
         }
     }
 
@@ -323,6 +337,7 @@ impl Value {
             Value::Function(_) => "Function".to_string(),
             Value::Lambda(_) => "Lambda".to_string(),
             Value::Enum(e) => format!("{}.{}", e.enum_name, e.variant),
+            Value::EnumConstructor(c) => format!("EnumConstructor({}.{})", c.enum_name, c.variant),
         }
     }
 
