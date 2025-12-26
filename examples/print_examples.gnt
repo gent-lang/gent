@@ -1,28 +1,31 @@
 // Print Examples
 // Demonstrates print() and println() built-in functions
 
-tool demo() {
-    // Basic println
-    println("Hello, World!")
+// Basic println at top level
+println("Hello, World!")
 
-    // Print without newline
-    print("Loading")
-    print(".")
-    print(".")
-    print(".")
-    println(" Done!")
+// Print without newline
+print("Loading")
+print(".")
+print(".")
+print(".")
+println(" Done!")
 
-    // Multiple arguments (joined with spaces)
-    let name = "GENT"
-    println("Welcome to", "{name}!")
+// Multiple arguments (joined with spaces)
+let name = "GENT"
+println("Welcome to", "{name}!")
 
-    // Empty println (just newline)
-    println()
+// Empty println (just newline)
+println()
 
-    // Using with string methods
-    let message = "  hello world  "
-    println("Trimmed:", "{message.trim()}")
-    println("Upper:", "{message.trim().toUpperCase()}")
-
-    return "complete"
+// Define and call a function
+fn showMessage(msg: string) {
+    println("Message:", "{msg}")
 }
+
+showMessage("This is a top-level function call!")
+
+// Using with string methods
+let message = "  hello world  "
+println("Trimmed:", "{message.trim()}")
+println("Upper:", "{message.trim().toUpperCase()}")
