@@ -167,6 +167,12 @@ fn evaluate_block_internal<'a>(
                     evaluate_expr_async(expr, env, tools).await?;
                 }
 
+                BlockStmt::While(_while_stmt) => {
+                    // TODO: Implement while loop evaluation (Task 10)
+                    // For now, this is a placeholder to prevent compile errors
+                    unimplemented!("While loop evaluation not yet implemented");
+                }
+
                 BlockStmt::Break(_) => {
                     // Signal break to the enclosing loop
                     return Ok((ControlFlow::Break, Value::Null));

@@ -202,6 +202,7 @@ pub enum BlockStmt {
     Return(ReturnStmt),
     If(IfStmt),
     For(ForStmt),
+    While(WhileStmt),
     Break(Span),
     Continue(Span),
     Expr(Expression),
@@ -238,6 +239,17 @@ pub struct ForStmt {
     pub variable: String,
     /// Expression to iterate over
     pub iterable: Expression,
+    /// Loop body
+    pub body: Block,
+    /// Source location
+    pub span: Span,
+}
+
+/// While loop statement
+#[derive(Debug, Clone, PartialEq)]
+pub struct WhileStmt {
+    /// Loop condition
+    pub condition: Expression,
     /// Loop body
     pub body: Block,
     /// Source location
