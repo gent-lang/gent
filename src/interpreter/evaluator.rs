@@ -547,12 +547,23 @@ fn evaluate_expression(expr: &Expression) -> GentResult<Value> {
                 span: span.clone(),
             })
         }
-        Expression::Range(_, _, span) => {
-            // TODO: Implement range expression evaluation in Task 11
-            Err(GentError::SyntaxError {
-                message: "Range expressions not yet implemented".to_string(),
-                span: span.clone(),
-            })
+        Expression::Range(start, end, span) => {
+            let start_val = evaluate_expression(start)?;
+            let end_val = evaluate_expression(end)?;
+
+            match (start_val, end_val) {
+                (Value::Number(s), Value::Number(e)) => {
+                    let range: Vec<Value> = (s as i64..e as i64)
+                        .map(|n| Value::Number(n as f64))
+                        .collect();
+                    Ok(Value::Array(range))
+                }
+                _ => Err(GentError::TypeError {
+                    expected: "Number".to_string(),
+                    got: "non-number".to_string(),
+                    span: span.clone(),
+                }),
+            }
         }
     }
 }

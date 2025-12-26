@@ -148,12 +148,25 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
             span: span.clone(),
         }),
 
-        // Range expressions - evaluated during for loop iteration
-        Expression::Range(_, _, span) => Err(GentError::TypeError {
-            expected: "iterable expression".to_string(),
-            got: "range expression (use in for loop)".to_string(),
-            span: span.clone(),
-        }),
+        // Range expressions - produce an array of numbers
+        Expression::Range(start, end, span) => {
+            let start_val = evaluate_expr(start, env)?;
+            let end_val = evaluate_expr(end, env)?;
+
+            match (start_val, end_val) {
+                (Value::Number(s), Value::Number(e)) => {
+                    let range: Vec<Value> = (s as i64..e as i64)
+                        .map(|n| Value::Number(n as f64))
+                        .collect();
+                    Ok(Value::Array(range))
+                }
+                _ => Err(GentError::TypeError {
+                    expected: "Number".to_string(),
+                    got: "non-number".to_string(),
+                    span: span.clone(),
+                }),
+            }
+        }
     }
 }
 

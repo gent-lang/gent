@@ -69,12 +69,87 @@ pub fn evaluate_block<'a>(
                     }
                 }
 
-                BlockStmt::For(_for_stmt) => {
-                    // TODO: Implement for loop evaluation in Task 11
-                    return Err(GentError::SyntaxError {
-                        message: "for loops not yet implemented".to_string(),
-                        span: block.span.clone(),
-                    });
+                BlockStmt::For(for_stmt) => {
+                    // Evaluate the iterable expression
+                    let iterable = evaluate_expr(&for_stmt.iterable, env)?;
+
+                    // Convert iterable to a list of items
+                    let items: Vec<Value> = match iterable {
+                        Value::Array(arr) => arr,
+                        Value::String(s) => s.chars().map(|c| Value::String(c.to_string())).collect(),
+                        other => {
+                            return Err(GentError::TypeError {
+                                expected: "Array or String".to_string(),
+                                got: other.type_name().to_string(),
+                                span: for_stmt.span.clone(),
+                            });
+                        }
+                    };
+
+                    // Iterate over items
+                    for item in items {
+                        env.push_scope();
+                        env.define(&for_stmt.variable, item);
+
+                        // Execute the loop body
+                        for block_stmt in &for_stmt.body.statements {
+                            match block_stmt {
+                                BlockStmt::Return(return_stmt) => {
+                                    // Handle return inside the loop
+                                    let return_val = if let Some(ref expr) = return_stmt.value {
+                                        evaluate_expr(expr, env)?
+                                    } else {
+                                        Value::Null
+                                    };
+                                    env.pop_scope();
+                                    // Pop the outer block scope too
+                                    env.pop_scope();
+                                    return Ok(return_val);
+                                }
+                                BlockStmt::Let(let_stmt) => {
+                                    let value = evaluate_expr(&let_stmt.value, env)?;
+                                    env.define(&let_stmt.name, value);
+                                }
+                                BlockStmt::If(if_stmt) => {
+                                    let condition = evaluate_expr(&if_stmt.condition, env)?;
+                                    if condition.is_truthy() {
+                                        let then_result = evaluate_block(&if_stmt.then_block, env, tools).await?;
+                                        if !matches!(then_result, Value::Null) || has_return(&if_stmt.then_block) {
+                                            env.pop_scope();
+                                            env.pop_scope();
+                                            return Ok(then_result);
+                                        }
+                                    } else if let Some(ref else_block) = if_stmt.else_block {
+                                        let else_result = evaluate_block(else_block, env, tools).await?;
+                                        if !matches!(else_result, Value::Null) || has_return(else_block) {
+                                            env.pop_scope();
+                                            env.pop_scope();
+                                            return Ok(else_result);
+                                        }
+                                    }
+                                }
+                                BlockStmt::For(_) => {
+                                    // Nested for loops would require recursive handling
+                                    // For now, evaluate using the block evaluator
+                                    let nested_block = Block {
+                                        statements: vec![block_stmt.clone()],
+                                        span: for_stmt.body.span.clone(),
+                                    };
+                                    let nested_result = evaluate_block(&nested_block, env, tools).await?;
+                                    if !matches!(nested_result, Value::Null) {
+                                        env.pop_scope();
+                                        env.pop_scope();
+                                        return Ok(nested_result);
+                                    }
+                                }
+                                BlockStmt::Expr(expr) => {
+                                    evaluate_expr(expr, env)?;
+                                }
+                            }
+                        }
+
+                        env.pop_scope();
+                    }
                 }
 
                 BlockStmt::Expr(expr) => {
