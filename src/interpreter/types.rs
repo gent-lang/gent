@@ -93,6 +93,13 @@ pub struct FnValue {
     pub body: Block,
 }
 
+/// Represents a lambda/closure at runtime
+#[derive(Debug, Clone, PartialEq)]
+pub struct LambdaValue {
+    pub params: Vec<String>,
+    pub body: crate::parser::ast::LambdaBody,
+}
+
 /// Runtime values in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -114,6 +121,8 @@ pub enum Value {
     Tool(UserToolValue),
     /// User-defined function (pure, no agent access)
     Function(FnValue),
+    /// Lambda/closure value
+    Lambda(LambdaValue),
 }
 
 /// Represents a defined agent at runtime
@@ -232,6 +241,7 @@ impl fmt::Display for Value {
             }
             Value::Tool(t) => write!(f, "<tool {}>", t.name),
             Value::Function(func) => write!(f, "<fn {}>", func.name),
+            Value::Lambda(_) => write!(f, "<lambda>"),
         }
     }
 }
@@ -255,6 +265,7 @@ impl Value {
             Value::Object(map) => !map.is_empty(),
             Value::Tool(_) => true,
             Value::Function(_) => true,
+            Value::Lambda(_) => true,
         }
     }
 
@@ -270,6 +281,7 @@ impl Value {
             Value::Object(_) => "Object",
             Value::Tool(_) => "Tool",
             Value::Function(_) => "Function",
+            Value::Lambda(_) => "Lambda",
         }
     }
 

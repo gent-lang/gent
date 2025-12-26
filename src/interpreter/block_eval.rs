@@ -432,6 +432,7 @@ fn args_to_json(args: &[Value]) -> serde_json::Value {
             Value::Agent(_) => JsonValue::String("<agent>".to_string()),
             Value::Tool(_) => JsonValue::String("<tool>".to_string()),
             Value::Function(_) => JsonValue::String("<function>".to_string()),
+            Value::Lambda(_) => JsonValue::String("<lambda>".to_string()),
         }
     }
 
