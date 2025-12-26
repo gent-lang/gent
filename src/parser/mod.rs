@@ -5,7 +5,7 @@ pub mod ast;
 pub use ast::{
     AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, ForStmt, IfStmt,
     LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl,
-    TypeName, UnaryOp,
+    TypeName, UnaryOp, WhileStmt,
 };
 
 use crate::errors::{GentError, GentResult, Span};
@@ -600,6 +600,7 @@ fn parse_block_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<BlockStmt> 
         Rule::return_stmt => Ok(BlockStmt::Return(parse_return_stmt(inner)?)),
         Rule::if_stmt => Ok(BlockStmt::If(parse_if_stmt(inner)?)),
         Rule::for_stmt => Ok(BlockStmt::For(parse_for_stmt(inner)?)),
+        Rule::while_stmt => Ok(BlockStmt::While(parse_while_stmt(inner)?)),
         Rule::break_stmt => {
             let span = Span::new(inner.as_span().start(), inner.as_span().end());
             Ok(BlockStmt::Break(span))
@@ -667,6 +668,20 @@ fn parse_for_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<ForStmt> {
     Ok(ForStmt {
         variable,
         iterable,
+        body,
+        span,
+    })
+}
+
+fn parse_while_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<WhileStmt> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let condition = parse_expression(inner.next().unwrap())?;
+    let body = parse_block(inner.next().unwrap())?;
+
+    Ok(WhileStmt {
+        condition,
         body,
         span,
     })
