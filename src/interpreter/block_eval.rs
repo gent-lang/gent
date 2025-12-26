@@ -405,6 +405,33 @@ pub fn evaluate_expr_async<'a>(
                         return call_string_method(s, method_name, &arg_values);
                     }
 
+                    // Check if this is an enum .is() call
+                    if let Value::Enum(ref enum_val) = obj {
+                        if method_name == "is" {
+                            // Evaluate the argument (should be an EnumValue or EnumConstructor)
+                            if args.len() != 1 {
+                                return Err(GentError::TypeError {
+                                    expected: "1 argument for .is()".to_string(),
+                                    got: format!("{} arguments", args.len()),
+                                    span: span.clone(),
+                                });
+                            }
+
+                            let arg = evaluate_expr_async(&args[0], env, tools).await?;
+                            let matches = match arg {
+                                Value::Enum(other) => {
+                                    enum_val.enum_name == other.enum_name && enum_val.variant == other.variant
+                                }
+                                Value::EnumConstructor(ctor) => {
+                                    enum_val.enum_name == ctor.enum_name && enum_val.variant == ctor.variant
+                                }
+                                _ => false,
+                            };
+
+                            return Ok(Value::Boolean(matches));
+                        }
+                    }
+
                     // If it's an array, dispatch to array methods
                     if let Value::Array(ref arr) = obj {
                         // Evaluate method arguments

@@ -159,3 +159,49 @@ async fn test_enum_wrong_arg_count() {
     // Should fail because Ok expects 1 argument but got 2
     assert!(result.is_err());
 }
+
+// ============================================
+// .is() Method Tests
+// ============================================
+
+#[tokio::test]
+async fn test_enum_is_method_true() {
+    let source = r#"
+        enum Status { Pending, Active }
+        fn test() {
+            let s = Status.Pending
+            if s.is(Status.Pending) {
+                return true
+            }
+            return false
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_enum_is_method_false() {
+    let source = r#"
+        enum Status { Pending, Active }
+        fn test() {
+            let s = Status.Pending
+            if s.is(Status.Active) {
+                return true
+            }
+            return false
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}
