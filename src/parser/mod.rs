@@ -4,9 +4,10 @@ pub mod ast;
 
 pub use ast::{
     AgentDecl, AgentField, BinaryOp, Block, BlockStmt, EnumDecl, EnumField, EnumVariant, Expression,
-    FieldType, FnDecl, ForStmt, IfStmt, ImportStmt, Lambda, LambdaBody, LetStmt, OutputType, Param,
-    Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl, TopLevelCall,
-    TryStmt, TypeName, UnaryOp, WhileStmt,
+    FieldType, FnDecl, ForStmt, IfStmt, ImportStmt, Lambda, LambdaBody, LetStmt, MatchArm,
+    MatchBody, MatchExpr, MatchPattern, OutputType, Param, Program, ReturnStmt, Statement,
+    StringPart, StructDecl, StructField, ToolDecl, TopLevelCall, TryStmt, TypeName, UnaryOp,
+    WhileStmt,
 };
 
 use crate::errors::{GentError, GentResult, Span};
@@ -307,6 +308,7 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
         Rule::object_literal => parse_object_literal(pair),
         Rule::range_expr => parse_range_expr(pair),
         Rule::lambda => Ok(Expression::Lambda(parse_lambda(pair)?)),
+        Rule::match_expr => Ok(Expression::Match(parse_match_expr(pair)?)),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected expression: {:?}", pair.as_rule()),
             span,
@@ -347,6 +349,69 @@ fn parse_lambda(pair: pest::iterators::Pair<Rule>) -> GentResult<Lambda> {
     };
 
     Ok(Lambda { params, body, span })
+}
+
+fn parse_match_expr(pair: pest::iterators::Pair<Rule>) -> GentResult<MatchExpr> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let subject = Box::new(parse_expression(inner.next().unwrap())?);
+    let mut arms = Vec::new();
+
+    for arm_pair in inner {
+        arms.push(parse_match_arm(arm_pair)?);
+    }
+
+    Ok(MatchExpr { subject, arms, span })
+}
+
+fn parse_match_arm(pair: pest::iterators::Pair<Rule>) -> GentResult<MatchArm> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let pattern_pair = inner.next().unwrap();
+    let pattern = parse_match_pattern(pattern_pair)?;
+
+    let body_pair = inner.next().unwrap();
+    let body = parse_match_body(body_pair)?;
+
+    Ok(MatchArm { pattern, body, span })
+}
+
+fn parse_match_pattern(pair: pest::iterators::Pair<Rule>) -> GentResult<MatchPattern> {
+    let inner = pair.into_inner().next().unwrap();
+
+    match inner.as_rule() {
+        Rule::wildcard_pattern => Ok(MatchPattern::Wildcard),
+        Rule::enum_pattern => {
+            let mut parts = inner.into_inner();
+            let enum_name = parts.next().unwrap().as_str().to_string();
+            let variant_name = parts.next().unwrap().as_str().to_string();
+
+            let mut bindings = Vec::new();
+            if let Some(bindings_pair) = parts.next() {
+                for binding in bindings_pair.into_inner() {
+                    bindings.push(binding.as_str().to_string());
+                }
+            }
+
+            Ok(MatchPattern::EnumVariant {
+                enum_name,
+                variant_name,
+                bindings,
+            })
+        }
+        _ => unreachable!(),
+    }
+}
+
+fn parse_match_body(pair: pest::iterators::Pair<Rule>) -> GentResult<MatchBody> {
+    let inner = pair.into_inner().next().unwrap();
+
+    match inner.as_rule() {
+        Rule::block => Ok(MatchBody::Block(parse_block(inner)?)),
+        _ => Ok(MatchBody::Expression(Box::new(parse_expression(inner)?))),
+    }
 }
 
 /// Parse binary left-associative operators
