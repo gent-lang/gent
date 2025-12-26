@@ -103,10 +103,10 @@ fn get_string_arg(args: &[Value], index: usize, method: &str) -> GentResult<Stri
             let got = args
                 .get(index)
                 .map(|v| v.type_name())
-                .unwrap_or("missing argument");
+                .unwrap_or_else(|| "missing argument".to_string());
             GentError::TypeError {
                 expected: format!("String argument for {}()", method),
-                got: got.to_string(),
+                got,
                 span: Span::default(),
             }
         })
@@ -123,10 +123,10 @@ fn get_number_arg(args: &[Value], index: usize, method: &str) -> GentResult<f64>
             let got = args
                 .get(index)
                 .map(|v| v.type_name())
-                .unwrap_or("missing argument");
+                .unwrap_or_else(|| "missing argument".to_string());
             GentError::TypeError {
                 expected: format!("Number argument for {}()", method),
-                got: got.to_string(),
+                got,
                 span: Span::default(),
             }
         })
@@ -143,10 +143,10 @@ fn get_array_arg(args: &[Value], index: usize, method: &str) -> GentResult<Vec<V
             let got = args
                 .get(index)
                 .map(|v| v.type_name())
-                .unwrap_or("missing argument");
+                .unwrap_or_else(|| "missing argument".to_string());
             GentError::TypeError {
                 expected: format!("Array argument for {}()", method),
-                got: got.to_string(),
+                got,
                 span: Span::default(),
             }
         })

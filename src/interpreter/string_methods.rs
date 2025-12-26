@@ -83,10 +83,10 @@ fn get_string_arg(args: &[Value], index: usize, method: &str) -> GentResult<Stri
             let got = args
                 .get(index)
                 .map(|v| v.type_name())
-                .unwrap_or("missing argument");
+                .unwrap_or_else(|| "missing argument".to_string());
             GentError::TypeError {
                 expected: format!("String argument for {}()", method),
-                got: got.to_string(),
+                got,
                 span: Span::default(),
             }
         })

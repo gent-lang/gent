@@ -310,19 +310,19 @@ impl Value {
     }
 
     /// Get type name for error messages
-    pub fn type_name(&self) -> &'static str {
+    pub fn type_name(&self) -> String {
         match self {
-            Value::String(_) => "String",
-            Value::Number(_) => "Number",
-            Value::Boolean(_) => "Boolean",
-            Value::Null => "Null",
-            Value::Agent(_) => "Agent",
-            Value::Array(_) => "Array",
-            Value::Object(_) => "Object",
-            Value::Tool(_) => "Tool",
-            Value::Function(_) => "Function",
-            Value::Lambda(_) => "Lambda",
-            Value::Enum(_) => "Enum",
+            Value::String(_) => "String".to_string(),
+            Value::Number(_) => "Number".to_string(),
+            Value::Boolean(_) => "Boolean".to_string(),
+            Value::Null => "Null".to_string(),
+            Value::Agent(_) => "Agent".to_string(),
+            Value::Array(_) => "Array".to_string(),
+            Value::Object(_) => "Object".to_string(),
+            Value::Tool(_) => "Tool".to_string(),
+            Value::Function(_) => "Function".to_string(),
+            Value::Lambda(_) => "Lambda".to_string(),
+            Value::Enum(e) => format!("{}.{}", e.enum_name, e.variant),
         }
     }
 
