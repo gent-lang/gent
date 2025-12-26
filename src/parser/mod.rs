@@ -304,11 +304,47 @@ fn parse_expression(pair: pest::iterators::Pair<Rule>) -> GentResult<Expression>
         Rule::array_literal => parse_array_literal(pair),
         Rule::object_literal => parse_object_literal(pair),
         Rule::range_expr => parse_range_expr(pair),
+        Rule::lambda => Ok(Expression::Lambda(parse_lambda(pair)?)),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected expression: {:?}", pair.as_rule()),
             span,
         }),
     }
+}
+
+fn parse_lambda(pair: pest::iterators::Pair<Rule>) -> GentResult<Lambda> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    // Parse parameters (optional)
+    let mut params = Vec::new();
+    if let Some(params_pair) = inner.peek() {
+        if params_pair.as_rule() == Rule::lambda_params {
+            let params_pair = inner.next().unwrap();
+            for param in params_pair.into_inner() {
+                params.push(param.as_str().to_string());
+            }
+        }
+    }
+
+    // Parse body (lambda_body wraps either block or expression)
+    let body_pair = inner.next().unwrap();
+    let body = if body_pair.as_rule() == Rule::lambda_body {
+        // Unwrap lambda_body to get the actual block or expression
+        let inner_body = body_pair.into_inner().next().unwrap();
+        match inner_body.as_rule() {
+            Rule::block => LambdaBody::Block(parse_block(inner_body)?),
+            _ => LambdaBody::Expression(Box::new(parse_expression(inner_body)?)),
+        }
+    } else {
+        // Direct handling (shouldn't happen but handle gracefully)
+        match body_pair.as_rule() {
+            Rule::block => LambdaBody::Block(parse_block(body_pair)?),
+            _ => LambdaBody::Expression(Box::new(parse_expression(body_pair)?)),
+        }
+    };
+
+    Ok(Lambda { params, body, span })
 }
 
 /// Parse binary left-associative operators
