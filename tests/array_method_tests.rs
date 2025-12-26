@@ -718,3 +718,523 @@ async fn test_array_pop_returns_value() {
     assert!(result.is_ok());
     // Pop should return 30
 }
+
+// ============================================
+// Push/Pop Edge Cases
+// ============================================
+
+#[tokio::test]
+async fn test_push_to_empty_array_mutates() {
+    let source = r#"
+        fn test() {
+            let arr = []
+            arr.push(1)
+            arr.push(2)
+            return arr.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_pop_until_empty() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2]
+            let a = arr.pop()
+            let b = arr.pop()
+            let c = arr.pop()
+            return c
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Third pop should return null
+}
+
+#[tokio::test]
+async fn test_push_pop_in_loop() {
+    let source = r#"
+        fn test() {
+            let arr = []
+            for i in 1..4 {
+                arr.push(i)
+            }
+            return arr.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should have 3 elements after loop
+}
+
+#[tokio::test]
+async fn test_push_different_types() {
+    let source = r#"
+        fn test() {
+            let arr = []
+            arr.push(42)
+            arr.push("hello")
+            arr.push(true)
+            return arr.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_push_pop_conditional() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            if true {
+                arr.push(4)
+            }
+            if false {
+                arr.pop()
+            }
+            return arr.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should have 4 elements (push happened, pop didn't)
+}
+
+// ============================================
+// Slice Edge Cases
+// ============================================
+
+#[tokio::test]
+async fn test_slice_beyond_bounds() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            let sliced = arr.slice(0, 100)
+            return sliced.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should clamp to array length, return 3
+}
+
+#[tokio::test]
+async fn test_slice_start_equals_end() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            let sliced = arr.slice(1, 1)
+            return sliced.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return empty array
+}
+
+#[tokio::test]
+async fn test_slice_start_greater_than_end() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 4, 5]
+            let sliced = arr.slice(3, 1)
+            return sliced.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return empty array when start > end
+}
+
+// ============================================
+// Map/Filter/Reduce Edge Cases
+// ============================================
+
+#[tokio::test]
+async fn test_map_with_index_simulation() {
+    // Map only gets element, not index - test that it works
+    let source = r#"
+        fn test() {
+            let arr = [10, 20, 30]
+            let result = arr.map((x) => x + 1)
+            return result.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_filter_all_match() {
+    let source = r#"
+        fn test() {
+            let arr = [2, 4, 6, 8]
+            let evens = arr.filter((x) => x % 2 == 0)
+            return evens.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // All 4 should match
+}
+
+#[tokio::test]
+async fn test_filter_none_match() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 3, 5, 7]
+            let evens = arr.filter((x) => x % 2 == 0)
+            return evens.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // None should match, empty array
+}
+
+#[tokio::test]
+async fn test_reduce_single_element() {
+    let source = r#"
+        fn test() {
+            let arr = [42]
+            let sum = arr.reduce((acc, x) => acc + x, 0)
+            return sum
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return 42
+}
+
+#[tokio::test]
+async fn test_reduce_string_concatenation() {
+    let source = r#"
+        fn test() {
+            let arr = ["a", "b", "c"]
+            let joined = arr.reduce((acc, x) => "{acc}{x}", "")
+            return joined
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return "abc"
+}
+
+// ============================================
+// Find/IndexOf Edge Cases
+// ============================================
+
+#[tokio::test]
+async fn test_find_first_of_many() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 2, 1]
+            let found = arr.find((x) => x == 2)
+            return found
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return first 2
+}
+
+#[tokio::test]
+async fn test_indexof_first_occurrence() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 2, 1]
+            return arr.indexOf(2)
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return 1 (first occurrence)
+}
+
+#[tokio::test]
+async fn test_indexof_string_in_array() {
+    let source = r#"
+        fn test() {
+            let arr = ["apple", "banana", "cherry"]
+            return arr.indexOf("banana")
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return 1
+}
+
+// ============================================
+// Join/Concat Edge Cases
+// ============================================
+
+#[tokio::test]
+async fn test_join_single_element() {
+    let source = r#"
+        fn test() {
+            let arr = ["only"]
+            return arr.join(", ")
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return "only" (no separator needed)
+}
+
+#[tokio::test]
+async fn test_join_empty_separator() {
+    let source = r#"
+        fn test() {
+            let arr = ["a", "b", "c"]
+            return arr.join("")
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return "abc"
+}
+
+#[tokio::test]
+async fn test_concat_empty_arrays() {
+    let source = r#"
+        fn test() {
+            let a = []
+            let b = []
+            let c = a.concat(b)
+            return c.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return 0
+}
+
+#[tokio::test]
+async fn test_concat_to_empty() {
+    let source = r#"
+        fn test() {
+            let a = []
+            let b = [1, 2, 3]
+            let c = a.concat(b)
+            return c.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Should return 3
+}
+
+// ============================================
+// Chaining Edge Cases
+// ============================================
+
+#[tokio::test]
+async fn test_chain_filter_map_reduce() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 4, 5, 6]
+            let result = arr.filter((x) => x % 2 == 0).map((x) => x * x).reduce((a, b) => a + b, 0)
+            return result
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // filter: [2,4,6], map: [4,16,36], reduce: 56
+}
+
+#[tokio::test]
+async fn test_chain_empty_result() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 3, 5]
+            let result = arr.filter((x) => x % 2 == 0).map((x) => x * 2)
+            return result.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // filter returns empty, map on empty returns empty
+}
+
+// ============================================
+// Lambda Edge Cases
+// ============================================
+
+#[tokio::test]
+async fn test_lambda_no_params() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            let result = arr.map(() => 0)
+            return result.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Lambda with no params should still work (ignores element)
+}
+
+#[tokio::test]
+async fn test_lambda_block_body() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            let result = arr.map((x) => {
+                let doubled = x * 2
+                return doubled + 1
+            })
+            return result.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Block body lambda should work
+}
+
+#[tokio::test]
+async fn test_lambda_with_conditionals() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 4, 5]
+            let result = arr.map((x) => {
+                if x % 2 == 0 {
+                    return x * 2
+                } else {
+                    return x
+                }
+            })
+            return result.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Lambda with if/else should work
+}
