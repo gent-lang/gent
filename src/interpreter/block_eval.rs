@@ -146,6 +146,22 @@ pub fn evaluate_block<'a>(
                                 BlockStmt::Expr(expr) => {
                                     evaluate_expr(expr, env)?;
                                 }
+                                BlockStmt::Break(span) => {
+                                    // TODO: Implement break statement evaluation (Task 7)
+                                    return Err(GentError::TypeError {
+                                        expected: "break statement implementation".to_string(),
+                                        got: "not yet implemented".to_string(),
+                                        span: span.clone(),
+                                    });
+                                }
+                                BlockStmt::Continue(span) => {
+                                    // TODO: Implement continue statement evaluation (Task 7)
+                                    return Err(GentError::TypeError {
+                                        expected: "continue statement implementation".to_string(),
+                                        got: "not yet implemented".to_string(),
+                                        span: span.clone(),
+                                    });
+                                }
                             }
                         }
 
@@ -156,6 +172,24 @@ pub fn evaluate_block<'a>(
                 BlockStmt::Expr(expr) => {
                     // Evaluate the expression for side effects, discarding the result
                     evaluate_expr_async(expr, env, tools).await?;
+                }
+
+                BlockStmt::Break(span) => {
+                    // TODO: Implement break statement evaluation (Task 7)
+                    return Err(GentError::TypeError {
+                        expected: "break statement implementation".to_string(),
+                        got: "not yet implemented".to_string(),
+                        span: span.clone(),
+                    });
+                }
+
+                BlockStmt::Continue(span) => {
+                    // TODO: Implement continue statement evaluation (Task 7)
+                    return Err(GentError::TypeError {
+                        expected: "continue statement implementation".to_string(),
+                        got: "not yet implemented".to_string(),
+                        span: span.clone(),
+                    });
                 }
             }
         }

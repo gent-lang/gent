@@ -202,6 +202,8 @@ pub enum BlockStmt {
     Return(ReturnStmt),
     If(IfStmt),
     For(ForStmt),
+    Break(Span),
+    Continue(Span),
     Expr(Expression),
 }
 
