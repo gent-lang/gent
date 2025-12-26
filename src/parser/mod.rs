@@ -4,8 +4,8 @@ pub mod ast;
 
 pub use ast::{
     AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, FnDecl, ForStmt, IfStmt,
-    ImportStmt, LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl,
-    TryStmt, TypeName, UnaryOp, WhileStmt,
+    ImportStmt, LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart, StructDecl,
+    StructField, ToolDecl, TopLevelCall, TryStmt, TypeName, UnaryOp, WhileStmt,
 };
 
 use crate::errors::{GentError, GentResult, Span};
@@ -51,6 +51,7 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
         Rule::fn_decl => Ok(Statement::FnDecl(parse_fn_decl(inner)?)),
         Rule::top_level_let => Ok(Statement::LetStmt(parse_top_level_let(inner)?)),
+        Rule::top_level_call => Ok(Statement::TopLevelCall(parse_top_level_call(inner)?)),
         _ => Err(GentError::SyntaxError {
             message: format!("Unexpected rule: {:?}", inner.as_rule()),
             span: Span::new(0, 0),
@@ -597,6 +598,22 @@ fn parse_fn_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<FnDecl> {
         }),
         span,
     })
+}
+
+fn parse_top_level_call(pair: pest::iterators::Pair<Rule>) -> GentResult<TopLevelCall> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+
+    let mut args = Vec::new();
+    if let Some(arg_list) = inner.next() {
+        for arg_pair in arg_list.into_inner() {
+            args.push(parse_expression(arg_pair)?);
+        }
+    }
+
+    Ok(TopLevelCall { name, args, span })
 }
 
 fn parse_param_list(pair: pest::iterators::Pair<Rule>) -> GentResult<Vec<Param>> {
