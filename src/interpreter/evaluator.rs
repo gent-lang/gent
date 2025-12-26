@@ -819,5 +819,12 @@ fn evaluate_expression(expr: &Expression) -> GentResult<Value> {
                 }),
             }
         }
+        Expression::Lambda(lambda) => {
+            // Lambda expressions are not evaluated directly in this context
+            Err(GentError::SyntaxError {
+                message: "Lambda expressions not yet implemented".to_string(),
+                span: lambda.span.clone(),
+            })
+        }
     }
 }

@@ -167,6 +167,12 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
                 }),
             }
         }
+
+        // Lambda expressions - not yet implemented
+        Expression::Lambda(lambda) => Err(GentError::SyntaxError {
+            message: "Lambda expressions not yet implemented".to_string(),
+            span: lambda.span.clone(),
+        }),
     }
 }
 

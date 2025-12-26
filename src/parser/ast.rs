@@ -39,6 +39,23 @@ pub enum StringPart {
     Expr(Box<Expression>),
 }
 
+/// Lambda body - either a single expression or a block
+#[derive(Debug, Clone, PartialEq)]
+pub enum LambdaBody {
+    /// Single expression: (x) => x * 2
+    Expression(Box<Expression>),
+    /// Block with statements: (x) => { return x * 2 }
+    Block(Block),
+}
+
+/// Lambda expression: (params) => body
+#[derive(Debug, Clone, PartialEq)]
+pub struct Lambda {
+    pub params: Vec<String>,
+    pub body: LambdaBody,
+    pub span: Span,
+}
+
 /// Type names in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeName {
@@ -194,6 +211,8 @@ pub enum Expression {
     Index(Box<Expression>, Box<Expression>, Span),
     /// Range expression (start..end)
     Range(Box<Expression>, Box<Expression>, Span),
+    /// Lambda expression: (x) => x * 2
+    Lambda(Lambda),
 }
 
 impl Expression {
@@ -213,6 +232,7 @@ impl Expression {
             Expression::Member(_, _, span) => span,
             Expression::Index(_, _, span) => span,
             Expression::Range(_, _, span) => span,
+            Expression::Lambda(lambda) => &lambda.span,
         }
     }
 }

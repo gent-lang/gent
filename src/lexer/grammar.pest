@@ -91,6 +91,7 @@ index_expr = { "[" ~ expression ~ "]" }
 member_expr = { "." ~ identifier }
 
 primary = {
+    lambda |
     "(" ~ expression ~ ")" |
     array_literal |
     object_literal |
@@ -101,6 +102,11 @@ primary = {
     boolean_literal |
     identifier
 }
+
+// Lambda expression: (x) => x * 2 or (a, b) => a + b or () => 42
+lambda = { "(" ~ lambda_params? ~ ")" ~ "=>" ~ lambda_body }
+lambda_params = { identifier ~ ("," ~ identifier)* }
+lambda_body = { block | expression }
 
 // === Range Expression ===
 range_expr = { number_literal ~ ".." ~ number_literal }
