@@ -226,6 +226,15 @@ fn evaluate_block_internal<'a>(
                     // Signal continue to the enclosing loop
                     return Ok((ControlFlow::LoopContinue, Value::Null));
                 }
+
+                BlockStmt::Try(_try_stmt) => {
+                    // TODO: Implement try/catch evaluation (Task 13)
+                    // For now, just return an error indicating it's not yet implemented
+                    return Err(GentError::SyntaxError {
+                        message: "try/catch not yet implemented".to_string(),
+                        span: _try_stmt.span.clone(),
+                    });
+                }
             }
         }
 

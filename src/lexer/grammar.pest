@@ -35,12 +35,13 @@ output_type = { field_type_object | identifier }
 
 // === Block & Statements ===
 block = { "{" ~ block_stmt* ~ "}" }
-block_stmt = { let_stmt | return_stmt | if_stmt | for_stmt | while_stmt | break_stmt | continue_stmt | expr_stmt }
+block_stmt = { let_stmt | return_stmt | if_stmt | for_stmt | while_stmt | try_stmt | break_stmt | continue_stmt | expr_stmt }
 let_stmt = { "let" ~ identifier ~ "=" ~ expression }
 return_stmt = { "return" ~ expression? }
 if_stmt = { "if" ~ expression ~ block ~ ("else" ~ block)? }
 for_stmt = { "for" ~ identifier ~ "in" ~ expression ~ block }
 while_stmt = { "while" ~ expression ~ block }
+try_stmt = { "try" ~ block ~ "catch" ~ identifier ~ block }
 break_stmt = { "break" }
 continue_stmt = { "continue" }
 expr_stmt = { expression }

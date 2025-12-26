@@ -203,6 +203,7 @@ pub enum BlockStmt {
     If(IfStmt),
     For(ForStmt),
     While(WhileStmt),
+    Try(TryStmt),
     Break(Span),
     Continue(Span),
     Expr(Expression),
@@ -252,6 +253,19 @@ pub struct WhileStmt {
     pub condition: Expression,
     /// Loop body
     pub body: Block,
+    /// Source location
+    pub span: Span,
+}
+
+/// Try/catch statement
+#[derive(Debug, Clone, PartialEq)]
+pub struct TryStmt {
+    /// The try block
+    pub try_block: Block,
+    /// The error variable name in catch
+    pub error_var: String,
+    /// The catch block
+    pub catch_block: Block,
     /// Source location
     pub span: Span,
 }
