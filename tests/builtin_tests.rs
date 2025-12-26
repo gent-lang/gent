@@ -45,20 +45,22 @@ fn test_println_no_args() {
 }
 
 #[test]
-fn test_print_type_error() {
+fn test_print_number_auto_converts() {
     let args = vec![Value::Number(42.0)];
     let result = call_builtin("print", &args, &Span::default());
-    assert!(result.is_err());
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), Value::Null);
 }
 
 #[test]
-fn test_print_mixed_type_error() {
+fn test_print_mixed_types_auto_converts() {
     let args = vec![
         Value::String("hello".to_string()),
         Value::Number(42.0),
     ];
     let result = call_builtin("print", &args, &Span::default());
-    assert!(result.is_err());
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), Value::Null);
 }
 
 // Integration tests - test builtins work within tool evaluation
@@ -109,7 +111,7 @@ async fn test_print_multiple_args_in_tool() {
 }
 
 #[tokio::test]
-async fn test_print_type_error_in_tool() {
+async fn test_print_number_in_tool() {
     let source = r#"
         tool test() {
             println(42)
@@ -123,8 +125,9 @@ async fn test_print_type_error_in_tool() {
     let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed to evaluate: {:?}", result.err());
 
-    // Execute the tool - this should fail with type error
+    // Execute the tool - println(42) should auto-convert to "42"
     let tool = tools.get("test").expect("Tool 'test' should be registered");
     let exec_result = tool.execute(serde_json::json!({})).await;
-    assert!(exec_result.is_err(), "Should have failed with type error");
+    assert!(exec_result.is_ok(), "Failed to execute tool: {:?}", exec_result.err());
+    assert_eq!(exec_result.unwrap(), "done");
 }
