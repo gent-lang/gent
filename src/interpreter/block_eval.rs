@@ -524,6 +524,21 @@ fn args_to_json(args: &[Value]) -> serde_json::Value {
             Value::Tool(_) => JsonValue::String("<tool>".to_string()),
             Value::Function(_) => JsonValue::String("<function>".to_string()),
             Value::Lambda(_) => JsonValue::String("<lambda>".to_string()),
+            Value::Enum(e) => {
+                if e.data.is_empty() {
+                    JsonValue::String(format!("{}.{}", e.enum_name, e.variant))
+                } else {
+                    let mut map = Map::new();
+                    map.insert("enum".to_string(), JsonValue::String(e.enum_name.clone()));
+                    map.insert(
+                        "variant".to_string(),
+                        JsonValue::String(e.variant.clone()),
+                    );
+                    let data: Vec<JsonValue> = e.data.iter().map(value_to_json).collect();
+                    map.insert("data".to_string(), JsonValue::Array(data));
+                    JsonValue::Object(map)
+                }
+            }
         }
     }
 

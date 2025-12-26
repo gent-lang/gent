@@ -100,6 +100,35 @@ pub struct LambdaValue {
     pub body: crate::parser::ast::LambdaBody,
 }
 
+/// Definition of an enum type (stored in environment)
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumDef {
+    pub name: String,
+    pub variants: Vec<EnumVariantDef>,
+}
+
+/// Definition of an enum variant
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumVariantDef {
+    pub name: String,
+    pub fields: Vec<EnumFieldDef>,
+}
+
+/// Definition of a field in an enum variant
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumFieldDef {
+    pub name: Option<String>,
+    pub type_name: String,
+}
+
+/// Runtime value of an enum instance
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumValue {
+    pub enum_name: String,
+    pub variant: String,
+    pub data: Vec<Value>,
+}
+
 /// Runtime values in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -123,6 +152,8 @@ pub enum Value {
     Function(FnValue),
     /// Lambda/closure value
     Lambda(LambdaValue),
+    /// Enum value
+    Enum(EnumValue),
 }
 
 /// Represents a defined agent at runtime
@@ -242,6 +273,14 @@ impl fmt::Display for Value {
             Value::Tool(t) => write!(f, "<tool {}>", t.name),
             Value::Function(func) => write!(f, "<fn {}>", func.name),
             Value::Lambda(_) => write!(f, "<lambda>"),
+            Value::Enum(e) => {
+                if e.data.is_empty() {
+                    write!(f, "{}.{}", e.enum_name, e.variant)
+                } else {
+                    let data_str: Vec<String> = e.data.iter().map(|v| v.to_string()).collect();
+                    write!(f, "{}.{}({})", e.enum_name, e.variant, data_str.join(", "))
+                }
+            }
         }
     }
 }
@@ -266,6 +305,7 @@ impl Value {
             Value::Tool(_) => true,
             Value::Function(_) => true,
             Value::Lambda(_) => true,
+            Value::Enum(_) => true,
         }
     }
 
@@ -282,6 +322,7 @@ impl Value {
             Value::Tool(_) => "Tool",
             Value::Function(_) => "Function",
             Value::Lambda(_) => "Lambda",
+            Value::Enum(_) => "Enum",
         }
     }
 
