@@ -6,6 +6,7 @@
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
+use crate::interpreter::array_methods::call_array_method;
 use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::{Environment, Value};
 use crate::parser::ast::{Block, BlockStmt, Expression};
@@ -313,9 +314,29 @@ pub fn evaluate_expr_async<'a>(
                         return call_string_method(s, method_name, &arg_values);
                     }
 
+                    // If it's an array, dispatch to array methods
+                    if let Value::Array(ref arr) = obj {
+                        // Evaluate method arguments
+                        let mut arg_values = Vec::new();
+                        for arg in args {
+                            let val = evaluate_expr_async(arg, env, tools).await?;
+                            arg_values.push(val);
+                        }
+
+                        // Clone array for method call
+                        let mut arr_clone = arr.clone();
+                        let result = call_array_method(
+                            &mut arr_clone,
+                            method_name,
+                            &arg_values,
+                        )?;
+
+                        return Ok(result);
+                    }
+
                     // For other types, return an error for now
                     return Err(GentError::TypeError {
-                        expected: "String".to_string(),
+                        expected: "String or Array".to_string(),
                         got: obj.type_name().to_string(),
                         span: span.clone(),
                     });

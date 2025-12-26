@@ -410,3 +410,41 @@ fn test_unknown_method() {
     let result = call_array_method(&mut arr, "unknownMethod", &[]);
     assert!(result.is_err());
 }
+
+// ============================================
+// Integration Tests (through the interpreter)
+// ============================================
+
+#[tokio::test]
+async fn test_array_length_integration() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            return arr.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_join_integration() {
+    let source = r#"
+        fn test() {
+            let arr = ["a", "b", "c"]
+            return arr.join("-")
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
