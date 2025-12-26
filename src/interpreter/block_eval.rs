@@ -227,13 +227,55 @@ fn evaluate_block_internal<'a>(
                     return Ok((ControlFlow::LoopContinue, Value::Null));
                 }
 
-                BlockStmt::Try(_try_stmt) => {
-                    // TODO: Implement try/catch evaluation (Task 13)
-                    // For now, just return an error indicating it's not yet implemented
-                    return Err(GentError::SyntaxError {
-                        message: "try/catch not yet implemented".to_string(),
-                        span: _try_stmt.span.clone(),
-                    });
+                BlockStmt::Try(try_stmt) => {
+                    // Execute try block and capture result
+                    env.push_scope();
+                    let try_result = evaluate_block_internal(&try_stmt.try_block, env, tools).await;
+                    env.pop_scope();
+
+                    match try_result {
+                        Ok((flow, _value)) => {
+                            // Try block succeeded
+                            match flow {
+                                ControlFlow::Return(val) => {
+                                    return Ok((ControlFlow::Return(val), Value::Null));
+                                }
+                                ControlFlow::Break => {
+                                    return Ok((ControlFlow::Break, Value::Null));
+                                }
+                                ControlFlow::LoopContinue => {
+                                    return Ok((ControlFlow::LoopContinue, Value::Null));
+                                }
+                                ControlFlow::Continue => {
+                                    // Normal completion, continue with next statement after try/catch
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            // Error occurred, execute catch block with error bound
+                            env.push_scope();
+                            env.define(&try_stmt.error_var, Value::String(e.to_string()));
+
+                            let catch_result =
+                                evaluate_block_internal(&try_stmt.catch_block, env, tools).await?;
+                            env.pop_scope();
+
+                            match catch_result.0 {
+                                ControlFlow::Return(val) => {
+                                    return Ok((ControlFlow::Return(val), Value::Null));
+                                }
+                                ControlFlow::Break => {
+                                    return Ok((ControlFlow::Break, Value::Null));
+                                }
+                                ControlFlow::LoopContinue => {
+                                    return Ok((ControlFlow::LoopContinue, Value::Null));
+                                }
+                                ControlFlow::Continue => {
+                                    // Normal completion, continue with next statement after try/catch
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
