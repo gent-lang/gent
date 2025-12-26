@@ -448,3 +448,100 @@ async fn test_array_join_integration() {
     let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
+
+// ============================================
+// Lambda-based Array Methods Tests
+// ============================================
+
+#[tokio::test]
+async fn test_array_map() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            let doubled = arr.map((x) => x * 2)
+            return doubled.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_filter() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 4, 5]
+            let evens = arr.filter((x) => x % 2 == 0)
+            return evens.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_reduce() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 4]
+            let sum = arr.reduce((acc, x) => acc + x, 0)
+            return sum
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_find() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 4, 5]
+            let found = arr.find((x) => x > 3)
+            return found
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_map_with_function_ref() {
+    let source = r#"
+        fn double(x: number) {
+            return x * 2
+        }
+        fn test() {
+            let arr = [1, 2, 3]
+            let doubled = arr.map(double)
+            return doubled.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}

@@ -10,7 +10,7 @@ pub mod imports;
 pub mod string_methods;
 pub mod types;
 
-pub use array_methods::call_array_method;
+pub use array_methods::{call_array_method, call_array_method_with_callback, is_callback_method};
 pub use block_eval::{evaluate_block, evaluate_expr_async};
 pub use builtins::{call_builtin, is_builtin};
 pub use environment::Environment;

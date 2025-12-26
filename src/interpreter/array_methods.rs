@@ -2,9 +2,12 @@
 //!
 //! This module provides built-in methods for array values,
 //! including length, push, pop, indexOf, join, slice, concat.
+//! Also includes higher-order methods: map, filter, reduce, find.
 
 use crate::errors::{GentError, GentResult};
-use crate::interpreter::Value;
+use crate::interpreter::{Environment, Value};
+use crate::parser::ast::LambdaBody;
+use crate::runtime::tools::ToolRegistry;
 use crate::Span;
 
 /// Call a method on an array value (non-lambda methods only)
@@ -147,4 +150,127 @@ fn get_array_arg(args: &[Value], index: usize, method: &str) -> GentResult<Vec<V
                 span: Span::default(),
             }
         })
+}
+
+// ============================================
+// Higher-order array methods (map, filter, reduce, find)
+// ============================================
+
+/// Check if method requires a callback (for dispatch routing)
+pub fn is_callback_method(method: &str) -> bool {
+    matches!(method, "map" | "filter" | "reduce" | "find")
+}
+
+/// Call a higher-order array method that takes a lambda/function callback
+pub fn call_array_method_with_callback<'a>(
+    arr: &'a [Value],
+    method: &'a str,
+    callback: &'a Value,
+    extra_args: &'a [Value],
+    env: &'a Environment,
+    tools: &'a ToolRegistry,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
+    Box::pin(async move {
+        match method {
+            "map" => {
+                let mut results = Vec::new();
+                for item in arr {
+                    let result = apply_callback(callback, &[item.clone()], env, tools).await?;
+                    results.push(result);
+                }
+                Ok(Value::Array(results))
+            }
+
+            "filter" => {
+                let mut results = Vec::new();
+                for item in arr {
+                    let result = apply_callback(callback, &[item.clone()], env, tools).await?;
+                    if result.is_truthy() {
+                        results.push(item.clone());
+                    }
+                }
+                Ok(Value::Array(results))
+            }
+
+            "reduce" => {
+                let initial = extra_args.first().cloned().ok_or_else(|| GentError::TypeError {
+                    expected: "initial value for reduce()".to_string(),
+                    got: "missing argument".to_string(),
+                    span: Span::default(),
+                })?;
+
+                let mut acc = initial;
+                for item in arr {
+                    acc = apply_callback(callback, &[acc, item.clone()], env, tools).await?;
+                }
+                Ok(acc)
+            }
+
+            "find" => {
+                for item in arr {
+                    let result = apply_callback(callback, &[item.clone()], env, tools).await?;
+                    if result.is_truthy() {
+                        return Ok(item.clone());
+                    }
+                }
+                Ok(Value::Null)
+            }
+
+            _ => Err(GentError::UndefinedProperty {
+                property: method.to_string(),
+                type_name: "Array".to_string(),
+                span: Span::default(),
+            }),
+        }
+    })
+}
+
+/// Apply a callback (lambda or function reference) to arguments
+fn apply_callback<'a>(
+    callback: &'a Value,
+    args: &'a [Value],
+    env: &'a Environment,
+    tools: &'a ToolRegistry,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
+    Box::pin(async move {
+        match callback {
+            Value::Lambda(lambda) => {
+                let mut lambda_env = env.clone();
+                lambda_env.push_scope();
+
+                for (param, arg) in lambda.params.iter().zip(args.iter()) {
+                    lambda_env.define(param, arg.clone());
+                }
+
+                let result = match &lambda.body {
+                    LambdaBody::Expression(expr) => {
+                        crate::interpreter::expr_eval::evaluate_expr(expr, &lambda_env)?
+                    }
+                    LambdaBody::Block(block) => {
+                        crate::interpreter::block_eval::evaluate_block(block, &mut lambda_env, tools).await?
+                    }
+                };
+
+                Ok(result)
+            }
+
+            Value::Function(fn_val) => {
+                let mut fn_env = env.clone();
+                fn_env.push_scope();
+
+                for (param, arg) in fn_val.params.iter().zip(args.iter()) {
+                    fn_env.define(&param.name, arg.clone());
+                }
+
+                let result = crate::interpreter::block_eval::evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                Ok(result)
+            }
+
+            _ => Err(GentError::TypeError {
+                expected: "function or lambda".to_string(),
+                got: callback.type_name().to_string(),
+                span: Span::default(),
+            }),
+        }
+    })
 }

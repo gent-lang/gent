@@ -6,7 +6,7 @@
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
-use crate::interpreter::array_methods::call_array_method;
+use crate::interpreter::array_methods::{call_array_method, call_array_method_with_callback, is_callback_method};
 use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::{Environment, Value};
 use crate::parser::ast::{Block, BlockStmt, Expression};
@@ -323,7 +323,25 @@ pub fn evaluate_expr_async<'a>(
                             arg_values.push(val);
                         }
 
-                        // Clone array for method call
+                        // Check if this is a callback method (map, filter, reduce, find)
+                        if is_callback_method(method_name) {
+                            let callback = arg_values.first().ok_or_else(|| GentError::TypeError {
+                                expected: "callback function for array method".to_string(),
+                                got: "missing argument".to_string(),
+                                span: span.clone(),
+                            })?;
+                            let extra_args = if arg_values.len() > 1 { &arg_values[1..] } else { &[] };
+                            return call_array_method_with_callback(
+                                arr,
+                                method_name,
+                                callback,
+                                extra_args,
+                                env,
+                                tools,
+                            ).await;
+                        }
+
+                        // Non-callback methods
                         let mut arr_clone = arr.clone();
                         let result = call_array_method(
                             &mut arr_clone,
