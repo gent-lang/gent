@@ -4,6 +4,7 @@ pub mod block_eval;
 pub mod environment;
 pub mod evaluator;
 pub mod expr_eval;
+pub mod string_methods;
 pub mod types;
 
 pub use block_eval::{evaluate_block, evaluate_expr_async};
