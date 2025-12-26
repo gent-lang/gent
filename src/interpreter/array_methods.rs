@@ -193,6 +193,26 @@ pub fn call_array_method_with_callback<'a>(
             }
 
             "reduce" => {
+                // Validate callback has exactly 2 parameters
+                let param_count = match callback {
+                    Value::Lambda(lambda) => lambda.params.len(),
+                    Value::Function(fn_val) => fn_val.params.len(),
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "function or lambda".to_string(),
+                            got: callback.type_name().to_string(),
+                            span: Span::default(),
+                        });
+                    }
+                };
+                if param_count != 2 {
+                    return Err(GentError::TypeError {
+                        expected: "reduce callback requires 2 parameters".to_string(),
+                        got: format!("{} parameters", param_count),
+                        span: Span::default(),
+                    });
+                }
+
                 let initial = extra_args.first().cloned().ok_or_else(|| GentError::TypeError {
                     expected: "initial value for reduce()".to_string(),
                     got: "missing argument".to_string(),

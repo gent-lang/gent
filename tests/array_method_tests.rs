@@ -545,3 +545,118 @@ async fn test_array_map_with_function_ref() {
     let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
+
+// ============================================
+// Edge Case Tests for Lambda-based Array Methods
+// ============================================
+
+#[tokio::test]
+async fn test_array_map_empty_array() {
+    let source = r#"
+        fn test() {
+            let arr = []
+            let result = arr.map((x) => x * 2)
+            return result.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Map on empty array should return empty array: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_filter_empty_array() {
+    let source = r#"
+        fn test() {
+            let arr = []
+            let result = arr.filter((x) => x > 0)
+            return result.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Filter on empty array should return empty array: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_find_empty_array() {
+    let source = r#"
+        fn test() {
+            let arr = []
+            let result = arr.find((x) => x > 0)
+            return result
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Find on empty array should return null: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_reduce_empty_array_without_initial() {
+    // reduce on empty array without initial value should error
+    let source = r#"
+        fn test() {
+            let arr = []
+            let result = arr.reduce((acc, x) => acc + x)
+            return result
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_err(), "Reduce on empty array without initial value should error");
+}
+
+#[tokio::test]
+async fn test_array_map_wrong_callback_type() {
+    // Passing a number instead of a lambda should error
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            let result = arr.map(42)
+            return result.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_err(), "Passing a number instead of lambda should error");
+}
+
+#[tokio::test]
+async fn test_array_reduce_wrong_param_count() {
+    // Reduce callback with wrong number of parameters should error
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            let result = arr.reduce((x) => x, 0)
+            return result
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_err(), "Reduce with 1-param callback should error");
+}
