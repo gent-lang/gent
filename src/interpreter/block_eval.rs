@@ -167,10 +167,54 @@ fn evaluate_block_internal<'a>(
                     evaluate_expr_async(expr, env, tools).await?;
                 }
 
-                BlockStmt::While(_while_stmt) => {
-                    // TODO: Implement while loop evaluation (Task 10)
-                    // For now, this is a placeholder to prevent compile errors
-                    unimplemented!("While loop evaluation not yet implemented");
+                BlockStmt::While(while_stmt) => {
+                    const MAX_ITERATIONS: usize = 10000; // Prevent infinite loops
+                    let mut iterations = 0;
+
+                    'while_loop: loop {
+                        iterations += 1;
+                        if iterations > MAX_ITERATIONS {
+                            return Err(GentError::SyntaxError {
+                                message: format!(
+                                    "While loop exceeded maximum iterations ({})",
+                                    MAX_ITERATIONS
+                                ),
+                                span: while_stmt.span.clone(),
+                            });
+                        }
+
+                        // Evaluate condition
+                        let condition =
+                            evaluate_expr_async(&while_stmt.condition, env, tools).await?;
+                        if !condition.is_truthy() {
+                            break;
+                        }
+
+                        // Execute body statements with a new scope
+                        env.push_scope();
+                        let (flow, _) =
+                            evaluate_block_internal(&while_stmt.body, env, tools).await?;
+                        env.pop_scope();
+
+                        // Handle control flow from the loop body
+                        match flow {
+                            ControlFlow::Continue => {
+                                // Normal completion, continue to next iteration
+                            }
+                            ControlFlow::LoopContinue => {
+                                // Skip to next iteration
+                                continue 'while_loop;
+                            }
+                            ControlFlow::Break => {
+                                // Exit the loop
+                                break 'while_loop;
+                            }
+                            ControlFlow::Return(val) => {
+                                // Propagate return up
+                                return Ok((ControlFlow::Return(val), Value::Null));
+                            }
+                        }
+                    }
                 }
 
                 BlockStmt::Break(_) => {
