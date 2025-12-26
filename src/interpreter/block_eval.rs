@@ -10,6 +10,23 @@ use crate::interpreter::{Environment, Value};
 use crate::parser::ast::{Block, BlockStmt, Expression};
 use crate::runtime::tools::ToolRegistry;
 
+/// Control flow signal for break/continue/return propagation
+#[derive(Debug, Clone, PartialEq)]
+enum ControlFlow {
+    /// Normal execution, continue to next statement
+    Continue,
+    /// Break out of the current loop
+    Break,
+    /// Skip to next iteration of the current loop
+    LoopContinue,
+    /// Return from the function with the given value (boxed to reduce enum size)
+    Return(Box<Value>),
+}
+
+/// Type alias for async block evaluation result with control flow
+type BlockInternalFuture<'a> =
+    std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<(ControlFlow, Value)>> + 'a>>;
+
 /// Evaluate a block of statements in the given environment
 ///
 /// Returns the value of the first return statement encountered,
@@ -23,6 +40,29 @@ pub fn evaluate_block<'a>(
         // Create a new scope for this block
         env.push_scope();
 
+        let (flow, result) = evaluate_block_internal(block, env, tools).await?;
+
+        // Pop the scope
+        env.pop_scope();
+
+        // Handle control flow that escaped the block
+        match flow {
+            ControlFlow::Return(val) => Ok(*val),
+            ControlFlow::Continue => Ok(result),
+            // Break/LoopContinue outside of a loop is an error, but we treat it as normal
+            // completion for now (the loop handler consumes these signals)
+            ControlFlow::Break | ControlFlow::LoopContinue => Ok(result),
+        }
+    })
+}
+
+/// Internal block evaluation that returns control flow signals
+fn evaluate_block_internal<'a>(
+    block: &'a Block,
+    env: &'a mut Environment,
+    tools: &'a ToolRegistry,
+) -> BlockInternalFuture<'a> {
+    Box::pin(async move {
         let mut result = Value::Null;
 
         for stmt in &block.statements {
@@ -41,9 +81,7 @@ pub fn evaluate_block<'a>(
                     } else {
                         Value::Null
                     };
-                    // Pop the scope before returning
-                    env.pop_scope();
-                    return Ok(result);
+                    return Ok((ControlFlow::Return(Box::new(result)), Value::Null));
                 }
 
                 BlockStmt::If(if_stmt) => {
@@ -52,20 +90,26 @@ pub fn evaluate_block<'a>(
 
                     // Execute the appropriate block
                     if condition.is_truthy() {
-                        // Execute then block
-                        let then_result = evaluate_block(&if_stmt.then_block, env, tools).await?;
-                        // If the then block returned, propagate that return
-                        if !matches!(then_result, Value::Null) || has_return(&if_stmt.then_block) {
-                            env.pop_scope();
-                            return Ok(then_result);
+                        // Execute then block (create a new scope)
+                        env.push_scope();
+                        let (flow, _) = evaluate_block_internal(&if_stmt.then_block, env, tools).await?;
+                        env.pop_scope();
+
+                        // Propagate control flow signals
+                        match flow {
+                            ControlFlow::Continue => {}
+                            other => return Ok((other, Value::Null)),
                         }
                     } else if let Some(ref else_block) = if_stmt.else_block {
-                        // Execute else block
-                        let else_result = evaluate_block(else_block, env, tools).await?;
-                        // If the else block returned, propagate that return
-                        if !matches!(else_result, Value::Null) || has_return(else_block) {
-                            env.pop_scope();
-                            return Ok(else_result);
+                        // Execute else block (create a new scope)
+                        env.push_scope();
+                        let (flow, _) = evaluate_block_internal(else_block, env, tools).await?;
+                        env.pop_scope();
+
+                        // Propagate control flow signals
+                        match flow {
+                            ControlFlow::Continue => {}
+                            other => return Ok((other, Value::Null)),
                         }
                     }
                 }
@@ -88,84 +132,33 @@ pub fn evaluate_block<'a>(
                     };
 
                     // Iterate over items
-                    for item in items {
+                    'outer: for item in items {
                         env.push_scope();
                         env.define(&for_stmt.variable, item);
 
-                        // Execute the loop body
-                        for block_stmt in &for_stmt.body.statements {
-                            match block_stmt {
-                                BlockStmt::Return(return_stmt) => {
-                                    // Handle return inside the loop
-                                    let return_val = if let Some(ref expr) = return_stmt.value {
-                                        evaluate_expr(expr, env)?
-                                    } else {
-                                        Value::Null
-                                    };
-                                    env.pop_scope();
-                                    // Pop the outer block scope too
-                                    env.pop_scope();
-                                    return Ok(return_val);
-                                }
-                                BlockStmt::Let(let_stmt) => {
-                                    let value = evaluate_expr(&let_stmt.value, env)?;
-                                    env.define(&let_stmt.name, value);
-                                }
-                                BlockStmt::If(if_stmt) => {
-                                    let condition = evaluate_expr(&if_stmt.condition, env)?;
-                                    if condition.is_truthy() {
-                                        let then_result = evaluate_block(&if_stmt.then_block, env, tools).await?;
-                                        if !matches!(then_result, Value::Null) || has_return(&if_stmt.then_block) {
-                                            env.pop_scope();
-                                            env.pop_scope();
-                                            return Ok(then_result);
-                                        }
-                                    } else if let Some(ref else_block) = if_stmt.else_block {
-                                        let else_result = evaluate_block(else_block, env, tools).await?;
-                                        if !matches!(else_result, Value::Null) || has_return(else_block) {
-                                            env.pop_scope();
-                                            env.pop_scope();
-                                            return Ok(else_result);
-                                        }
-                                    }
-                                }
-                                BlockStmt::For(_) => {
-                                    // Nested for loops would require recursive handling
-                                    // For now, evaluate using the block evaluator
-                                    let nested_block = Block {
-                                        statements: vec![block_stmt.clone()],
-                                        span: for_stmt.body.span.clone(),
-                                    };
-                                    let nested_result = evaluate_block(&nested_block, env, tools).await?;
-                                    if !matches!(nested_result, Value::Null) {
-                                        env.pop_scope();
-                                        env.pop_scope();
-                                        return Ok(nested_result);
-                                    }
-                                }
-                                BlockStmt::Expr(expr) => {
-                                    evaluate_expr(expr, env)?;
-                                }
-                                BlockStmt::Break(span) => {
-                                    // TODO: Implement break statement evaluation (Task 7)
-                                    return Err(GentError::TypeError {
-                                        expected: "break statement implementation".to_string(),
-                                        got: "not yet implemented".to_string(),
-                                        span: span.clone(),
-                                    });
-                                }
-                                BlockStmt::Continue(span) => {
-                                    // TODO: Implement continue statement evaluation (Task 7)
-                                    return Err(GentError::TypeError {
-                                        expected: "continue statement implementation".to_string(),
-                                        got: "not yet implemented".to_string(),
-                                        span: span.clone(),
-                                    });
-                                }
-                            }
-                        }
+                        // Execute the loop body using internal evaluation
+                        let (flow, _) = evaluate_block_internal(&for_stmt.body, env, tools).await?;
 
                         env.pop_scope();
+
+                        // Handle control flow from the loop body
+                        match flow {
+                            ControlFlow::Continue => {
+                                // Normal completion, continue to next iteration
+                            }
+                            ControlFlow::LoopContinue => {
+                                // Skip to next iteration (already handled by continuing the loop)
+                                continue 'outer;
+                            }
+                            ControlFlow::Break => {
+                                // Exit the loop
+                                break 'outer;
+                            }
+                            ControlFlow::Return(val) => {
+                                // Propagate return up
+                                return Ok((ControlFlow::Return(val), Value::Null));
+                            }
+                        }
                     }
                 }
 
@@ -174,39 +167,20 @@ pub fn evaluate_block<'a>(
                     evaluate_expr_async(expr, env, tools).await?;
                 }
 
-                BlockStmt::Break(span) => {
-                    // TODO: Implement break statement evaluation (Task 7)
-                    return Err(GentError::TypeError {
-                        expected: "break statement implementation".to_string(),
-                        got: "not yet implemented".to_string(),
-                        span: span.clone(),
-                    });
+                BlockStmt::Break(_) => {
+                    // Signal break to the enclosing loop
+                    return Ok((ControlFlow::Break, Value::Null));
                 }
 
-                BlockStmt::Continue(span) => {
-                    // TODO: Implement continue statement evaluation (Task 7)
-                    return Err(GentError::TypeError {
-                        expected: "continue statement implementation".to_string(),
-                        got: "not yet implemented".to_string(),
-                        span: span.clone(),
-                    });
+                BlockStmt::Continue(_) => {
+                    // Signal continue to the enclosing loop
+                    return Ok((ControlFlow::LoopContinue, Value::Null));
                 }
             }
         }
 
-        // Pop the scope when the block ends naturally
-        env.pop_scope();
-
-        Ok(result)
+        Ok((ControlFlow::Continue, result))
     })
-}
-
-/// Check if a block contains a return statement at the top level
-fn has_return(block: &Block) -> bool {
-    block
-        .statements
-        .iter()
-        .any(|stmt| matches!(stmt, BlockStmt::Return(_)))
 }
 
 /// Evaluate an expression in an async context, handling function calls
