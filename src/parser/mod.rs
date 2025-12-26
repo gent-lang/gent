@@ -3,9 +3,10 @@
 pub mod ast;
 
 pub use ast::{
-    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, FnDecl, ForStmt, IfStmt,
-    ImportStmt, Lambda, LambdaBody, LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart,
-    StructDecl, StructField, ToolDecl, TopLevelCall, TryStmt, TypeName, UnaryOp, WhileStmt,
+    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, EnumDecl, EnumField, EnumVariant, Expression,
+    FieldType, FnDecl, ForStmt, IfStmt, ImportStmt, Lambda, LambdaBody, LetStmt, OutputType, Param,
+    Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl, TopLevelCall,
+    TryStmt, TypeName, UnaryOp, WhileStmt,
 };
 
 use crate::errors::{GentError, GentResult, Span};
@@ -47,6 +48,7 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
     match inner.as_rule() {
         Rule::import_stmt => Ok(Statement::Import(parse_import_stmt(inner)?)),
         Rule::struct_decl => Ok(Statement::StructDecl(parse_struct_decl(inner)?)),
+        Rule::enum_decl => Ok(Statement::EnumDecl(parse_enum_decl(inner)?)),
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
         Rule::fn_decl => Ok(Statement::FnDecl(parse_fn_decl(inner)?)),
@@ -984,4 +986,54 @@ fn infer_field_type_from_expr(expr: &Expression) -> GentResult<FieldType> {
             span: expr.span().clone(),
         }),
     }
+}
+
+fn parse_enum_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<EnumDecl> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let mut variants = Vec::new();
+
+    if let Some(body) = inner.next() {
+        for variant_pair in body.into_inner() {
+            variants.push(parse_enum_variant(variant_pair)?);
+        }
+    }
+
+    Ok(EnumDecl { name, variants, span })
+}
+
+fn parse_enum_variant(pair: pest::iterators::Pair<Rule>) -> GentResult<EnumVariant> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let mut fields = Vec::new();
+
+    // Check for variant data
+    if let Some(data_pair) = inner.next() {
+        let field_list = data_pair.into_inner().next().unwrap();
+        for field_pair in field_list.into_inner() {
+            fields.push(parse_enum_field(field_pair)?);
+        }
+    }
+
+    Ok(EnumVariant { name, fields, span })
+}
+
+fn parse_enum_field(pair: pest::iterators::Pair<Rule>) -> GentResult<EnumField> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let first = inner.next().unwrap();
+    let (name, type_name) = if let Some(second) = inner.next() {
+        // Named field: name: type
+        (Some(first.as_str().to_string()), second.as_str().to_string())
+    } else {
+        // Unnamed field: just type
+        (None, first.as_str().to_string())
+    };
+
+    Ok(EnumField { name, type_name, span })
 }
