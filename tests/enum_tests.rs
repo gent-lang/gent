@@ -161,6 +161,28 @@ async fn test_enum_wrong_arg_count() {
 }
 
 // ============================================
+// Match Expression Parsing Tests
+// ============================================
+
+#[test]
+fn test_parse_match_expression() {
+    let source = r#"
+        enum Status { Pending, Failed(msg) }
+        fn test() {
+            let s = Status.Pending
+            let result = match s {
+                Status.Pending => "waiting"
+                Status.Failed(m) => m
+                _ => "other"
+            }
+            return result
+        }
+    "#;
+    let result = gent::parser::parse(source);
+    assert!(result.is_ok(), "Failed to parse match: {:?}", result.err());
+}
+
+// ============================================
 // .is() Method Tests
 // ============================================
 

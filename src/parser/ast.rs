@@ -238,6 +238,8 @@ pub enum Expression {
     Range(Box<Expression>, Box<Expression>, Span),
     /// Lambda expression: (x) => x * 2
     Lambda(Lambda),
+    /// Match expression: match value { Pattern => result }
+    Match(MatchExpr),
 }
 
 impl Expression {
@@ -258,6 +260,7 @@ impl Expression {
             Expression::Index(_, _, span) => span,
             Expression::Range(_, _, span) => span,
             Expression::Lambda(lambda) => &lambda.span,
+            Expression::Match(m) => &m.span,
         }
     }
 }
@@ -342,4 +345,40 @@ pub struct TryStmt {
     pub catch_block: Block,
     /// Source location
     pub span: Span,
+}
+
+/// Match expression: `match value { Pattern => result }`
+#[derive(Debug, Clone, PartialEq)]
+pub struct MatchExpr {
+    pub subject: Box<Expression>,
+    pub arms: Vec<MatchArm>,
+    pub span: Span,
+}
+
+/// A single arm in a match expression
+#[derive(Debug, Clone, PartialEq)]
+pub struct MatchArm {
+    pub pattern: MatchPattern,
+    pub body: MatchBody,
+    pub span: Span,
+}
+
+/// Pattern in a match arm
+#[derive(Debug, Clone, PartialEq)]
+pub enum MatchPattern {
+    /// Wildcard: `_`
+    Wildcard,
+    /// Enum variant: `Status.Pending` or `Result.Ok(value)`
+    EnumVariant {
+        enum_name: String,
+        variant_name: String,
+        bindings: Vec<String>,
+    },
+}
+
+/// Body of a match arm
+#[derive(Debug, Clone, PartialEq)]
+pub enum MatchBody {
+    Expression(Box<Expression>),
+    Block(Block),
 }

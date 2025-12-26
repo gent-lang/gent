@@ -208,6 +208,13 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
                 body: lambda.body.clone(),
             }))
         }
+
+        // Match expressions require async context for body evaluation
+        Expression::Match(match_expr) => Err(GentError::TypeError {
+            expected: "synchronous expression".to_string(),
+            got: "match expression (requires async context)".to_string(),
+            span: match_expr.span.clone(),
+        }),
     }
 }
 
