@@ -1,0 +1,15 @@
+// Function Examples
+
+fn formatName(first: string, last: string) -> string {
+    return "{first} {last}"
+}
+
+fn isPositive(n: number) -> boolean {
+    return n > 0
+}
+
+tool test() {
+    let name = formatName("John", "Doe")
+    let positive = isPositive(42)
+    return name
+}

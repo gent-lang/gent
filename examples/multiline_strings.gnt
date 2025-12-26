@@ -1,0 +1,16 @@
+// Multi-line String Examples
+
+let name = "Claude"
+let systemPrompt = """
+You are {name}, a helpful assistant.
+
+Your goals:
+1. Be helpful
+2. Be accurate
+3. Be concise
+"""
+
+agent Assistant {
+    systemPrompt: systemPrompt
+    model: "gpt-4o-mini"
+}

@@ -1,0 +1,15 @@
+// Try/Catch Examples
+
+agent Risky {
+    systemPrompt: "You sometimes fail."
+    model: "gpt-4o-mini"
+}
+
+tool safeInvoke() {
+    try {
+        let result = Risky.invoke()
+        return result
+    } catch error {
+        return "Error occurred: {error}"
+    }
+}

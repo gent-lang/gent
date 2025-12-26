@@ -1,0 +1,9 @@
+// Import Example - Main file
+
+import { greet, formatDate } from "./helpers.gnt"
+
+tool demo() {
+    let greeting = greet("World")
+    let date = formatDate(2024, 12, 26)
+    return greeting
+}

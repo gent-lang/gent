@@ -1,0 +1,15 @@
+// String Methods Examples
+
+tool processText() {
+    let raw = "  Hello, World!  "
+    let trimmed = raw.trim()
+    let lower = trimmed.toLowerCase()
+    let upper = trimmed.toUpperCase()
+    let parts = raw.split(",")
+    let hasHello = raw.contains("Hello")
+    let startsWithH = trimmed.startsWith("H")
+    let replaced = raw.replace("World", "GENT")
+    let len = raw.length()
+
+    return "processed"
+}

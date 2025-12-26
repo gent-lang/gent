@@ -1,0 +1,9 @@
+// Helper functions for import example
+
+fn greet(name: string) -> string {
+    return "Hello, {name}!"
+}
+
+fn formatDate(year: number, month: number, day: number) -> string {
+    return "{year}-{month}-{day}"
+}
