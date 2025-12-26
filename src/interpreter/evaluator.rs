@@ -1,6 +1,7 @@
 //! Program evaluation for GENT
 
 use crate::errors::{GentError, GentResult};
+use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::{AgentValue, Environment, OutputSchema, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
@@ -181,7 +182,7 @@ fn evaluate_agent_decl(
     for field in &decl.fields {
         match field.name.as_str() {
             "prompt" | "systemPrompt" => {
-                let value = evaluate_expression(&field.value)?;
+                let value = evaluate_expr(&field.value, env)?;
                 prompt = Some(match value {
                     Value::String(s) => s,
                     _ => {
@@ -194,7 +195,7 @@ fn evaluate_agent_decl(
                 });
             }
             "max_steps" | "maxSteps" => {
-                let value = evaluate_expression(&field.value)?;
+                let value = evaluate_expr(&field.value, env)?;
                 max_steps = Some(match value {
                     Value::Number(n) if n >= 0.0 => n as u32,
                     Value::Number(_) => {
@@ -214,7 +215,7 @@ fn evaluate_agent_decl(
                 });
             }
             "model" => {
-                let value = evaluate_expression(&field.value)?;
+                let value = evaluate_expr(&field.value, env)?;
                 model = Some(match value {
                     Value::String(s) => s,
                     _ => {
@@ -227,7 +228,7 @@ fn evaluate_agent_decl(
                 });
             }
             "output_retries" | "outputRetries" => {
-                let value = evaluate_expression(&field.value)?;
+                let value = evaluate_expr(&field.value, env)?;
                 output_retries = Some(match value {
                     Value::Number(n) if n >= 0.0 => n as u32,
                     Value::Number(_) => {
@@ -253,7 +254,7 @@ fn evaluate_agent_decl(
                 // Ignore for now - will be implemented later
             }
             "userPrompt" => {
-                let value = evaluate_expression(&field.value)?;
+                let value = evaluate_expr(&field.value, env)?;
                 user_prompt = Some(match value {
                     Value::String(s) => s,
                     _ => {
