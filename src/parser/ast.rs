@@ -94,6 +94,30 @@ pub struct StructDecl {
     pub span: Span,
 }
 
+/// Enum declaration: `enum Name { Variant1, Variant2(type) }`
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumDecl {
+    pub name: String,
+    pub variants: Vec<EnumVariant>,
+    pub span: Span,
+}
+
+/// A variant in an enum declaration
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumVariant {
+    pub name: String,
+    pub fields: Vec<EnumField>,
+    pub span: Span,
+}
+
+/// A field in an enum variant
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumField {
+    pub name: Option<String>,
+    pub type_name: String,
+    pub span: Span,
+}
+
 /// Output type specification (inline or named)
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
@@ -124,6 +148,7 @@ pub enum Statement {
     ToolDecl(ToolDecl),
     FnDecl(FnDecl),
     StructDecl(StructDecl),
+    EnumDecl(EnumDecl),
     LetStmt(LetStmt),
     TopLevelCall(TopLevelCall),
 }

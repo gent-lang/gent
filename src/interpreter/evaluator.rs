@@ -177,6 +177,10 @@ async fn evaluate_statement(
             // Struct declarations are handled during parsing/validation
             // No runtime action needed
         }
+        Statement::EnumDecl(_) => {
+            // Enum declarations are handled during parsing/validation
+            // No runtime action needed
+        }
         Statement::FnDecl(decl) => {
             logger.log(
                 LogLevel::Debug,
@@ -286,6 +290,11 @@ async fn evaluate_statement_with_output(
         }
         Statement::StructDecl(_) => {
             // Struct declarations are handled during parsing/validation
+            // No runtime action needed
+            Ok(None)
+        }
+        Statement::EnumDecl(_) => {
+            // Enum declarations are handled during parsing/validation
             // No runtime action needed
             Ok(None)
         }
