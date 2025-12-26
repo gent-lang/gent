@@ -5,6 +5,7 @@
 
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::expr_eval::evaluate_expr;
+use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::{Environment, Value};
 use crate::parser::ast::{Block, BlockStmt, Expression};
 use crate::runtime::tools::ToolRegistry;
@@ -186,6 +187,30 @@ pub fn evaluate_expr_async<'a>(
         match expr {
             // Function/tool calls require async context
             Expression::Call(callee_expr, args, span) => {
+                // Check if this is a method call on a string
+                if let Expression::Member(obj_expr, method_name, _) = callee_expr.as_ref() {
+                    // Evaluate the object expression
+                    let obj = evaluate_expr_async(obj_expr, env, tools).await?;
+
+                    // If it's a string, dispatch to string methods
+                    if let Value::String(s) = &obj {
+                        // Evaluate method arguments
+                        let mut arg_values = Vec::new();
+                        for arg in args {
+                            let val = evaluate_expr_async(arg, env, tools).await?;
+                            arg_values.push(val);
+                        }
+                        return call_string_method(s, method_name, &arg_values);
+                    }
+
+                    // For other types, return an error for now
+                    return Err(GentError::TypeError {
+                        expected: "String".to_string(),
+                        got: obj.type_name().to_string(),
+                        span: span.clone(),
+                    });
+                }
+
                 // Evaluate the callee
                 let callee = evaluate_expr(callee_expr, env)?;
 

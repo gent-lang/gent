@@ -2,6 +2,7 @@
 
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::expr_eval::evaluate_expr;
+use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::{AgentValue, Environment, OutputSchema, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
@@ -428,8 +429,17 @@ fn evaluate_expr_with_env<'a>(
                                 }
                             }
                         }
+                        Value::String(s) => {
+                            // String method call - evaluate arguments and dispatch
+                            let mut arg_values = Vec::new();
+                            for arg in args {
+                                let val = evaluate_expr_with_env(arg, env, llm, tools, logger).await?;
+                                arg_values.push(val);
+                            }
+                            return call_string_method(&s, method, &arg_values);
+                        }
                         _ => {
-                            // Not an agent - method calls on non-agents not yet supported
+                            // Not an agent or string - method calls not yet supported
                             return Err(GentError::SyntaxError {
                                 message: format!("Method calls on {} not yet implemented", obj_value.type_name()),
                                 span: span.clone(),

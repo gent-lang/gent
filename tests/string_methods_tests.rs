@@ -396,3 +396,324 @@ fn test_replace_wrong_arg_types() {
     );
     assert!(result.is_err());
 }
+
+// ============================================
+// Integration Tests - String Methods in GENT Programs
+// ============================================
+
+use gent::interpreter::block_eval::evaluate_block;
+use gent::interpreter::Environment;
+use gent::parser::ast::{Block, BlockStmt, Expression, LetStmt, ReturnStmt};
+use gent::runtime::tools::ToolRegistry;
+use gent::Span;
+
+/// Helper to create a method call expression: receiver.method(args)
+fn make_method_call(receiver: Expression, method: &str, args: Vec<Expression>) -> Expression {
+    Expression::Call(
+        Box::new(Expression::Member(
+            Box::new(receiver),
+            method.to_string(),
+            Span::new(0, 1),
+        )),
+        args,
+        Span::new(0, 1),
+    )
+}
+
+/// Helper to create a string literal expression
+fn make_string(s: &str) -> Expression {
+    Expression::String(
+        vec![gent::parser::ast::StringPart::Literal(s.to_string())],
+        Span::new(0, 1),
+    )
+}
+
+#[tokio::test]
+async fn test_string_method_length_integration() {
+    // let x = "hello".length()
+    // return x
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "x".to_string(),
+                value: make_method_call(make_string("hello"), "length", vec![]),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("x".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::Number(5.0));
+}
+
+#[tokio::test]
+async fn test_string_method_trim_integration() {
+    // let x = "  hello  ".trim()
+    // return x
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "x".to_string(),
+                value: make_method_call(make_string("  hello  "), "trim", vec![]),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("x".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::String("hello".to_string()));
+}
+
+#[tokio::test]
+async fn test_string_method_split_integration() {
+    // let parts = "a,b,c".split(",")
+    // return parts
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "parts".to_string(),
+                value: make_method_call(make_string("a,b,c"), "split", vec![make_string(",")]),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("parts".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    let expected = Value::Array(vec![
+        Value::String("a".to_string()),
+        Value::String("b".to_string()),
+        Value::String("c".to_string()),
+    ]);
+    assert_eq!(result.unwrap(), expected);
+}
+
+#[tokio::test]
+async fn test_string_method_contains_integration() {
+    // let result = "hello world".contains("world")
+    // return result
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "result".to_string(),
+                value: make_method_call(
+                    make_string("hello world"),
+                    "contains",
+                    vec![make_string("world")],
+                ),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("result".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::Boolean(true));
+}
+
+#[tokio::test]
+async fn test_string_method_to_upper_case_integration() {
+    // let x = "hello".toUpperCase()
+    // return x
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "x".to_string(),
+                value: make_method_call(make_string("hello"), "toUpperCase", vec![]),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("x".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::String("HELLO".to_string()));
+}
+
+#[tokio::test]
+async fn test_string_method_to_lower_case_integration() {
+    // let x = "HELLO".toLowerCase()
+    // return x
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "x".to_string(),
+                value: make_method_call(make_string("HELLO"), "toLowerCase", vec![]),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("x".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::String("hello".to_string()));
+}
+
+#[tokio::test]
+async fn test_string_method_replace_integration() {
+    // let x = "hello world".replace("world", "there")
+    // return x
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "x".to_string(),
+                value: make_method_call(
+                    make_string("hello world"),
+                    "replace",
+                    vec![make_string("world"), make_string("there")],
+                ),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("x".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::String("hello there".to_string()));
+}
+
+#[tokio::test]
+async fn test_string_method_starts_with_integration() {
+    // let x = "hello".startsWith("hel")
+    // return x
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "x".to_string(),
+                value: make_method_call(
+                    make_string("hello"),
+                    "startsWith",
+                    vec![make_string("hel")],
+                ),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("x".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::Boolean(true));
+}
+
+#[tokio::test]
+async fn test_string_method_ends_with_integration() {
+    // let x = "hello".endsWith("lo")
+    // return x
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "x".to_string(),
+                value: make_method_call(make_string("hello"), "endsWith", vec![make_string("lo")]),
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("x".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::Boolean(true));
+}
+
+#[tokio::test]
+async fn test_string_method_chaining_integration() {
+    // let x = "  HELLO  ".trim().toLowerCase()
+    // return x
+    let inner_call = make_method_call(make_string("  HELLO  "), "trim", vec![]);
+    let outer_call = make_method_call(inner_call, "toLowerCase", vec![]);
+
+    let block = Block {
+        statements: vec![
+            BlockStmt::Let(LetStmt {
+                name: "x".to_string(),
+                value: outer_call,
+                span: Span::new(0, 1),
+            }),
+            BlockStmt::Return(ReturnStmt {
+                value: Some(Expression::Identifier("x".to_string(), Span::new(0, 1))),
+                span: Span::new(0, 1),
+            }),
+        ],
+        span: Span::new(0, 1),
+    };
+
+    let mut env = Environment::new();
+    let tools = ToolRegistry::new();
+
+    let result = evaluate_block(&block, &mut env, &tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+    assert_eq!(result.unwrap(), Value::String("hello".to_string()));
+}
