@@ -1,6 +1,8 @@
 //! Program evaluation for GENT
 
 use crate::errors::{GentError, GentResult};
+use crate::interpreter::block_eval::evaluate_block;
+use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::imports::collect_imports;
 use crate::interpreter::string_methods::call_string_method;
@@ -198,8 +200,53 @@ async fn evaluate_statement(
             let value = evaluate_expr_with_env(&stmt.value, env, llm, tools, logger).await?;
             env.define(&stmt.name, value);
         }
-        Statement::TopLevelCall(_) => {
-            // TODO: Implement in Task 3
+        Statement::TopLevelCall(call) => {
+            // Evaluate arguments
+            let mut arg_values = Vec::new();
+            for arg in &call.args {
+                let val = evaluate_expr_with_env(arg, env, llm, tools, logger).await?;
+                arg_values.push(val);
+            }
+
+            // Check if it's a built-in function
+            if is_builtin(&call.name) {
+                call_builtin(&call.name, &arg_values, &call.span)?;
+                return Ok(());
+            }
+
+            // Check if it's a user-defined function
+            if let Some(Value::Function(fn_val)) = env.get(&call.name) {
+                let fn_val = fn_val.clone();
+
+                // Check argument count
+                if arg_values.len() != fn_val.params.len() {
+                    return Err(GentError::SyntaxError {
+                        message: format!(
+                            "Function '{}' expects {} arguments, got {}",
+                            fn_val.name,
+                            fn_val.params.len(),
+                            arg_values.len()
+                        ),
+                        span: call.span.clone(),
+                    });
+                }
+
+                // Create function scope and bind parameters
+                let mut fn_env = env.clone();
+                fn_env.push_scope();
+                for (param, arg_val) in fn_val.params.iter().zip(arg_values.iter()) {
+                    fn_env.define(&param.name, arg_val.clone());
+                }
+
+                // Evaluate function body
+                evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                return Ok(());
+            }
+
+            return Err(GentError::UnknownTool {
+                name: call.name.clone(),
+                span: call.span.clone(),
+            });
         }
     }
     Ok(())
@@ -273,9 +320,53 @@ async fn evaluate_statement_with_output(
             env.define(&stmt.name, value);
             Ok(output)
         }
-        Statement::TopLevelCall(_) => {
-            // TODO: Implement in Task 3
-            Ok(None)
+        Statement::TopLevelCall(call) => {
+            // Evaluate arguments
+            let mut arg_values = Vec::new();
+            for arg in &call.args {
+                let val = evaluate_expr_with_env(arg, env, llm, tools, logger).await?;
+                arg_values.push(val);
+            }
+
+            // Check if it's a built-in function
+            if is_builtin(&call.name) {
+                call_builtin(&call.name, &arg_values, &call.span)?;
+                return Ok(None);
+            }
+
+            // Check if it's a user-defined function
+            if let Some(Value::Function(fn_val)) = env.get(&call.name) {
+                let fn_val = fn_val.clone();
+
+                // Check argument count
+                if arg_values.len() != fn_val.params.len() {
+                    return Err(GentError::SyntaxError {
+                        message: format!(
+                            "Function '{}' expects {} arguments, got {}",
+                            fn_val.name,
+                            fn_val.params.len(),
+                            arg_values.len()
+                        ),
+                        span: call.span.clone(),
+                    });
+                }
+
+                // Create function scope and bind parameters
+                let mut fn_env = env.clone();
+                fn_env.push_scope();
+                for (param, arg_val) in fn_val.params.iter().zip(arg_values.iter()) {
+                    fn_env.define(&param.name, arg_val.clone());
+                }
+
+                // Evaluate function body
+                evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                return Ok(None);
+            }
+
+            return Err(GentError::UnknownTool {
+                name: call.name.clone(),
+                span: call.span.clone(),
+            });
         }
     }
 }
