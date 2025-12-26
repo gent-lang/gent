@@ -70,8 +70,36 @@ fn evaluate_block_internal<'a>(
         for stmt in &block.statements {
             match stmt {
                 BlockStmt::Let(let_stmt) => {
-                    // Evaluate the value expression
-                    let value = evaluate_expr_async(&let_stmt.value, env, tools).await?;
+                    // Check if the value is a mutating array method call (push/pop)
+                    let value = if let Some((arr_var, method_name, args)) = extract_array_method_call(&let_stmt.value) {
+                        if method_name == "push" || method_name == "pop" {
+                            if let Some(Value::Array(arr)) = env.get(&arr_var).cloned() {
+                                let mut arr_mut = arr;
+
+                                // Evaluate arguments
+                                let mut arg_values = Vec::new();
+                                for arg in args {
+                                    let val = evaluate_expr_async(arg, env, tools).await?;
+                                    arg_values.push(val);
+                                }
+
+                                // Call the method and get result
+                                let result = call_array_method(&mut arr_mut, &method_name, &arg_values)?;
+
+                                // Update the array variable with the mutated array
+                                env.set(&arr_var, Value::Array(arr_mut));
+
+                                result
+                            } else {
+                                evaluate_expr_async(&let_stmt.value, env, tools).await?
+                            }
+                        } else {
+                            evaluate_expr_async(&let_stmt.value, env, tools).await?
+                        }
+                    } else {
+                        evaluate_expr_async(&let_stmt.value, env, tools).await?
+                    };
+
                     // Define the variable in the current scope
                     env.define(&let_stmt.name, value);
                 }
@@ -165,6 +193,30 @@ fn evaluate_block_internal<'a>(
                 }
 
                 BlockStmt::Expr(expr) => {
+                    // Check for mutating array method calls (push/pop) and handle specially
+                    if let Some((var_name, method_name, args)) = extract_array_method_call(expr) {
+                        if method_name == "push" || method_name == "pop" {
+                            // Get the current array value
+                            if let Some(Value::Array(arr)) = env.get(&var_name).cloned() {
+                                let mut arr_mut = arr;
+
+                                // Evaluate arguments
+                                let mut arg_values = Vec::new();
+                                for arg in args {
+                                    let val = evaluate_expr_async(arg, env, tools).await?;
+                                    arg_values.push(val);
+                                }
+
+                                // Call the method
+                                call_array_method(&mut arr_mut, &method_name, &arg_values)?;
+
+                                // Update the variable with the mutated array
+                                env.set(&var_name, Value::Array(arr_mut));
+                            }
+                            continue;
+                        }
+                    }
+
                     // Evaluate the expression for side effects, discarding the result
                     evaluate_expr_async(expr, env, tools).await?;
                 }
@@ -485,4 +537,17 @@ fn args_to_json(args: &[Value]) -> serde_json::Value {
 
     // For multiple args or non-object single arg, create an array
     JsonValue::Array(args.iter().map(value_to_json).collect())
+}
+
+/// Extract variable name, method name, and arguments from a method call expression
+/// Returns Some((var_name, method_name, args)) if this is a method call on an identifier
+fn extract_array_method_call(expr: &Expression) -> Option<(String, String, &Vec<Expression>)> {
+    if let Expression::Call(callee_expr, args, _) = expr {
+        if let Expression::Member(obj_expr, method_name, _) = callee_expr.as_ref() {
+            if let Expression::Identifier(var_name, _) = obj_expr.as_ref() {
+                return Some((var_name.clone(), method_name.clone(), args));
+            }
+        }
+    }
+    None
 }

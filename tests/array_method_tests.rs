@@ -660,3 +660,61 @@ async fn test_array_reduce_wrong_param_count() {
     let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_err(), "Reduce with 1-param callback should error");
 }
+
+#[tokio::test]
+async fn test_array_push_mutates() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3]
+            arr.push(4)
+            arr.push(5)
+            return arr.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Array should now have 5 elements after two pushes
+}
+
+#[tokio::test]
+async fn test_array_pop_mutates() {
+    let source = r#"
+        fn test() {
+            let arr = [1, 2, 3, 4]
+            let popped = arr.pop()
+            return arr.length()
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Array should now have 3 elements after pop
+}
+
+#[tokio::test]
+async fn test_array_pop_returns_value() {
+    let source = r#"
+        fn test() {
+            let arr = [10, 20, 30]
+            let last = arr.pop()
+            return last
+        }
+        println("{test()}")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok());
+    // Pop should return 30
+}

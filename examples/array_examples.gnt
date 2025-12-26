@@ -165,12 +165,26 @@ println("Sum of squares of odds:", oddSquaresSum)
 println()
 
 // ============================================
-// push() and pop() - Array mutation notes
+// push() and pop() - Array mutation
 // ============================================
-println("=== push() and pop() ===")
-println("Note: push() and pop() currently have limitations in GENT.")
-println("Arrays passed to functions are cloned, so mutation doesn't persist.")
-println("For now, prefer using map/filter/concat for transformations.")
-println()
+fn demoPushPop() {
+    println("=== push() and pop() ===")
+
+    let stack = [1, 2, 3]
+    println("Initial stack: {stack}")
+
+    stack.push(4)
+    println("After push(4): {stack}")
+
+    stack.push(5)
+    println("After push(5): {stack}")
+
+    let popped = stack.pop()
+    println("Popped value: {popped}")
+    println("After pop: {stack}")
+
+    println()
+}
+demoPushPop()
 
 println("=== Array examples complete! ===")
