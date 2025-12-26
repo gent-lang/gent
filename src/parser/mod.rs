@@ -4,7 +4,7 @@ pub mod ast;
 
 pub use ast::{
     AgentDecl, AgentField, BinaryOp, Block, BlockStmt, Expression, FieldType, FnDecl, ForStmt, IfStmt,
-    LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl,
+    ImportStmt, LetStmt, OutputType, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl,
     TryStmt, TypeName, UnaryOp, WhileStmt,
 };
 
@@ -45,6 +45,7 @@ pub fn parse(source: &str) -> GentResult<Program> {
 fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
+        Rule::import_stmt => Ok(Statement::Import(parse_import_stmt(inner)?)),
         Rule::struct_decl => Ok(Statement::StructDecl(parse_struct_decl(inner)?)),
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
@@ -55,6 +56,26 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
             span: Span::new(0, 0),
         }),
     }
+}
+
+fn parse_import_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<ImportStmt> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let import_list = inner.next().unwrap();
+    let mut names = Vec::new();
+    for ident in import_list.into_inner() {
+        if ident.as_rule() == Rule::identifier {
+            names.push(ident.as_str().to_string());
+        }
+    }
+
+    let path_pair = inner.next().unwrap();
+    let raw_path = path_pair.as_str();
+    // Remove the quotes from the string literal
+    let path = raw_path[1..raw_path.len() - 1].to_string();
+
+    Ok(ImportStmt { names, path, span })
 }
 
 fn parse_top_level_let(pair: pest::iterators::Pair<Rule>) -> GentResult<LetStmt> {
