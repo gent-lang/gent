@@ -1,0 +1,28 @@
+// Print Examples
+// Demonstrates print() and println() built-in functions
+
+tool demo() {
+    // Basic println
+    println("Hello, World!")
+
+    // Print without newline
+    print("Loading")
+    print(".")
+    print(".")
+    print(".")
+    println(" Done!")
+
+    // Multiple arguments (joined with spaces)
+    let name = "GENT"
+    println("Welcome to", "{name}!")
+
+    // Empty println (just newline)
+    println()
+
+    // Using with string methods
+    let message = "  hello world  "
+    println("Trimmed:", "{message.trim()}")
+    println("Upper:", "{message.trim().toUpperCase()}")
+
+    return "complete"
+}
