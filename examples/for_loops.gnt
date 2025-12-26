@@ -1,0 +1,57 @@
+// For Loop Examples
+// Syntax: for variable in iterable { ... }
+
+// Iterate over an array
+tool process_items() {
+    let items = ["apple", "banana", "cherry"]
+    for item in items {
+        let msg = "Processing: {item}"
+    }
+    return "done"
+}
+
+// Iterate over a range (0 to 4, exclusive end)
+tool count_up() {
+    for i in 0..5 {
+        let msg = "Count: {i}"
+    }
+    return "counted to 5"
+}
+
+// Iterate over string characters
+tool spell_word() {
+    for char in "GENT" {
+        let letter = "Letter: {char}"
+    }
+    return "spelled out"
+}
+
+// Nested for loops
+tool matrix_example() {
+    for row in 0..3 {
+        for col in 0..3 {
+            let cell = "Cell [{row},{col}]"
+        }
+    }
+    return "matrix complete"
+}
+
+// Batch processing with agents
+agent Summarizer {
+    systemPrompt: "Summarize the given text in one sentence."
+    model: "gpt-4o-mini"
+}
+
+tool batch_summarize() {
+    let documents = [
+        "The quick brown fox jumps over the lazy dog.",
+        "To be or not to be, that is the question.",
+        "All that glitters is not gold."
+    ]
+
+    for doc in documents {
+        let summary = Summarizer.userPrompt(doc).invoke()
+    }
+
+    return "batch complete"
+}
