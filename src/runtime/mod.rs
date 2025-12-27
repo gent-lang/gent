@@ -3,6 +3,7 @@
 pub mod agent;
 pub mod llm;
 pub mod providers;
+pub mod rag;
 pub mod tools;
 pub mod validation;
 
