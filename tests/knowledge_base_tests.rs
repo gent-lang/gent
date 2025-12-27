@@ -58,3 +58,164 @@ async fn test_knowledge_base_wrong_type_error() {
         err
     );
 }
+
+#[tokio::test]
+async fn test_knowledge_base_index_and_search() {
+    // Create a temp directory with test files
+    let temp_dir = std::env::temp_dir().join("gent_test_kb");
+    std::fs::create_dir_all(&temp_dir).unwrap();
+    std::fs::write(
+        temp_dir.join("test.md"),
+        "# Hello\n\nThis is about authentication and JWT tokens.",
+    )
+    .unwrap();
+
+    let source = format!(
+        r#"
+        let kb = KnowledgeBase("{}")
+        let count = kb.index({{}})
+        println("indexed {{count}} chunks")
+        let results = kb.search("authentication")
+        let numResults = results.length()
+        println("found {{numResults}} results")
+    "#,
+        temp_dir.display().to_string().replace("\\", "/")
+    );
+
+    let program = gent::parser::parse(&source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+
+    // Cleanup
+    std::fs::remove_dir_all(&temp_dir).ok();
+
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_knowledge_base_search_before_index_error() {
+    // Create temp dir that exists but hasn't been indexed
+    let temp_dir = std::env::temp_dir().join("gent_test_kb_unindexed");
+    std::fs::create_dir_all(&temp_dir).unwrap();
+    std::fs::write(temp_dir.join("test.md"), "# Test content").unwrap();
+
+    let source = format!(
+        r#"
+        let kb = KnowledgeBase("{}")
+        let results = kb.search("query")
+    "#,
+        temp_dir.display().to_string().replace("\\", "/")
+    );
+    let program = gent::parser::parse(&source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+
+    // Cleanup
+    std::fs::remove_dir_all(&temp_dir).ok();
+
+    assert!(result.is_err(), "Expected error when searching before indexing");
+    let err = result.unwrap_err().to_string();
+    assert!(
+        err.contains("not indexed") || err.contains("index"),
+        "Error should mention indexing: {}",
+        err
+    );
+}
+
+#[tokio::test]
+async fn test_knowledge_base_is_indexed() {
+    let temp_dir = std::env::temp_dir().join("gent_test_kb_indexed_check");
+    std::fs::create_dir_all(&temp_dir).unwrap();
+    std::fs::write(temp_dir.join("test.md"), "# Test content").unwrap();
+
+    let source = format!(
+        r#"
+        let kb = KnowledgeBase("{}")
+        let beforeIndex = kb.isIndexed()
+        println("before: {{beforeIndex}}")
+        let indexCount = kb.index({{}})
+        let afterIndex = kb.isIndexed()
+        println("after: {{afterIndex}}")
+    "#,
+        temp_dir.display().to_string().replace("\\", "/")
+    );
+
+    let program = gent::parser::parse(&source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+
+    // Cleanup
+    std::fs::remove_dir_all(&temp_dir).ok();
+
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_knowledge_base_search_with_limit() {
+    let temp_dir = std::env::temp_dir().join("gent_test_kb_limit");
+    std::fs::create_dir_all(&temp_dir).unwrap();
+    std::fs::write(
+        temp_dir.join("test.md"),
+        "# Test\n\nFirst paragraph about testing.\n\nSecond paragraph about testing.\n\nThird paragraph about testing.",
+    )
+    .unwrap();
+
+    let source = format!(
+        r#"
+        let kb = KnowledgeBase("{}")
+        let indexCount = kb.index({{}})
+        let results = kb.search("testing", {{ limit: 2 }})
+        let numResults = results.length()
+        println("found {{numResults}} results")
+    "#,
+        temp_dir.display().to_string().replace("\\", "/")
+    );
+
+    let program = gent::parser::parse(&source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+
+    // Cleanup
+    std::fs::remove_dir_all(&temp_dir).ok();
+
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_knowledge_base_unknown_method_error() {
+    let temp_dir = std::env::temp_dir().join("gent_test_kb_unknown_method");
+    std::fs::create_dir_all(&temp_dir).unwrap();
+
+    let source = format!(
+        r#"
+        let kb = KnowledgeBase("{}")
+        let result = kb.unknownMethod()
+    "#,
+        temp_dir.display().to_string().replace("\\", "/")
+    );
+
+    let program = gent::parser::parse(&source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+
+    // Cleanup
+    std::fs::remove_dir_all(&temp_dir).ok();
+
+    assert!(result.is_err(), "Expected error for unknown method");
+    let err = result.unwrap_err().to_string();
+    assert!(
+        err.contains("no method") || err.contains("unknownMethod"),
+        "Error should mention missing method: {}",
+        err
+    );
+}

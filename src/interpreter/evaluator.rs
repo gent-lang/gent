@@ -920,8 +920,86 @@ fn evaluate_expr_with_env<'a>(
                                 });
                             }
                         }
+                        Value::KnowledgeBase(kb) => {
+                            // KnowledgeBase method call
+                            match method.as_str() {
+                                "index" => {
+                                    let options = if args.is_empty() {
+                                        crate::runtime::rag::IndexOptions::default()
+                                    } else {
+                                        let arg = evaluate_expr_with_env(&args[0], env, llm, tools, logger).await?;
+                                        parse_index_options(&arg)?
+                                    };
+
+                                    let mut kb = kb.write().await;
+                                    let count = kb.index(options).await
+                                        .map_err(|e| GentError::SyntaxError { message: e, span: span.clone() })?;
+
+                                    return Ok(Value::Number(count as f64));
+                                }
+                                "search" => {
+                                    if args.is_empty() {
+                                        return Err(GentError::SyntaxError {
+                                            message: "search requires a query string".to_string(),
+                                            span: span.clone(),
+                                        });
+                                    }
+
+                                    let query_arg = evaluate_expr_with_env(&args[0], env, llm, tools, logger).await?;
+                                    let query = match query_arg {
+                                        Value::String(s) => s,
+                                        other => return Err(GentError::TypeError {
+                                            expected: "String".to_string(),
+                                            got: other.type_name(),
+                                            span: span.clone(),
+                                        }),
+                                    };
+
+                                    let limit = if args.len() > 1 {
+                                        let options_arg = evaluate_expr_with_env(&args[1], env, llm, tools, logger).await?;
+                                        if let Value::Object(o) = options_arg {
+                                            o.get("limit")
+                                                .and_then(|v| if let Value::Number(n) = v { Some(*n as usize) } else { None })
+                                                .unwrap_or(5)
+                                        } else if let Value::Number(n) = options_arg {
+                                            n as usize
+                                        } else {
+                                            5
+                                        }
+                                    } else {
+                                        5
+                                    };
+
+                                    let kb = kb.read().await;
+                                    let results = kb.search(&query, limit).await
+                                        .map_err(|e| GentError::SyntaxError { message: e, span: span.clone() })?;
+
+                                    let result_values: Vec<Value> = results.iter().map(|r| {
+                                        let mut map = std::collections::HashMap::new();
+                                        map.insert("source".to_string(), Value::String(r.metadata.source.clone()));
+                                        map.insert("score".to_string(), Value::Number(r.score as f64));
+                                        map.insert("content".to_string(), Value::String(r.metadata.content.clone()));
+                                        map.insert("startLine".to_string(), Value::Number(r.metadata.start_line as f64));
+                                        map.insert("endLine".to_string(), Value::Number(r.metadata.end_line as f64));
+                                        Value::Object(map)
+                                    }).collect();
+
+                                    return Ok(Value::Array(result_values));
+                                }
+                                "isIndexed" => {
+                                    let kb = kb.read().await;
+                                    return Ok(Value::Boolean(kb.is_indexed()));
+                                }
+                                _ => {
+                                    return Err(GentError::SyntaxError {
+                                        message: format!("KnowledgeBase has no method '{}'", method),
+                                        span: span.clone(),
+                                    });
+                                }
+                            }
+                        }
                         _ => {
-                            // Not an agent, string, or array - method calls not yet supported
+                            // Not an agent, string, array, or KnowledgeBase - method calls not yet supported
                             return Err(GentError::SyntaxError {
                                 message: format!("Method calls on {} not yet implemented", obj_value.type_name()),
                                 span: span.clone(),
@@ -1197,4 +1275,40 @@ async fn run_parallel(
     Ok(Value::Array(
         results.into_iter().map(Value::String).collect(),
     ))
+}
+
+/// Parse IndexOptions from a GENT Value (typically an object)
+fn parse_index_options(value: &Value) -> GentResult<crate::runtime::rag::IndexOptions> {
+    let mut options = crate::runtime::rag::IndexOptions::default();
+
+    if let Value::Object(map) = value {
+        // Parse extensions
+        if let Some(Value::Array(exts)) = map.get("extensions") {
+            options.extensions = exts.iter()
+                .filter_map(|v| if let Value::String(s) = v { Some(s.clone()) } else { None })
+                .collect();
+        }
+
+        // Parse recursive
+        if let Some(Value::Boolean(b)) = map.get("recursive") {
+            options.recursive = *b;
+        }
+
+        // Parse chunk_size
+        if let Some(Value::Number(n)) = map.get("chunkSize") {
+            options.chunk_size = *n as usize;
+        }
+
+        // Parse chunk_overlap
+        if let Some(Value::Number(n)) = map.get("chunkOverlap") {
+            options.chunk_overlap = *n as usize;
+        }
+
+        // Parse strategy
+        if let Some(Value::String(s)) = map.get("strategy") {
+            options.strategy = s.clone();
+        }
+    }
+
+    Ok(options)
 }
