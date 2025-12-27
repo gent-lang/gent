@@ -3,9 +3,8 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-// Note: local module will be added in next task
-// mod local;
-// pub use local::LocalVectorStore;
+mod local;
+pub use local::LocalVectorStore;
 
 /// Metadata associated with a stored embedding
 #[derive(Debug, Clone, Serialize, Deserialize)]
