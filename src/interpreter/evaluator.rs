@@ -256,6 +256,10 @@ async fn evaluate_statement(
             // Enum declarations are handled during parsing/validation
             // No runtime action needed
         }
+        Statement::ParallelDecl(_) => {
+            // TODO: Parallel execution will be implemented in a future task
+            unimplemented!("Parallel execution not yet implemented")
+        }
         Statement::FnDecl(decl) => {
             logger.log(
                 LogLevel::Debug,
@@ -372,6 +376,10 @@ async fn evaluate_statement_with_output(
             // Enum declarations are handled during parsing/validation
             // No runtime action needed
             Ok(None)
+        }
+        Statement::ParallelDecl(_) => {
+            // TODO: Parallel execution will be implemented in a future task
+            unimplemented!("Parallel execution not yet implemented")
         }
         Statement::FnDecl(decl) => {
             logger.log(

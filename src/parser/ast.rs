@@ -118,6 +118,41 @@ pub struct EnumField {
     pub span: Span,
 }
 
+/// Duration unit for timeout specifications
+#[derive(Debug, Clone, PartialEq)]
+pub enum DurationUnit {
+    Milliseconds,
+    Seconds,
+    Minutes,
+}
+
+/// Duration value with unit
+#[derive(Debug, Clone, PartialEq)]
+pub struct Duration {
+    pub value: u64,
+    pub unit: DurationUnit,
+    pub span: Span,
+}
+
+impl Duration {
+    pub fn to_millis(&self) -> u64 {
+        match self.unit {
+            DurationUnit::Milliseconds => self.value,
+            DurationUnit::Seconds => self.value * 1000,
+            DurationUnit::Minutes => self.value * 60 * 1000,
+        }
+    }
+}
+
+/// Parallel execution block declaration
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParallelDecl {
+    pub name: String,
+    pub agents: Vec<Expression>,
+    pub timeout: Duration,
+    pub span: Span,
+}
+
 /// Output type specification (inline or named)
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
@@ -149,6 +184,7 @@ pub enum Statement {
     FnDecl(FnDecl),
     StructDecl(StructDecl),
     EnumDecl(EnumDecl),
+    ParallelDecl(ParallelDecl),
     LetStmt(LetStmt),
     TopLevelCall(TopLevelCall),
 }
