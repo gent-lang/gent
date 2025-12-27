@@ -29,8 +29,9 @@ type_name = { "string" | "number" | "boolean" | "object" | "array" | "any" }
 
 // === Struct Declaration ===
 struct_decl = {
-    "struct" ~ identifier ~ "{" ~ struct_body ~ "}"
+    "struct" ~ identifier ~ implements_clause? ~ "{" ~ struct_body ~ "}"
 }
+implements_clause = { "implements" ~ identifier ~ ("," ~ identifier)* }
 struct_body = { (struct_field ~ ","?)* }
 struct_field = { identifier ~ ":" ~ field_type }
 field_type = {
