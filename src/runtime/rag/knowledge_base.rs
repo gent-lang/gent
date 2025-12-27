@@ -4,6 +4,7 @@ use super::chunker::{ChunkConfig, ChunkStrategy, Chunker, SemanticChunker};
 use super::embeddings::{EmbeddingProvider, MockEmbeddings, OpenAIEmbeddings};
 use super::store::{LocalVectorStore, Metadata, SearchResult, VectorStore};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -42,31 +43,35 @@ pub struct KnowledgeBase {
     path: PathBuf,
     store: Arc<RwLock<Box<dyn VectorStore>>>,
     embeddings: Arc<dyn EmbeddingProvider>,
-    indexed: bool,
+    indexed: Arc<AtomicBool>,
 }
 
 impl KnowledgeBase {
     pub fn new(path: impl Into<PathBuf>) -> Self {
         let path = path.into();
         let index_path = path.join(".gent_index").join("vectors.json");
+        let store = LocalVectorStore::with_path(index_path);
+        let has_existing = store.len() > 0;
 
         Self {
             path,
-            store: Arc::new(RwLock::new(Box::new(LocalVectorStore::with_path(index_path)))),
+            store: Arc::new(RwLock::new(Box::new(store))),
             embeddings: Arc::new(MockEmbeddings::new()),
-            indexed: false,
+            indexed: Arc::new(AtomicBool::new(has_existing)),
         }
     }
 
     pub fn with_openai(path: impl Into<PathBuf>, api_key: String) -> Self {
         let path = path.into();
         let index_path = path.join(".gent_index").join("vectors.json");
+        let store = LocalVectorStore::with_path(index_path);
+        let has_existing = store.len() > 0;
 
         Self {
             path,
-            store: Arc::new(RwLock::new(Box::new(LocalVectorStore::with_path(index_path)))),
+            store: Arc::new(RwLock::new(Box::new(store))),
             embeddings: Arc::new(OpenAIEmbeddings::new(api_key)),
-            indexed: false,
+            indexed: Arc::new(AtomicBool::new(has_existing)),
         }
     }
 
@@ -117,12 +122,12 @@ impl KnowledgeBase {
         }
 
         drop(store);
-        self.indexed = true;
+        self.indexed.store(true, Ordering::SeqCst);
         Ok(total_chunks)
     }
 
     pub async fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>, String> {
-        if !self.indexed {
+        if !self.indexed.load(Ordering::SeqCst) {
             return Err("KnowledgeBase not indexed. Call .index() first.".to_string());
         }
 
@@ -172,7 +177,7 @@ impl KnowledgeBase {
     }
 
     pub fn is_indexed(&self) -> bool {
-        self.indexed
+        self.indexed.load(Ordering::SeqCst)
     }
 }
 
