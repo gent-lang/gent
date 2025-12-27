@@ -1,0 +1,32 @@
+// RAG Example: Agent with Knowledge Base
+// This example shows how to use the KnowledgeBase type with agents
+
+// Create and index a knowledge base from the examples directory
+let docs = KnowledgeBase("./examples")
+let chunkCount = docs.index({
+    extensions: [".md", ".gnt"],
+    recursive: true
+})
+println("Indexed {chunkCount} chunks from examples directory")
+
+// Search the knowledge base directly
+let results = docs.search("agent", { limit: 3 })
+let resultCount = results.length()
+println("Found {resultCount} results for 'agent'")
+
+// Create an agent with the knowledge base as a tool
+agent DocHelper {
+    tools: [docs]
+    model: "gpt-4o-mini"
+    systemPrompt: """
+        You are a helpful assistant that answers questions about the Gent codebase.
+        Use the knowledge base tool to search for relevant information.
+        Always cite your sources when providing answers.
+    """
+}
+
+// Note: To actually run the agent, you would need:
+// let answer = DocHelper.userPrompt("What examples are available?").run()
+// println(answer)
+
+println("RAG example complete!")
