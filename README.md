@@ -2,8 +2,9 @@
 
 **A programming language for AI agents**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/yourusername/gent/ci.yml?branch=main)](https://github.com/yourusername/gent/actions)
+[![Crates.io](https://img.shields.io/crates/v/gent.svg)](https://crates.io/crates/gent)
+[![Downloads](https://img.shields.io/crates/d/gent.svg)](https://crates.io/crates/gent)
+[![License](https://img.shields.io/crates/l/gent.svg)](LICENSE)
 
 > Write agents in minutes, not hours. Type-safe. Parallel. Observable.
 
@@ -175,18 +176,14 @@ try {
 
 ## Installation
 
-### From Source
-
-```bash
-git clone https://github.com/yourusername/gent.git
-cd gent
-cargo build --release
-```
-
-### Using Cargo
-
 ```bash
 cargo install gent
+```
+
+Or with Homebrew:
+
+```bash
+brew tap gent-lang/tap && brew install gent
 ```
 
 ---
