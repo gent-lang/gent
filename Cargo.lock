@@ -481,6 +481,7 @@ dependencies = [
  "async-trait",
  "atty",
  "clap",
+ "futures",
  "insta",
  "pest",
  "pest_derive",

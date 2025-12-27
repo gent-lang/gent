@@ -771,6 +771,24 @@ fn evaluate_expr_with_env<'a>(
                             // Otherwise, call non-callback array method
                             return crate::interpreter::array_methods::call_array_method(&mut arr, method, &arg_values);
                         }
+                        Value::Parallel(parallel) => {
+                            // Parallel block method call
+                            if method == "run" {
+                                if !args.is_empty() {
+                                    return Err(GentError::TypeError {
+                                        expected: "no arguments for .run()".to_string(),
+                                        got: format!("{} arguments", args.len()),
+                                        span: span.clone(),
+                                    });
+                                }
+                                return run_parallel(&parallel, env, llm, tools, logger).await;
+                            } else {
+                                return Err(GentError::SyntaxError {
+                                    message: format!("Unknown parallel method: {}", method),
+                                    span: span.clone(),
+                                });
+                            }
+                        }
                         _ => {
                             // Not an agent, string, or array - method calls not yet supported
                             return Err(GentError::SyntaxError {
@@ -849,4 +867,51 @@ fn evaluate_expr_with_env<'a>(
             other => evaluate_expr(other, env),
         }
     })
+}
+
+/// Execute a parallel block - runs all agents concurrently
+async fn run_parallel(
+    parallel: &ParallelValue,
+    env: &Environment,
+    llm: &dyn LLMClient,
+    tools: &ToolRegistry,
+    logger: &dyn Logger,
+) -> GentResult<Value> {
+    use futures::future::try_join_all;
+
+    let timeout = std::time::Duration::from_millis(parallel.timeout_ms);
+
+    // Evaluate each agent expression and collect futures
+    let mut agent_values = Vec::new();
+    for expr in &parallel.agents {
+        // Evaluate the expression to get the configured agent
+        let agent_val = evaluate_expr_with_env(expr, env, llm, tools, logger).await?;
+
+        let agent = agent_val.as_agent().ok_or_else(|| GentError::TypeError {
+            expected: "agent".to_string(),
+            got: agent_val.type_name(),
+            span: expr.span().clone(),
+        })?;
+
+        agent_values.push(agent.clone());
+    }
+
+    // Create futures for all agents
+    let futures: Vec<_> = agent_values
+        .iter()
+        .map(|agent| run_agent_with_tools(agent, None, llm, tools, logger))
+        .collect();
+
+    // Wait for all with timeout
+    let results = tokio::time::timeout(timeout, try_join_all(futures))
+        .await
+        .map_err(|_| GentError::ParallelTimeout {
+            name: parallel.name.clone(),
+            timeout_ms: parallel.timeout_ms,
+        })??;
+
+    // Return as array of strings
+    Ok(Value::Array(
+        results.into_iter().map(Value::String).collect(),
+    ))
 }
