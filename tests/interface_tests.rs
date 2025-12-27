@@ -230,3 +230,64 @@ fn test_parse_multiple_interfaces() {
         _ => panic!("Expected InterfaceDecl"),
     }
 }
+
+#[test]
+fn test_parse_struct_implements() {
+    let source = r#"
+        interface Tool {
+            name: string
+        }
+        struct MyTool implements Tool {
+            name: string
+        }
+    "#;
+    let result = gent::parser::parse(source);
+    assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+
+    let program = result.unwrap();
+    if let Statement::StructDecl(s) = &program.statements[1] {
+        assert_eq!(s.implements, vec!["Tool".to_string()]);
+    } else {
+        panic!("Expected StructDecl");
+    }
+}
+
+#[test]
+fn test_parse_struct_implements_multiple() {
+    let source = r#"
+        struct MyTool implements Tool, Searchable {
+            name: string
+        }
+    "#;
+    let result = gent::parser::parse(source);
+    assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+
+    let program = result.unwrap();
+    if let Statement::StructDecl(s) = &program.statements[0] {
+        assert_eq!(s.implements.len(), 2);
+        assert!(s.implements.contains(&"Tool".to_string()));
+        assert!(s.implements.contains(&"Searchable".to_string()));
+    } else {
+        panic!("Expected StructDecl");
+    }
+}
+
+#[test]
+fn test_parse_struct_no_implements() {
+    // Test that structs without implements clause still work and have empty implements vec
+    let source = r#"
+        struct SimpleStruct {
+            name: string
+        }
+    "#;
+    let result = gent::parser::parse(source);
+    assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+
+    let program = result.unwrap();
+    if let Statement::StructDecl(s) = &program.statements[0] {
+        assert!(s.implements.is_empty());
+        assert_eq!(s.name, "SimpleStruct");
+    } else {
+        panic!("Expected StructDecl");
+    }
+}

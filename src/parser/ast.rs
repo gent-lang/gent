@@ -86,10 +86,11 @@ pub struct StructField {
     pub span: Span,
 }
 
-/// Struct declaration: `struct Name { fields... }`
+/// Struct declaration: `struct Name implements Interface1, Interface2 { fields... }`
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructDecl {
     pub name: String,
+    pub implements: Vec<String>, // interface names this struct implements
     pub fields: Vec<StructField>,
     pub span: Span,
 }

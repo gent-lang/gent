@@ -912,10 +912,33 @@ fn parse_struct_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<StructDecl
     let mut inner = pair.into_inner();
 
     let name = inner.next().unwrap().as_str().to_string();
-    let body = inner.next().unwrap();
+
+    // Check if next is implements_clause or struct_body
+    let mut implements = Vec::new();
+    let next = inner.next().unwrap();
+
+    let body = if next.as_rule() == Rule::implements_clause {
+        // Parse the implements clause - collect all interface names
+        for ident in next.into_inner() {
+            if ident.as_rule() == Rule::identifier {
+                implements.push(ident.as_str().to_string());
+            }
+        }
+        // struct_body comes after implements_clause
+        inner.next().unwrap()
+    } else {
+        // No implements clause, next is the struct_body
+        next
+    };
+
     let fields = parse_struct_body(body)?;
 
-    Ok(StructDecl { name, fields, span })
+    Ok(StructDecl {
+        name,
+        implements,
+        fields,
+        span,
+    })
 }
 
 fn parse_struct_body(pair: pest::iterators::Pair<Rule>) -> GentResult<Vec<StructField>> {
