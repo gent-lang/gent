@@ -7,12 +7,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// Local vector store using cosine similarity
+#[derive(Debug)]
 pub struct LocalVectorStore {
     vectors: HashMap<String, StoredVector>,
     index_path: Option<PathBuf>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredVector {
     embedding: Vec<f32>,
     metadata: Metadata,

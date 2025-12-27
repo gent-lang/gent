@@ -9,7 +9,7 @@ pub use openai::OpenAIEmbeddings;
 
 /// Trait for embedding text into vectors
 #[async_trait]
-pub trait EmbeddingProvider: Send + Sync {
+pub trait EmbeddingProvider: Send + Sync + std::fmt::Debug {
     /// Embed a single text into a vector
     async fn embed(&self, text: &str) -> Result<Vec<f32>, String>;
 
@@ -22,6 +22,7 @@ pub trait EmbeddingProvider: Send + Sync {
 
 /// Mock embedding provider for testing
 /// Generates deterministic normalized embeddings based on text hash
+#[derive(Debug)]
 pub struct MockEmbeddings {
     dimensions: usize,
 }

@@ -26,7 +26,7 @@ pub struct SearchResult {
 
 /// Trait for vector storage backends
 #[async_trait]
-pub trait VectorStore: Send + Sync {
+pub trait VectorStore: Send + Sync + std::fmt::Debug {
     /// Add a vector with metadata
     async fn add(&mut self, id: &str, embedding: Vec<f32>, metadata: Metadata) -> Result<(), String>;
 

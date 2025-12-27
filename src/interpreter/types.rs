@@ -5,6 +5,8 @@ use crate::parser::ast::{
 };
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 /// Runtime representation of an output schema
 #[derive(Debug, Clone, PartialEq)]
@@ -221,7 +223,7 @@ pub enum InterfaceMemberDef {
 }
 
 /// Runtime values in GENT
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Value {
     /// String value
     String(String),
@@ -249,6 +251,31 @@ pub enum Value {
     EnumConstructor(EnumConstructor),
     /// Parallel execution block
     Parallel(ParallelValue),
+    /// Knowledge base for RAG
+    KnowledgeBase(Arc<RwLock<crate::runtime::rag::KnowledgeBase>>),
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::Boolean(a), Value::Boolean(b)) => a == b,
+            (Value::Null, Value::Null) => true,
+            (Value::Agent(a), Value::Agent(b)) => a == b,
+            (Value::Array(a), Value::Array(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => a == b,
+            (Value::Tool(a), Value::Tool(b)) => a == b,
+            (Value::Function(a), Value::Function(b)) => a == b,
+            (Value::Lambda(a), Value::Lambda(b)) => a == b,
+            (Value::Enum(a), Value::Enum(b)) => a == b,
+            (Value::EnumConstructor(a), Value::EnumConstructor(b)) => a == b,
+            (Value::Parallel(a), Value::Parallel(b)) => a == b,
+            // KnowledgeBase uses Arc pointer equality
+            (Value::KnowledgeBase(a), Value::KnowledgeBase(b)) => Arc::ptr_eq(a, b),
+            _ => false,
+        }
+    }
 }
 
 /// Represents a defined agent at runtime
@@ -380,6 +407,7 @@ impl fmt::Display for Value {
                 write!(f, "<enum constructor {}.{}>", c.enum_name, c.variant)
             }
             Value::Parallel(p) => write!(f, "<parallel {}>", p.name),
+            Value::KnowledgeBase(_) => write!(f, "<KnowledgeBase>"),
         }
     }
 }
@@ -407,6 +435,7 @@ impl Value {
             Value::Enum(_) => true,
             Value::EnumConstructor(_) => true,
             Value::Parallel(_) => true,
+            Value::KnowledgeBase(_) => true,
         }
     }
 
@@ -426,6 +455,7 @@ impl Value {
             Value::Enum(e) => format!("{}.{}", e.enum_name, e.variant),
             Value::EnumConstructor(c) => format!("EnumConstructor({}.{})", c.enum_name, c.variant),
             Value::Parallel(_) => "parallel".to_string(),
+            Value::KnowledgeBase(_) => "KnowledgeBase".to_string(),
         }
     }
 

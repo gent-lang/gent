@@ -6,6 +6,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 /// OpenAI embeddings provider using the embeddings API
+#[derive(Debug)]
 pub struct OpenAIEmbeddings {
     client: Client,
     api_key: String,
