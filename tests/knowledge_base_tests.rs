@@ -219,3 +219,45 @@ async fn test_knowledge_base_unknown_method_error() {
         err
     );
 }
+
+#[tokio::test]
+async fn test_knowledge_base_as_tool() {
+    use gent::runtime::rag::KnowledgeBaseTool;
+    use gent::runtime::tools::Tool;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+
+    // Create a temp directory with test files
+    let temp_dir = std::env::temp_dir().join("gent_test_kb_tool");
+    std::fs::create_dir_all(&temp_dir).unwrap();
+    std::fs::write(
+        temp_dir.join("doc.md"),
+        "# API\n\nThis is about REST API endpoints.",
+    )
+    .unwrap();
+
+    // Create and index knowledge base
+    let mut kb = gent::runtime::rag::KnowledgeBase::new(&temp_dir);
+    kb.index(gent::runtime::rag::IndexOptions::default())
+        .await
+        .unwrap();
+
+    // Wrap as tool
+    let kb_arc = Arc::new(RwLock::new(kb));
+    let tool = KnowledgeBaseTool::new(kb_arc, "docs".to_string());
+
+    // Verify tool properties
+    assert_eq!(tool.name(), "docs");
+    assert!(tool.description().contains("knowledge base"));
+
+    // Execute search
+    let result = tool
+        .execute(serde_json::json!({"query": "API", "limit": 3}))
+        .await;
+    assert!(result.is_ok());
+    let output = result.unwrap();
+    assert!(output.contains("API") || output.contains("doc.md"));
+
+    // Cleanup
+    std::fs::remove_dir_all(&temp_dir).ok();
+}
