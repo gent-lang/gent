@@ -78,6 +78,10 @@ pub enum GentError {
     #[error("Agent exceeded maximum steps ({limit})")]
     MaxStepsExceeded { limit: u32 },
 
+    /// Parallel execution timeout
+    #[error("Parallel block '{name}' timed out after {timeout_ms}ms")]
+    ParallelTimeout { name: String, timeout_ms: u64 },
+
     /// Unknown tool referenced
     #[error("Unknown tool: '{name}'")]
     UnknownTool { name: String, span: Span },
@@ -172,6 +176,7 @@ impl GentError {
             GentError::ApiError { .. } => None,
             GentError::MissingApiKey { .. } => None,
             GentError::MaxStepsExceeded { .. } => None,
+            GentError::ParallelTimeout { .. } => None,
             GentError::ToolError { .. } => None,
             GentError::OutputValidationError { .. } => None,
         }
