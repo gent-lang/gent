@@ -252,3 +252,98 @@ async fn test_agent_run_result_can_be_iterated() {
     let result = evaluate_with_output(&program, &mock, &mut tools).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
+
+#[tokio::test]
+async fn test_nested_object_property_access_in_loop() {
+    // This reproduces the bug from puzzle_ideation.gnt:
+    // for idea in ideas.ideas {
+    //     println("{idea.coreMechanic}")  // ERROR: Undefined property: coreMechanic on Object
+    // }
+    let source = r#"
+        struct GameIdea {
+            title: string
+            coreMechanic: string
+        }
+
+        struct IdeationSession {
+            ideas: GameIdea[]
+        }
+
+        agent Ideator {
+            systemPrompt: "Generate ideas"
+            model: "gpt-4o"
+            output: IdeationSession
+        }
+
+        fn main() {
+            let session = Ideator.userPrompt("generate").run()
+            for idea in session.ideas {
+                println("Title: {idea.title}")
+                println("Mechanic: {idea.coreMechanic}")
+            }
+        }
+
+        main()
+    "#;
+
+    let program = parse(source).unwrap();
+    let mock = MockLLMClient::with_response(
+        r#"{"ideas": [{"title": "Puzzle Quest", "coreMechanic": "Match tiles"}, {"title": "Logic Land", "coreMechanic": "Solve equations"}]}"#,
+    );
+    let mut tools = ToolRegistry::new();
+
+    let result = evaluate_with_output(&program, &mock, &mut tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_nested_struct_with_wrong_property_names_should_fail_validation() {
+    // When LLM returns different property names than the struct defines,
+    // validation should catch this and request a retry
+    let source = r#"
+        struct GameIdea {
+            title: string
+            coreMechanic: string
+        }
+
+        struct IdeationSession {
+            ideas: GameIdea[]
+        }
+
+        agent Ideator {
+            systemPrompt: "Generate ideas"
+            model: "gpt-4o"
+            output: IdeationSession
+        }
+
+        fn main() {
+            let session = Ideator.userPrompt("generate").run()
+            for idea in session.ideas {
+                println("Title: {idea.title}")
+                println("Mechanic: {idea.coreMechanic}")
+            }
+        }
+
+        main()
+    "#;
+
+    let program = parse(source).unwrap();
+    // LLM returns snake_case instead of camelCase - validation should catch this
+    let mock = MockLLMClient::with_response(
+        r#"{"ideas": [{"title": "Puzzle Quest", "core_mechanic": "Match tiles"}]}"#,
+    );
+    let mut tools = ToolRegistry::new();
+
+    let result = evaluate_with_output(&program, &mock, &mut tools).await;
+    // This should fail because the property names don't match
+    // Currently this passes validation (bug!) and fails at runtime with UndefinedProperty
+    assert!(result.is_err(), "Should have failed validation due to wrong property names");
+
+    // The error should be a validation error, not a runtime UndefinedProperty error
+    let err = result.unwrap_err();
+    let err_msg = format!("{:?}", err);
+    assert!(
+        err_msg.contains("validation") || err_msg.contains("missing required field"),
+        "Error should be from validation, not runtime. Got: {}", err_msg
+    );
+}

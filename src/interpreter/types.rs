@@ -18,15 +18,23 @@ impl OutputSchema {
         structs: &HashMap<String, Vec<StructField>>,
     ) -> Result<Self, String> {
         match output_type {
-            OutputType::Inline(fields) => Ok(OutputSchema {
-                fields: fields.clone(),
-            }),
-            OutputType::Named(name) => structs
-                .get(name)
-                .map(|fields| OutputSchema {
-                    fields: fields.clone(),
+            OutputType::Inline(fields) => {
+                // Resolve any Named types in the inline fields
+                let resolved_fields = resolve_named_types(fields, structs)?;
+                Ok(OutputSchema {
+                    fields: resolved_fields,
                 })
-                .ok_or_else(|| format!("Unknown struct: {}", name)),
+            }
+            OutputType::Named(name) => {
+                let fields = structs
+                    .get(name)
+                    .ok_or_else(|| format!("Unknown struct: {}", name))?;
+                // Resolve any Named types in the struct fields
+                let resolved_fields = resolve_named_types(fields, structs)?;
+                Ok(OutputSchema {
+                    fields: resolved_fields,
+                })
+            }
         }
     }
 
@@ -46,6 +54,52 @@ impl OutputSchema {
             "properties": properties,
             "required": required
         })
+    }
+}
+
+/// Recursively resolve FieldType::Named references to FieldType::Object
+fn resolve_named_types(
+    fields: &[StructField],
+    structs: &HashMap<String, Vec<StructField>>,
+) -> Result<Vec<StructField>, String> {
+    fields
+        .iter()
+        .map(|field| {
+            let resolved_type = resolve_field_type(&field.field_type, structs)?;
+            Ok(StructField {
+                name: field.name.clone(),
+                field_type: resolved_type,
+                span: field.span.clone(),
+            })
+        })
+        .collect()
+}
+
+/// Resolve a single FieldType, converting Named to Object
+fn resolve_field_type(
+    ft: &FieldType,
+    structs: &HashMap<String, Vec<StructField>>,
+) -> Result<FieldType, String> {
+    match ft {
+        FieldType::String => Ok(FieldType::String),
+        FieldType::Number => Ok(FieldType::Number),
+        FieldType::Boolean => Ok(FieldType::Boolean),
+        FieldType::Array(inner) => {
+            let resolved_inner = resolve_field_type(inner, structs)?;
+            Ok(FieldType::Array(Box::new(resolved_inner)))
+        }
+        FieldType::Object(fields) => {
+            let resolved_fields = resolve_named_types(fields, structs)?;
+            Ok(FieldType::Object(resolved_fields))
+        }
+        FieldType::Named(name) => {
+            let struct_fields = structs
+                .get(name)
+                .ok_or_else(|| format!("Unknown struct: {}", name))?;
+            // Recursively resolve the struct's fields
+            let resolved_fields = resolve_named_types(struct_fields, structs)?;
+            Ok(FieldType::Object(resolved_fields))
+        }
     }
 }
 
