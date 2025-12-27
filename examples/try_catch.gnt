@@ -7,7 +7,7 @@ agent Risky {
 
 tool safeInvoke() {
     try {
-        let result = Risky.invoke()
+        let result = Risky.run()
         return result
     } catch error {
         return "Error occurred: {error}"

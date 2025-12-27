@@ -25,4 +25,4 @@ agent Assistant {
     maxSteps: 5
 }
 
-let result = Assistant.userPrompt("Hello! What's 25 degrees like?").invoke()
+let result = Assistant.userPrompt("Hello! What's 25 degrees like?").run()

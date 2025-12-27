@@ -102,8 +102,8 @@ agent StrictClassifier {
 // Example Runs
 // ============================================
 
-let email_result = EmailClassifier.userPrompt("Hi, I've been having trouble logging into my account for the past 3 days. I've tried resetting my password but it still doesn't work. Can someone please help? - John").invoke()
+let email_result = EmailClassifier.userPrompt("Hi, I've been having trouble logging into my account for the past 3 days. I've tried resetting my password but it still doesn't work. Can someone please help? - John").run()
 
-let contact_result = ContactExtractor.userPrompt("Please reach out to Sarah Johnson at sarah.j@techcorp.io. She's the Head of Engineering at TechCorp and would be the right person to discuss the integration.").invoke()
+let contact_result = ContactExtractor.userPrompt("Please reach out to Sarah Johnson at sarah.j@techcorp.io. She's the Head of Engineering at TechCorp and would be the right person to discuss the integration.").run()
 
-let sentiment_result = SentimentAnalyzer.userPrompt("I absolutely love this product! It has completely transformed how our team works. The customer support is also fantastic - they responded within minutes.").invoke()
+let sentiment_result = SentimentAnalyzer.userPrompt("I absolutely love this product! It has completely transformed how our team works. The customer support is also fantastic - they responded within minutes.").run()

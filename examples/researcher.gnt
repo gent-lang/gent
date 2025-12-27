@@ -5,4 +5,4 @@ agent Researcher {
     maxSteps: 5
 }
 
-let result = Researcher.userPrompt("What is the capital of France?").invoke()
+let result = Researcher.userPrompt("What is the capital of France?").run()

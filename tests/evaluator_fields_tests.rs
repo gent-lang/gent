@@ -10,7 +10,7 @@ async fn test_evaluate_agent_with_max_steps() {
             model: "gpt-4o-mini"
             maxSteps: 5
         }
-        let result = Bot.invoke()
+        let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -26,7 +26,7 @@ async fn test_evaluate_agent_with_model() {
             systemPrompt: "Hello"
             model: "gpt-4o"
         }
-        let result = Bot.invoke()
+        let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -43,7 +43,7 @@ async fn test_evaluate_agent_with_tools() {
             model: "gpt-4o-mini"
             use web_fetch, read_file
         }
-        let result = Bot.invoke()
+        let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -61,7 +61,7 @@ async fn test_evaluate_agent_all_fields() {
             maxSteps: 20
             model: "gpt-4o-mini"
         }
-        let result = Bot.invoke()
+        let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();

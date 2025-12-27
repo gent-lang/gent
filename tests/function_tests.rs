@@ -61,7 +61,7 @@ async fn test_eval_fn_call_simple() {
             use test
         }
 
-        let output = TestAgent.invoke()
+        let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -88,7 +88,7 @@ async fn test_eval_fn_multiple_params() {
             use test
         }
 
-        let output = TestAgent.invoke()
+        let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -115,7 +115,7 @@ async fn test_eval_fn_string_return() {
             use test
         }
 
-        let output = TestAgent.invoke()
+        let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -142,7 +142,7 @@ async fn test_eval_fn_no_params() {
             use test
         }
 
-        let output = TestAgent.invoke()
+        let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -173,7 +173,7 @@ async fn test_eval_fn_nested_call() {
             use test
         }
 
-        let output = TestAgent.invoke()
+        let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -203,7 +203,7 @@ async fn test_eval_fn_with_conditionals() {
             use test
         }
 
-        let output = TestAgent.invoke()
+        let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -275,7 +275,7 @@ async fn test_eval_fn_declaration_only() {
             model: "gpt-4o-mini"
         }
 
-        let output = TestAgent.invoke()
+        let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello!");
@@ -304,7 +304,7 @@ async fn test_eval_fn_with_local_vars() {
             use test
         }
 
-        let output = TestAgent.invoke()
+        let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();

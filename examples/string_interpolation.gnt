@@ -24,4 +24,4 @@ agent Greeter {
     model: "gpt-4o-mini"
 }
 
-let result = Greeter.invoke()
+let result = Greeter.run()

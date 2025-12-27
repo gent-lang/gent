@@ -11,7 +11,7 @@ async fn test_agent_with_tools_parses() {
             model: "gpt-4o-mini"
             use web_fetch, read_file
         }
-        let result = Bot.invoke()
+        let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -30,7 +30,7 @@ async fn test_agent_with_max_steps() {
             model: "gpt-4o-mini"
             maxSteps: 3
         }
-        let result = Bot.invoke()
+        let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -48,7 +48,7 @@ async fn test_agent_with_model() {
             systemPrompt: "Hello"
             model: "gpt-4o"
         }
-        let result = Bot.invoke()
+        let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
@@ -68,7 +68,7 @@ async fn test_full_researcher_example() {
             use web_fetch
             maxSteps: 5
         }
-        let result = Researcher.userPrompt("Tell me about Rust").invoke()
+        let result = Researcher.userPrompt("Tell me about Rust").run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Rust is a systems programming language.");
@@ -92,8 +92,8 @@ async fn test_multiple_agents_with_different_tools() {
             model: "gpt-4o-mini"
             use write_file
         }
-        let r1 = Reader.invoke()
-        let r2 = Writer.invoke()
+        let r1 = Reader.run()
+        let r2 = Writer.run()
     "#;
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();

@@ -688,7 +688,7 @@ fn evaluate_expr_with_env<'a>(
                     match obj_value {
                         Value::Agent(mut agent) => {
                             match method.as_str() {
-                                "invoke" => {
+                                "run" => {
                                     // Execute the agent
                                     let result = run_agent_with_tools(&agent, None, llm, tools, logger).await?;
                                     return Ok(Value::String(result));

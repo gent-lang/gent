@@ -50,7 +50,7 @@ tool batchSummarize() {
     ]
 
     for doc in documents {
-        let summary = Summarizer.userPrompt(doc).invoke()
+        let summary = Summarizer.userPrompt(doc).run()
     }
 
     return "batch complete"

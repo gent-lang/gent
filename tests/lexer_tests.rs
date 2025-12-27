@@ -269,14 +269,14 @@ fn test_program_with_let() {
     // Top-level let statements invoke agents via method chaining
     assert!(parse_rule(
         Rule::program,
-        "let result = Hello.userPrompt(\"Hi\").invoke()"
+        "let result = Hello.userPrompt(\"Hi\").run()"
     ));
 }
 
 #[test]
 fn test_program_agent_and_invoke() {
     let input = r#"agent Hello { systemPrompt: "You are friendly." }
-let result = Hello.invoke()"#;
+let result = Hello.run()"#;
     assert!(parse_rule(Rule::program, input));
 }
 
@@ -285,14 +285,14 @@ fn test_program_with_comments() {
     let input = r#"// This is a comment
 agent Hello { systemPrompt: "Hi" }
 // Invoke the agent
-let result = Hello.invoke()"#;
+let result = Hello.run()"#;
     assert!(parse_rule(Rule::program, input));
 }
 
 #[test]
 fn test_program_hello_world() {
     let input = r#"agent Hello { systemPrompt: "You are friendly." }
-let result = Hello.invoke()"#;
+let result = Hello.run()"#;
     assert!(parse_rule(Rule::program, input));
 }
 

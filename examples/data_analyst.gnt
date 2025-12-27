@@ -177,4 +177,4 @@ operations and return results efficiently."
 // Run Analysis
 // ============================================
 
-let result = DataAnalyst.userPrompt("Analyze Q4 performance: Revenue $150000, Costs $95000, Previous quarter revenue $120000. Calculate margin, growth rate, and risk classification based on a profitability score of 65.").invoke()
+let result = DataAnalyst.userPrompt("Analyze Q4 performance: Revenue $150000, Costs $95000, Previous quarter revenue $120000. Calculate margin, growth rate, and risk classification based on a profitability score of 65.").run()

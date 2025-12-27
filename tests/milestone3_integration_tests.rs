@@ -21,7 +21,7 @@ async fn test_simple_user_tool() {
             model: "gpt-4o-mini"
         }
 
-        let result = Bot.invoke()
+        let result = Bot.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -47,7 +47,7 @@ async fn test_tool_with_arithmetic() {
             model: "gpt-4o-mini"
         }
 
-        let result = Calculator.invoke()
+        let result = Calculator.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -77,7 +77,7 @@ async fn test_tool_with_conditional() {
             model: "gpt-4o-mini"
         }
 
-        let result = WeatherBot.invoke()
+        let result = WeatherBot.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -104,7 +104,7 @@ async fn test_tool_with_let_binding() {
             model: "gpt-4o-mini"
         }
 
-        let result = Formatter.invoke()
+        let result = Formatter.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -138,7 +138,7 @@ async fn test_multiple_tools() {
             model: "gpt-4o-mini"
         }
 
-        let result = MultiTool.invoke()
+        let result = MultiTool.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -172,7 +172,7 @@ async fn test_parse_full_expression() {
             model: "gpt-4o-mini"
         }
 
-        let result = ComplexBot.invoke()
+        let result = ComplexBot.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -204,7 +204,7 @@ async fn test_tool_with_agent_fields() {
             use web_fetch
         }
 
-        let result = MathBot.invoke()
+        let result = MathBot.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -230,7 +230,7 @@ async fn test_tool_with_run_input() {
             model: "gpt-4o-mini"
         }
 
-        let result = Processor.userPrompt("test input").invoke()
+        let result = Processor.userPrompt("test input").run()
     "#;
 
     let program = parse(source).unwrap();
@@ -268,7 +268,7 @@ async fn test_tool_nested_conditionals() {
             model: "gpt-4o-mini"
         }
 
-        let result = Grader.invoke()
+        let result = Grader.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -297,7 +297,7 @@ async fn test_tool_multiple_let_bindings() {
             model: "gpt-4o-mini"
         }
 
-        let result = MessageBuilder.invoke()
+        let result = MessageBuilder.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -328,7 +328,7 @@ async fn test_tool_all_arithmetic_operators() {
             model: "gpt-4o-mini"
         }
 
-        let result = AllMath.invoke()
+        let result = AllMath.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -362,7 +362,7 @@ async fn test_tool_comparison_operators() {
             model: "gpt-4o-mini"
         }
 
-        let result = Comparator.invoke()
+        let result = Comparator.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -390,7 +390,7 @@ async fn test_tool_string_concatenation() {
             model: "gpt-4o-mini"
         }
 
-        let result = URLBuilder.invoke()
+        let result = URLBuilder.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -420,7 +420,7 @@ async fn test_tool_no_return_type() {
             model: "gpt-4o-mini"
         }
 
-        let result = Logger.invoke()
+        let result = Logger.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -446,7 +446,7 @@ async fn test_tool_no_parameters() {
             model: "gpt-4o-mini"
         }
 
-        let result = SimpleBot.invoke()
+        let result = SimpleBot.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -478,7 +478,7 @@ async fn test_multiple_agents_with_tools() {
             maxSteps: 5
         }
 
-        let result = Bot1.invoke()
+        let result = Bot1.run()
     "#;
 
     let program = parse(source).unwrap();
@@ -524,7 +524,7 @@ async fn test_full_milestone3_program() {
             model: "gpt-4o-mini"
         }
 
-        let result = ShoppingAssistant.userPrompt("Calculate my savings").invoke()
+        let result = ShoppingAssistant.userPrompt("Calculate my savings").run()
     "#;
 
     let program = parse(source).unwrap();

@@ -80,7 +80,7 @@ async fn test_multiline_string_in_agent() {
             """
             model: "gpt-4o-mini"
         }
-        let result = TestBot.invoke()
+        let result = TestBot.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Multiline string in agent failed: {:?}", result.err());
@@ -140,7 +140,7 @@ async fn test_string_methods_trim() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "String trim failed: {:?}", result.err());
@@ -162,7 +162,7 @@ async fn test_string_methods_case_conversion() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Case conversion failed: {:?}", result.err());
@@ -183,7 +183,7 @@ async fn test_string_methods_chained() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Chained string methods failed: {:?}", result.err());
@@ -207,7 +207,7 @@ async fn test_string_methods_contains() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "String contains failed: {:?}", result.err());
@@ -228,7 +228,7 @@ async fn test_string_methods_split() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "String split failed: {:?}", result.err());
@@ -249,7 +249,7 @@ async fn test_string_methods_replace() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "String replace failed: {:?}", result.err());
@@ -278,7 +278,7 @@ async fn test_while_loop_basic() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Basic while loop failed: {:?}", result.err());
@@ -300,7 +300,7 @@ async fn test_while_with_break() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "While with break failed: {:?}", result.err());
@@ -326,7 +326,7 @@ async fn test_while_with_continue() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "While with continue failed: {:?}", result.err());
@@ -352,7 +352,7 @@ async fn test_while_with_break_in_if() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "While with break in if failed: {:?}", result.err());
@@ -378,7 +378,7 @@ async fn test_for_loop_array() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "For loop array failed: {:?}", result.err());
@@ -400,7 +400,7 @@ async fn test_for_loop_range() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "For loop range failed: {:?}", result.err());
@@ -424,7 +424,7 @@ async fn test_for_loop_with_break() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "For loop with break failed: {:?}", result.err());
@@ -448,7 +448,7 @@ async fn test_for_loop_with_continue() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "For loop with continue failed: {:?}", result.err());
@@ -470,7 +470,7 @@ async fn test_for_loop_string_iteration() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "For loop string iteration failed: {:?}", result.err());
@@ -498,7 +498,7 @@ async fn test_try_catch_basic() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Basic try/catch failed: {:?}", result.err());
@@ -522,7 +522,7 @@ async fn test_try_catch_with_return() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Try/catch with return failed: {:?}", result.err());
@@ -550,7 +550,7 @@ async fn test_try_catch_nested() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Nested try/catch failed: {:?}", result.err());
@@ -576,7 +576,7 @@ async fn test_try_catch_in_loop() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Try/catch in loop failed: {:?}", result.err());
@@ -604,7 +604,7 @@ async fn test_function_basic() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Basic function failed: {:?}", result.err());
@@ -628,7 +628,7 @@ async fn test_function_string_return() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Function string return failed: {:?}", result.err());
@@ -652,7 +652,7 @@ async fn test_function_no_params() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Function no params failed: {:?}", result.err());
@@ -680,7 +680,7 @@ async fn test_function_nested_calls() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Nested function calls failed: {:?}", result.err());
@@ -707,7 +707,7 @@ async fn test_function_with_conditionals() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Function with conditionals failed: {:?}", result.err());
@@ -731,7 +731,7 @@ async fn test_function_with_string_methods() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Function with string methods failed: {:?}", result.err());
@@ -772,7 +772,7 @@ async fn test_all_features_combined() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "All features combined failed: {:?}", result.err());
@@ -813,7 +813,7 @@ async fn test_while_loop_with_string_processing() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "While loop with string processing failed: {:?}", result.err());
@@ -843,7 +843,7 @@ async fn test_function_with_loop_and_break() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Function with loop failed: {:?}", result.err());
@@ -870,7 +870,7 @@ async fn test_try_catch_with_while_and_break() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Try/catch with while and break failed: {:?}", result.err());
@@ -924,7 +924,7 @@ async fn test_comprehensive_program() {
             model: "gpt-4o-mini"
         }
 
-        let result = ShoppingAssistant.userPrompt("Calculate my order").invoke()
+        let result = ShoppingAssistant.userPrompt("Calculate my order").run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Comprehensive program failed: {:?}", result.err());
@@ -951,7 +951,7 @@ async fn test_while_false_condition() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "While false condition failed: {:?}", result.err());
@@ -973,7 +973,7 @@ async fn test_empty_for_body() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Empty for body failed: {:?}", result.err());
@@ -991,7 +991,7 @@ async fn test_function_declaration_only() {
             model: "gpt-4o-mini"
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Function declaration only failed: {:?}", result.err());
@@ -1018,7 +1018,7 @@ async fn test_deeply_nested_loops() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "Deeply nested loops failed: {:?}", result.err());
@@ -1039,7 +1039,7 @@ async fn test_string_methods_on_interpolated_string() {
             use test
         }
 
-        let result = TestAgent.invoke()
+        let result = TestAgent.run()
     "#;
     let result = run_program(source).await;
     assert!(result.is_ok(), "String methods on interpolated string failed: {:?}", result.err());

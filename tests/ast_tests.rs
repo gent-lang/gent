@@ -386,7 +386,7 @@ fn test_program_debug() {
 
 #[test]
 fn test_hello_world_ast() {
-    // Represents: agent Hello { systemPrompt: "You are friendly." } let result = Hello.invoke()
+    // Represents: agent Hello { systemPrompt: "You are friendly." } let result = Hello.run()
     let program = Program {
         statements: vec![
             Statement::AgentDecl(AgentDecl {
