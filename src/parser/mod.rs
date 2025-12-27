@@ -3,11 +3,11 @@
 pub mod ast;
 
 pub use ast::{
-    AgentDecl, AgentField, AssignmentStmt, BinaryOp, Block, BlockStmt, EnumDecl, EnumField,
-    EnumVariant, Expression, FieldType, FnDecl, ForStmt, IfStmt, ImportStmt, Lambda, LambdaBody,
-    LetStmt, MatchArm, MatchBody, MatchExpr, MatchPattern, OutputType, Param, Program, ReturnStmt,
-    Statement, StringPart, StructDecl, StructField, ToolDecl, TopLevelCall, TryStmt, TypeName,
-    UnaryOp, WhileStmt,
+    AgentDecl, AgentField, AssignmentStmt, BinaryOp, Block, BlockStmt, Duration, DurationUnit,
+    EnumDecl, EnumField, EnumVariant, Expression, FieldType, FnDecl, ForStmt, IfStmt, ImportStmt,
+    Lambda, LambdaBody, LetStmt, MatchArm, MatchBody, MatchExpr, MatchPattern, OutputType,
+    ParallelDecl, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField,
+    ToolDecl, TopLevelCall, TryStmt, TypeName, UnaryOp, WhileStmt,
 };
 
 use crate::errors::{GentError, GentResult, Span};
@@ -53,6 +53,7 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
         Rule::fn_decl => Ok(Statement::FnDecl(parse_fn_decl(inner)?)),
+        Rule::parallel_decl => Ok(Statement::ParallelDecl(parse_parallel_decl(inner)?)),
         Rule::top_level_let => Ok(Statement::LetStmt(parse_top_level_let(inner)?)),
         Rule::top_level_call => Ok(Statement::TopLevelCall(parse_top_level_call(inner)?)),
         _ => Err(GentError::SyntaxError {
@@ -1112,4 +1113,88 @@ fn parse_enum_field(pair: pest::iterators::Pair<Rule>) -> GentResult<EnumField> 
     };
 
     Ok(EnumField { name, type_name, span })
+}
+
+fn parse_parallel_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<ParallelDecl> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+
+    let mut agents = Vec::new();
+    let mut timeout = None;
+
+    // Parse parallel_body -> parallel_field*
+    for field_pair in inner {
+        match field_pair.as_rule() {
+            Rule::parallel_body => {
+                for item in field_pair.into_inner() {
+                    match item.as_rule() {
+                        Rule::parallel_field => {
+                            let field_inner = item.into_inner().next().unwrap();
+                            match field_inner.as_rule() {
+                                Rule::agents_field => {
+                                    for expr_pair in field_inner.into_inner() {
+                                        agents.push(parse_expression(expr_pair)?);
+                                    }
+                                }
+                                Rule::timeout_field => {
+                                    let duration_pair = field_inner.into_inner().next().unwrap();
+                                    timeout = Some(parse_duration(duration_pair)?);
+                                }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let timeout = timeout.ok_or_else(|| GentError::SyntaxError {
+        message: "parallel block requires 'timeout' field".to_string(),
+        span: span.clone(),
+    })?;
+
+    if agents.is_empty() {
+        return Err(GentError::SyntaxError {
+            message: "parallel block requires at least one agent in 'agents' field".to_string(),
+            span: span.clone(),
+        });
+    }
+
+    Ok(ParallelDecl {
+        name,
+        agents,
+        timeout,
+        span,
+    })
+}
+
+fn parse_duration(pair: pest::iterators::Pair<Rule>) -> GentResult<Duration> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let text = pair.as_str();
+
+    // Parse "30s", "2m", "500ms"
+    let (value_str, unit) = if text.ends_with("ms") {
+        (&text[..text.len() - 2], DurationUnit::Milliseconds)
+    } else if text.ends_with('s') {
+        (&text[..text.len() - 1], DurationUnit::Seconds)
+    } else if text.ends_with('m') {
+        (&text[..text.len() - 1], DurationUnit::Minutes)
+    } else {
+        return Err(GentError::SyntaxError {
+            message: format!("Invalid duration: {}", text),
+            span,
+        });
+    };
+
+    let value = value_str.parse::<u64>().map_err(|_| GentError::SyntaxError {
+        message: format!("Invalid duration value: {}", value_str),
+        span: span.clone(),
+    })?;
+
+    Ok(Duration { value, unit, span })
 }
