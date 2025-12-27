@@ -118,6 +118,38 @@ pub struct EnumField {
     pub span: Span,
 }
 
+/// Interface declaration: `interface Name { methods/fields... }`
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterfaceDecl {
+    pub name: String,
+    pub members: Vec<InterfaceMember>,
+    pub span: Span,
+}
+
+/// A member in an interface declaration
+#[derive(Debug, Clone, PartialEq)]
+pub enum InterfaceMember {
+    Field(InterfaceField),
+    Method(InterfaceMethod),
+}
+
+/// A field in an interface: `name: type`
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterfaceField {
+    pub name: String,
+    pub type_name: TypeName,
+    pub span: Span,
+}
+
+/// A method in an interface: `name(params) -> return_type`
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterfaceMethod {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<TypeName>,
+    pub span: Span,
+}
+
 /// Duration unit for timeout specifications
 #[derive(Debug, Clone, PartialEq)]
 pub enum DurationUnit {
@@ -184,6 +216,7 @@ pub enum Statement {
     FnDecl(FnDecl),
     StructDecl(StructDecl),
     EnumDecl(EnumDecl),
+    InterfaceDecl(InterfaceDecl),
     ParallelDecl(ParallelDecl),
     LetStmt(LetStmt),
     TopLevelCall(TopLevelCall),

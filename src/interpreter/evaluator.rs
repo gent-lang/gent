@@ -256,6 +256,10 @@ async fn evaluate_statement(
             // Enum declarations are handled during parsing/validation
             // No runtime action needed
         }
+        Statement::InterfaceDecl(_) => {
+            // Interface declarations are handled during parsing/validation
+            // No runtime action needed
+        }
         Statement::ParallelDecl(decl) => {
             let parallel = ParallelValue {
                 name: decl.name.clone(),
@@ -378,6 +382,11 @@ async fn evaluate_statement_with_output(
         }
         Statement::EnumDecl(_) => {
             // Enum declarations are handled during parsing/validation
+            // No runtime action needed
+            Ok(None)
+        }
+        Statement::InterfaceDecl(_) => {
+            // Interface declarations are handled during parsing/validation
             // No runtime action needed
             Ok(None)
         }
