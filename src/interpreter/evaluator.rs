@@ -31,6 +31,12 @@ pub async fn evaluate(
     logger: &dyn Logger,
 ) -> GentResult<()> {
     let mut env = Environment::new();
+
+    // Register built-in tools in environment so they can be referenced by name
+    for tool_name in ["web_fetch", "read_file", "write_file", "json_parse"] {
+        env.define(tool_name, Value::BuiltinTool(tool_name.to_string()));
+    }
+
     let mut structs: HashMap<String, Vec<StructField>> = HashMap::new();
 
     // First pass: collect struct declarations
@@ -110,6 +116,12 @@ pub async fn evaluate_with_output(
 ) -> GentResult<Vec<String>> {
     let logger = NullLogger;
     let mut env = Environment::new();
+
+    // Register built-in tools in environment so they can be referenced by name
+    for tool_name in ["web_fetch", "read_file", "write_file", "json_parse"] {
+        env.define(tool_name, Value::BuiltinTool(tool_name.to_string()));
+    }
+
     let mut outputs = Vec::new();
     let mut structs: HashMap<String, Vec<StructField>> = HashMap::new();
 
@@ -196,6 +208,12 @@ pub async fn evaluate_with_imports(
     logger: &dyn Logger,
 ) -> GentResult<()> {
     let mut env = Environment::new();
+
+    // Register built-in tools in environment so they can be referenced by name
+    for tool_name in ["web_fetch", "read_file", "write_file", "json_parse"] {
+        env.define(tool_name, Value::BuiltinTool(tool_name.to_string()));
+    }
+
     let mut structs: HashMap<String, Vec<StructField>> = HashMap::new();
 
     // Process imports if source file is provided
@@ -694,6 +712,7 @@ fn evaluate_agent_decl(
                 for item in items {
                     match item {
                         Value::Tool(t) => names.push(t.name.clone()),
+                        Value::BuiltinTool(name) => names.push(name),
                         Value::String(s) => names.push(s),
                         Value::KnowledgeBase(kb) => {
                             // Generate a unique name for the KB tool
@@ -708,7 +727,7 @@ fn evaluate_agent_decl(
                         }
                         _ => {
                             return Err(GentError::TypeError {
-                                expected: "Tool, String, or KnowledgeBase".to_string(),
+                                expected: "Tool, BuiltinTool, String, or KnowledgeBase".to_string(),
                                 got: item.type_name().to_string(),
                                 span: decl.span.clone(),
                             })

@@ -1069,6 +1069,7 @@ fn args_to_json(args: &[Value]) -> serde_json::Value {
             }
             Value::Parallel(p) => JsonValue::String(format!("<parallel {}>", p.name)),
             Value::KnowledgeBase(_) => JsonValue::String("<KnowledgeBase>".to_string()),
+            Value::BuiltinTool(name) => JsonValue::String(format!("<builtin tool {}>", name)),
         }
     }
 

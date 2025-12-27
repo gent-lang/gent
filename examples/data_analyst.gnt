@@ -142,11 +142,13 @@ calculate statistics, and generate reports. Use the available tools to:
 
 When given data, analyze it thoroughly and provide insights."
     model: "gpt-4o"
-    use calculate_percentage, calculate_growth, calculate_average
-    use calculate_margin, classify_risk, format_currency
-    use build_metric_report, format_comparison, generate_status
-    use validate_range, is_positive
-    use read_file, write_file
+    tools: [
+        calculate_percentage, calculate_growth, calculate_average,
+        calculate_margin, classify_risk, format_currency,
+        build_metric_report, format_comparison, generate_status,
+        validate_range, is_positive,
+        read_file, write_file
+    ]
     maxSteps: 20
 }
 
@@ -159,8 +161,10 @@ create clear, professional summaries. Focus on:
 
 Write concise but comprehensive reports."
     model: "gpt-4o-mini"
-    use build_metric_report, format_comparison, format_currency
-    use classify_risk, generate_status
+    tools: [
+        build_metric_report, format_comparison, format_currency,
+        classify_risk, generate_status
+    ]
     maxSteps: 10
 }
 
@@ -168,8 +172,10 @@ agent QuickCalculator {
     systemPrompt: "You are a quick calculation assistant. Perform mathematical
 operations and return results efficiently."
     model: "gpt-4o-mini"
-    use calculate_percentage, calculate_growth, calculate_average
-    use calculate_margin, validate_range
+    tools: [
+        calculate_percentage, calculate_growth, calculate_average,
+        calculate_margin, validate_range
+    ]
     maxSteps: 5
 }
 

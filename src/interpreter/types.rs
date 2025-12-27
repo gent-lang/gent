@@ -253,6 +253,8 @@ pub enum Value {
     Parallel(ParallelValue),
     /// Knowledge base for RAG
     KnowledgeBase(Arc<RwLock<crate::runtime::rag::KnowledgeBase>>),
+    /// Built-in tool reference (name only, actual tool in registry)
+    BuiltinTool(String),
 }
 
 impl PartialEq for Value {
@@ -273,6 +275,7 @@ impl PartialEq for Value {
             (Value::Parallel(a), Value::Parallel(b)) => a == b,
             // KnowledgeBase uses Arc pointer equality
             (Value::KnowledgeBase(a), Value::KnowledgeBase(b)) => Arc::ptr_eq(a, b),
+            (Value::BuiltinTool(a), Value::BuiltinTool(b)) => a == b,
             _ => false,
         }
     }
@@ -408,6 +411,7 @@ impl fmt::Display for Value {
             }
             Value::Parallel(p) => write!(f, "<parallel {}>", p.name),
             Value::KnowledgeBase(_) => write!(f, "<KnowledgeBase>"),
+            Value::BuiltinTool(name) => write!(f, "<builtin tool {}>", name),
         }
     }
 }
@@ -436,6 +440,7 @@ impl Value {
             Value::EnumConstructor(_) => true,
             Value::Parallel(_) => true,
             Value::KnowledgeBase(_) => true,
+            Value::BuiltinTool(_) => true,
         }
     }
 
@@ -456,6 +461,7 @@ impl Value {
             Value::EnumConstructor(c) => format!("EnumConstructor({}.{})", c.enum_name, c.variant),
             Value::Parallel(_) => "parallel".to_string(),
             Value::KnowledgeBase(_) => "KnowledgeBase".to_string(),
+            Value::BuiltinTool(_) => "BuiltinTool".to_string(),
         }
     }
 
