@@ -6,7 +6,7 @@ use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::imports::collect_imports;
 use crate::interpreter::string_methods::call_string_method;
-use crate::interpreter::{AgentValue, Environment, FnValue, OutputSchema, UserToolValue, Value};
+use crate::interpreter::{AgentValue, Environment, FnValue, OutputSchema, ParallelValue, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
@@ -256,9 +256,13 @@ async fn evaluate_statement(
             // Enum declarations are handled during parsing/validation
             // No runtime action needed
         }
-        Statement::ParallelDecl(_) => {
-            // TODO: Parallel execution will be implemented in a future task
-            unimplemented!("Parallel execution not yet implemented")
+        Statement::ParallelDecl(decl) => {
+            let parallel = ParallelValue {
+                name: decl.name.clone(),
+                agents: decl.agents.clone(),
+                timeout_ms: decl.timeout.to_millis(),
+            };
+            env.define(&decl.name, Value::Parallel(parallel));
         }
         Statement::FnDecl(decl) => {
             logger.log(
@@ -377,9 +381,14 @@ async fn evaluate_statement_with_output(
             // No runtime action needed
             Ok(None)
         }
-        Statement::ParallelDecl(_) => {
-            // TODO: Parallel execution will be implemented in a future task
-            unimplemented!("Parallel execution not yet implemented")
+        Statement::ParallelDecl(decl) => {
+            let parallel = ParallelValue {
+                name: decl.name.clone(),
+                agents: decl.agents.clone(),
+                timeout_ms: decl.timeout.to_millis(),
+            };
+            env.define(&decl.name, Value::Parallel(parallel));
+            Ok(None)
         }
         Statement::FnDecl(decl) => {
             logger.log(
