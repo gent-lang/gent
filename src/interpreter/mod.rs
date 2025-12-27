@@ -7,8 +7,11 @@ pub mod environment;
 pub mod evaluator;
 pub mod expr_eval;
 pub mod imports;
+mod kb_helpers;
 pub mod string_methods;
 pub mod types;
+
+pub(crate) use kb_helpers::parse_index_options;
 
 pub use array_methods::{call_array_method, call_array_method_with_callback, is_callback_method};
 pub use block_eval::{evaluate_block, evaluate_block_with_llm, evaluate_expr_async, BlockEvalContext};
