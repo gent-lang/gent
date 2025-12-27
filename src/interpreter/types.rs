@@ -100,6 +100,14 @@ pub struct LambdaValue {
     pub body: crate::parser::ast::LambdaBody,
 }
 
+/// Runtime value for a parallel execution block
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParallelValue {
+    pub name: String,
+    pub agents: Vec<crate::parser::ast::Expression>,
+    pub timeout_ms: u64,
+}
+
 /// Definition of an enum type (stored in environment)
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnumDef {
@@ -164,6 +172,8 @@ pub enum Value {
     Enum(EnumValue),
     /// Enum constructor (intermediate value before calling with args)
     EnumConstructor(EnumConstructor),
+    /// Parallel execution block
+    Parallel(ParallelValue),
 }
 
 /// Represents a defined agent at runtime
@@ -294,6 +304,7 @@ impl fmt::Display for Value {
             Value::EnumConstructor(c) => {
                 write!(f, "<enum constructor {}.{}>", c.enum_name, c.variant)
             }
+            Value::Parallel(p) => write!(f, "<parallel {}>", p.name),
         }
     }
 }
@@ -320,6 +331,7 @@ impl Value {
             Value::Lambda(_) => true,
             Value::Enum(_) => true,
             Value::EnumConstructor(_) => true,
+            Value::Parallel(_) => true,
         }
     }
 
@@ -338,6 +350,7 @@ impl Value {
             Value::Lambda(_) => "Lambda".to_string(),
             Value::Enum(e) => format!("{}.{}", e.enum_name, e.variant),
             Value::EnumConstructor(c) => format!("EnumConstructor({}.{})", c.enum_name, c.variant),
+            Value::Parallel(_) => "parallel".to_string(),
         }
     }
 

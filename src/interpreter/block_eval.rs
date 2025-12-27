@@ -689,6 +689,7 @@ fn args_to_json(args: &[Value]) -> serde_json::Value {
             Value::EnumConstructor(c) => {
                 JsonValue::String(format!("<enum constructor {}.{}>", c.enum_name, c.variant))
             }
+            Value::Parallel(p) => JsonValue::String(format!("<parallel {}>", p.name)),
         }
     }
 
