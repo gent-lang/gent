@@ -5,9 +5,10 @@ pub mod ast;
 pub use ast::{
     AgentDecl, AgentField, AssignmentStmt, BinaryOp, Block, BlockStmt, Duration, DurationUnit,
     EnumDecl, EnumField, EnumVariant, Expression, FieldType, FnDecl, ForStmt, IfStmt, ImportStmt,
-    Lambda, LambdaBody, LetStmt, MatchArm, MatchBody, MatchExpr, MatchPattern, OutputType,
-    ParallelDecl, Param, Program, ReturnStmt, Statement, StringPart, StructDecl, StructField,
-    ToolDecl, TopLevelCall, TryStmt, TypeName, UnaryOp, WhileStmt,
+    InterfaceDecl, InterfaceField, InterfaceMember, InterfaceMethod, Lambda, LambdaBody, LetStmt,
+    MatchArm, MatchBody, MatchExpr, MatchPattern, OutputType, ParallelDecl, Param, Program,
+    ReturnStmt, Statement, StringPart, StructDecl, StructField, ToolDecl, TopLevelCall, TryStmt,
+    TypeName, UnaryOp, WhileStmt,
 };
 
 use crate::errors::{GentError, GentResult, Span};
@@ -50,6 +51,7 @@ fn parse_statement(pair: pest::iterators::Pair<Rule>) -> GentResult<Statement> {
         Rule::import_stmt => Ok(Statement::Import(parse_import_stmt(inner)?)),
         Rule::struct_decl => Ok(Statement::StructDecl(parse_struct_decl(inner)?)),
         Rule::enum_decl => Ok(Statement::EnumDecl(parse_enum_decl(inner)?)),
+        Rule::interface_decl => Ok(Statement::InterfaceDecl(parse_interface_decl(inner)?)),
         Rule::agent_decl => Ok(Statement::AgentDecl(parse_agent_decl(inner)?)),
         Rule::tool_decl => Ok(Statement::ToolDecl(parse_tool_decl(inner)?)),
         Rule::fn_decl => Ok(Statement::FnDecl(parse_fn_decl(inner)?)),
@@ -1113,6 +1115,82 @@ fn parse_enum_field(pair: pest::iterators::Pair<Rule>) -> GentResult<EnumField> 
     };
 
     Ok(EnumField { name, type_name, span })
+}
+
+fn parse_interface_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<InterfaceDecl> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let mut members = Vec::new();
+
+    if let Some(body) = inner.next() {
+        for member_pair in body.into_inner() {
+            members.push(parse_interface_member(member_pair)?);
+        }
+    }
+
+    Ok(InterfaceDecl {
+        name,
+        members,
+        span,
+    })
+}
+
+fn parse_interface_member(pair: pest::iterators::Pair<Rule>) -> GentResult<InterfaceMember> {
+    let inner = pair.into_inner().next().unwrap();
+    match inner.as_rule() {
+        Rule::interface_method => Ok(InterfaceMember::Method(parse_interface_method(inner)?)),
+        Rule::interface_field => Ok(InterfaceMember::Field(parse_interface_field(inner)?)),
+        _ => Err(GentError::SyntaxError {
+            message: format!("Unexpected interface member rule: {:?}", inner.as_rule()),
+            span: Span::new(inner.as_span().start(), inner.as_span().end()),
+        }),
+    }
+}
+
+fn parse_interface_field(pair: pest::iterators::Pair<Rule>) -> GentResult<InterfaceField> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let type_pair = inner.next().unwrap();
+    let type_name = parse_type_name(type_pair)?;
+
+    Ok(InterfaceField {
+        name,
+        type_name,
+        span,
+    })
+}
+
+fn parse_interface_method(pair: pest::iterators::Pair<Rule>) -> GentResult<InterfaceMethod> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let mut params = Vec::new();
+    let mut return_type = None;
+
+    for item in inner {
+        match item.as_rule() {
+            Rule::param_list => {
+                params = parse_param_list(item)?;
+            }
+            Rule::return_type => {
+                let type_pair = item.into_inner().next().unwrap();
+                return_type = Some(parse_type_name(type_pair)?);
+            }
+            _ => {}
+        }
+    }
+
+    Ok(InterfaceMethod {
+        name,
+        params,
+        return_type,
+        span,
+    })
 }
 
 fn parse_parallel_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<ParallelDecl> {
