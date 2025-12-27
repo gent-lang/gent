@@ -1,6 +1,6 @@
 // === Program Structure ===
 program = { SOI ~ statement* ~ EOI }
-statement = { import_stmt | struct_decl | enum_decl | fn_decl | tool_decl | agent_decl | parallel_decl | top_level_let | top_level_call }
+statement = { import_stmt | interface_decl | struct_decl | enum_decl | fn_decl | tool_decl | agent_decl | parallel_decl | top_level_let | top_level_call }
 
 // === Import Statement ===
 import_stmt = { "import" ~ "{" ~ import_list ~ "}" ~ "from" ~ string_literal }
@@ -50,6 +50,13 @@ enum_variant = { identifier ~ enum_variant_data? }
 enum_variant_data = { "(" ~ enum_field_list ~ ")" }
 enum_field_list = { enum_field ~ ("," ~ enum_field)* }
 enum_field = { (identifier ~ ":")? ~ identifier }
+
+// === Interface Declaration ===
+interface_decl = { "interface" ~ identifier ~ "{" ~ interface_body ~ "}" }
+interface_body = { interface_member* }
+interface_member = { interface_method | interface_field }
+interface_field = { identifier ~ ":" ~ type_name }
+interface_method = { identifier ~ "(" ~ param_list? ~ ")" ~ return_type? }
 
 // === Parallel Declaration ===
 parallel_decl = { "parallel" ~ identifier ~ "{" ~ parallel_body ~ "}" }
