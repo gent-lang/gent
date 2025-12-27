@@ -145,3 +145,110 @@ async fn test_struct_with_array_output() {
     assert_eq!(json["tags"].as_array().unwrap().len(), 3);
     assert_eq!(json["count"], 3);
 }
+
+// ============================================
+// Bug Reproduction: Agent with structured output called from function
+// Issue: "Type error: expected String or Array, got Agent"
+// ============================================
+
+#[tokio::test]
+async fn test_agent_with_structured_output_called_from_function() {
+    // This reproduces the bug from puzzle_ideation.gnt:
+    // fn generateIdeas(prompt: string) -> object {
+    //     let session = PuzzleIdeator.userPrompt("...{prompt}...").run()
+    //     return session
+    // }
+    let source = r#"
+        struct IdeaList {
+            ideas: string[]
+            count: number
+        }
+
+        agent Ideator {
+            systemPrompt: "Generate ideas"
+            model: "gpt-4o"
+            output: IdeaList
+        }
+
+        fn generateIdeas(prompt: string) -> object {
+            let result = Ideator.userPrompt("Generate ideas for: {prompt}").run()
+            return result
+        }
+
+        fn main() {
+            let ideas = generateIdeas("puzzle games")
+            println("{ideas}")
+        }
+
+        main()
+    "#;
+
+    let program = parse(source).unwrap();
+    let mock = MockLLMClient::with_response(r#"{"ideas": ["puzzle1", "puzzle2"], "count": 2}"#);
+    let mut tools = ToolRegistry::new();
+
+    let result = evaluate_with_output(&program, &mock, &mut tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_agent_with_structured_output_interpolation_in_function() {
+    // Simpler version: just test interpolation works inside function
+    let source = r#"
+        struct Result {
+            value: string
+        }
+
+        agent Processor {
+            systemPrompt: "Process input"
+            model: "gpt-4o"
+            output: Result
+        }
+
+        fn process(input: string) -> object {
+            let r = Processor.userPrompt("Process: {input}").run()
+            return r
+        }
+
+        let output = process("test input")
+    "#;
+
+    let program = parse(source).unwrap();
+    let mock = MockLLMClient::with_response(r#"{"value": "processed"}"#);
+    let mut tools = ToolRegistry::new();
+
+    let result = evaluate_with_output(&program, &mock, &mut tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_agent_run_result_can_be_iterated() {
+    // Test that agent result with array field can be iterated
+    let source = r#"
+        struct IdeaSession {
+            ideas: string[]
+        }
+
+        agent Ideator {
+            systemPrompt: "Generate ideas"
+            model: "gpt-4o"
+            output: IdeaSession
+        }
+
+        fn main() {
+            let session = Ideator.userPrompt("generate").run()
+            for idea in session.ideas {
+                println("{idea}")
+            }
+        }
+
+        main()
+    "#;
+
+    let program = parse(source).unwrap();
+    let mock = MockLLMClient::with_response(r#"{"ideas": ["idea1", "idea2", "idea3"]}"#);
+    let mut tools = ToolRegistry::new();
+
+    let result = evaluate_with_output(&program, &mock, &mut tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}

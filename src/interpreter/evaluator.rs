@@ -1,7 +1,7 @@
 //! Program evaluation for GENT
 
 use crate::errors::{GentError, GentResult};
-use crate::interpreter::block_eval::evaluate_block;
+use crate::interpreter::block_eval::evaluate_block_with_llm;
 use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::imports::collect_imports;
@@ -325,8 +325,8 @@ async fn evaluate_statement(
                     fn_env.define(&param.name, arg_val.clone());
                 }
 
-                // Evaluate function body
-                evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                // Evaluate function body with LLM support for agent calls
+                evaluate_block_with_llm(&fn_val.body, &mut fn_env, tools, llm, logger).await?;
                 return Ok(());
             }
 
@@ -459,8 +459,8 @@ async fn evaluate_statement_with_output(
                     fn_env.define(&param.name, arg_val.clone());
                 }
 
-                // Evaluate function body
-                evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                // Evaluate function body with LLM support for agent calls
+                evaluate_block_with_llm(&fn_val.body, &mut fn_env, tools, llm, logger).await?;
                 return Ok(None);
             }
 
@@ -851,8 +851,8 @@ fn evaluate_expr_with_env<'a>(
                             fn_env.define(&param.name, arg_val.clone());
                         }
 
-                        // Evaluate the function body using block evaluator
-                        let result = crate::interpreter::evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                        // Evaluate the function body with LLM support for agent calls
+                        let result = crate::interpreter::evaluate_block_with_llm(&fn_val.body, &mut fn_env, tools, llm, logger).await?;
                         return Ok(result);
                     }
                 }

@@ -10,8 +10,31 @@ use crate::interpreter::array_methods::{call_array_method, call_array_method_wit
 use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::types::EnumValue;
 use crate::interpreter::{Environment, Value};
+use crate::logging::{Logger, NullLogger};
 use crate::parser::ast::{Block, BlockStmt, Expression, MatchBody, MatchPattern};
 use crate::runtime::tools::ToolRegistry;
+use crate::runtime::{run_agent_with_tools, LLMClient};
+use std::collections::HashMap;
+
+/// Context for block evaluation that includes optional LLM client for agent execution
+pub struct BlockEvalContext<'a> {
+    pub llm: Option<&'a dyn LLMClient>,
+    pub logger: &'a dyn Logger,
+}
+
+impl<'a> BlockEvalContext<'a> {
+    /// Create a new context with LLM client
+    pub fn with_llm(llm: &'a dyn LLMClient, logger: &'a dyn Logger) -> Self {
+        Self { llm: Some(llm), logger }
+    }
+
+    /// Create an empty context (no agent execution support)
+    pub fn empty() -> Self {
+        // Use a static NullLogger for the empty context
+        static NULL_LOGGER: NullLogger = NullLogger;
+        Self { llm: None, logger: &NULL_LOGGER }
+    }
+}
 
 /// Control flow signal for break/continue/return propagation
 #[derive(Debug, Clone, PartialEq)]
@@ -34,6 +57,9 @@ type BlockInternalFuture<'a> =
 ///
 /// Returns the value of the first return statement encountered,
 /// or Value::Null if the block completes without returning.
+///
+/// Note: This version does not support agent execution. Use `evaluate_block_with_llm`
+/// if you need to call agent methods like `.run()`.
 pub fn evaluate_block<'a>(
     block: &'a Block,
     env: &'a mut Environment,
@@ -43,7 +69,8 @@ pub fn evaluate_block<'a>(
         // Create a new scope for this block
         env.push_scope();
 
-        let (flow, result) = evaluate_block_internal(block, env, tools).await?;
+        let ctx = BlockEvalContext::empty();
+        let (flow, result) = evaluate_block_internal(block, env, tools, &ctx).await?;
 
         // Pop the scope
         env.pop_scope();
@@ -59,11 +86,68 @@ pub fn evaluate_block<'a>(
     })
 }
 
+/// Evaluate a block with LLM support for agent execution
+///
+/// This version supports calling agent methods like `.run()` within the block.
+pub fn evaluate_block_with_llm<'a>(
+    block: &'a Block,
+    env: &'a mut Environment,
+    tools: &'a ToolRegistry,
+    llm: &'a dyn LLMClient,
+    logger: &'a dyn Logger,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
+    Box::pin(async move {
+        // Create a new scope for this block
+        env.push_scope();
+
+        let ctx = BlockEvalContext::with_llm(llm, logger);
+        let (flow, result) = evaluate_block_internal(block, env, tools, &ctx).await?;
+
+        // Pop the scope
+        env.pop_scope();
+
+        // Handle control flow that escaped the block
+        match flow {
+            ControlFlow::Return(val) => Ok(*val),
+            ControlFlow::Continue => Ok(result),
+            ControlFlow::Break | ControlFlow::LoopContinue => Ok(result),
+        }
+    })
+}
+
+/// Evaluate a block with an existing context
+///
+/// This is used internally when calling functions to preserve the LLM context.
+fn evaluate_block_with_ctx<'a>(
+    block: &'a Block,
+    env: &'a mut Environment,
+    tools: &'a ToolRegistry,
+    ctx: &'a BlockEvalContext<'a>,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
+    Box::pin(async move {
+        // Create a new scope for this block
+        env.push_scope();
+
+        let (flow, result) = evaluate_block_internal(block, env, tools, ctx).await?;
+
+        // Pop the scope
+        env.pop_scope();
+
+        // Handle control flow that escaped the block
+        match flow {
+            ControlFlow::Return(val) => Ok(*val),
+            ControlFlow::Continue => Ok(result),
+            ControlFlow::Break | ControlFlow::LoopContinue => Ok(result),
+        }
+    })
+}
+
 /// Internal block evaluation that returns control flow signals
 fn evaluate_block_internal<'a>(
     block: &'a Block,
     env: &'a mut Environment,
     tools: &'a ToolRegistry,
+    ctx: &'a BlockEvalContext<'a>,
 ) -> BlockInternalFuture<'a> {
     Box::pin(async move {
         let mut result = Value::Null;
@@ -80,7 +164,7 @@ fn evaluate_block_internal<'a>(
                                 // Evaluate arguments
                                 let mut arg_values = Vec::new();
                                 for arg in args {
-                                    let val = evaluate_expr_async(arg, env, tools).await?;
+                                    let val = evaluate_expr_async(arg, env, tools, ctx).await?;
                                     arg_values.push(val);
                                 }
 
@@ -92,13 +176,13 @@ fn evaluate_block_internal<'a>(
 
                                 result
                             } else {
-                                evaluate_expr_async(&let_stmt.value, env, tools).await?
+                                evaluate_expr_async(&let_stmt.value, env, tools, ctx).await?
                             }
                         } else {
-                            evaluate_expr_async(&let_stmt.value, env, tools).await?
+                            evaluate_expr_async(&let_stmt.value, env, tools, ctx).await?
                         }
                     } else {
-                        evaluate_expr_async(&let_stmt.value, env, tools).await?
+                        evaluate_expr_async(&let_stmt.value, env, tools, ctx).await?
                     };
 
                     // Define the variable in the current scope
@@ -107,7 +191,7 @@ fn evaluate_block_internal<'a>(
 
                 BlockStmt::Assignment(assign_stmt) => {
                     // Evaluate the right-hand side expression
-                    let value = evaluate_expr_async(&assign_stmt.value, env, tools).await?;
+                    let value = evaluate_expr_async(&assign_stmt.value, env, tools, ctx).await?;
 
                     // Update the variable in the environment
                     if !env.set(&assign_stmt.name, value) {
@@ -121,7 +205,7 @@ fn evaluate_block_internal<'a>(
                 BlockStmt::Return(return_stmt) => {
                     // Evaluate the return value (if any)
                     result = if let Some(ref expr) = return_stmt.value {
-                        evaluate_expr_async(expr, env, tools).await?
+                        evaluate_expr_async(expr, env, tools, ctx).await?
                     } else {
                         Value::Null
                     };
@@ -130,13 +214,13 @@ fn evaluate_block_internal<'a>(
 
                 BlockStmt::If(if_stmt) => {
                     // Evaluate the condition
-                    let condition = evaluate_expr_async(&if_stmt.condition, env, tools).await?;
+                    let condition = evaluate_expr_async(&if_stmt.condition, env, tools, ctx).await?;
 
                     // Execute the appropriate block
                     if condition.is_truthy() {
                         // Execute then block (create a new scope)
                         env.push_scope();
-                        let (flow, _) = evaluate_block_internal(&if_stmt.then_block, env, tools).await?;
+                        let (flow, _) = evaluate_block_internal(&if_stmt.then_block, env, tools, ctx).await?;
                         env.pop_scope();
 
                         // Propagate control flow signals
@@ -147,7 +231,7 @@ fn evaluate_block_internal<'a>(
                     } else if let Some(ref else_block) = if_stmt.else_block {
                         // Execute else block (create a new scope)
                         env.push_scope();
-                        let (flow, _) = evaluate_block_internal(else_block, env, tools).await?;
+                        let (flow, _) = evaluate_block_internal(else_block, env, tools, ctx).await?;
                         env.pop_scope();
 
                         // Propagate control flow signals
@@ -181,7 +265,7 @@ fn evaluate_block_internal<'a>(
                         env.define(&for_stmt.variable, item);
 
                         // Execute the loop body using internal evaluation
-                        let (flow, _) = evaluate_block_internal(&for_stmt.body, env, tools).await?;
+                        let (flow, _) = evaluate_block_internal(&for_stmt.body, env, tools, ctx).await?;
 
                         env.pop_scope();
 
@@ -217,7 +301,7 @@ fn evaluate_block_internal<'a>(
                                 // Evaluate arguments
                                 let mut arg_values = Vec::new();
                                 for arg in args {
-                                    let val = evaluate_expr_async(arg, env, tools).await?;
+                                    let val = evaluate_expr_async(arg, env, tools, ctx).await?;
                                     arg_values.push(val);
                                 }
 
@@ -232,7 +316,7 @@ fn evaluate_block_internal<'a>(
                     }
 
                     // Evaluate the expression for side effects, discarding the result
-                    evaluate_expr_async(expr, env, tools).await?;
+                    evaluate_expr_async(expr, env, tools, ctx).await?;
                 }
 
                 BlockStmt::While(while_stmt) => {
@@ -253,7 +337,7 @@ fn evaluate_block_internal<'a>(
 
                         // Evaluate condition
                         let condition =
-                            evaluate_expr_async(&while_stmt.condition, env, tools).await?;
+                            evaluate_expr_async(&while_stmt.condition, env, tools, ctx).await?;
                         if !condition.is_truthy() {
                             break;
                         }
@@ -261,7 +345,7 @@ fn evaluate_block_internal<'a>(
                         // Execute body statements with a new scope
                         env.push_scope();
                         let (flow, _) =
-                            evaluate_block_internal(&while_stmt.body, env, tools).await?;
+                            evaluate_block_internal(&while_stmt.body, env, tools, ctx).await?;
                         env.pop_scope();
 
                         // Handle control flow from the loop body
@@ -298,7 +382,7 @@ fn evaluate_block_internal<'a>(
                 BlockStmt::Try(try_stmt) => {
                     // Execute try block and capture result
                     env.push_scope();
-                    let try_result = evaluate_block_internal(&try_stmt.try_block, env, tools).await;
+                    let try_result = evaluate_block_internal(&try_stmt.try_block, env, tools, ctx).await;
                     env.pop_scope();
 
                     match try_result {
@@ -325,7 +409,7 @@ fn evaluate_block_internal<'a>(
                             env.define(&try_stmt.error_var, Value::String(e.to_string()));
 
                             let catch_result =
-                                evaluate_block_internal(&try_stmt.catch_block, env, tools).await?;
+                                evaluate_block_internal(&try_stmt.catch_block, env, tools, ctx).await?;
                             env.pop_scope();
 
                             match catch_result.0 {
@@ -355,10 +439,12 @@ fn evaluate_block_internal<'a>(
 /// Evaluate an expression in an async context, handling function calls
 ///
 /// This function is similar to evaluate_expr but supports async tool calls.
+/// The `ctx` parameter provides optional LLM client for agent execution.
 pub fn evaluate_expr_async<'a>(
     expr: &'a Expression,
     env: &'a Environment,
     tools: &'a ToolRegistry,
+    ctx: &'a BlockEvalContext<'a>,
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
     Box::pin(async move {
         match expr {
@@ -374,7 +460,7 @@ pub fn evaluate_expr_async<'a>(
                                 // Evaluate arguments
                                 let mut arg_values = Vec::new();
                                 for arg in args {
-                                    let val = evaluate_expr_async(arg, env, tools).await?;
+                                    let val = evaluate_expr_async(arg, env, tools, ctx).await?;
                                     arg_values.push(val);
                                 }
 
@@ -405,14 +491,14 @@ pub fn evaluate_expr_async<'a>(
                     }
 
                     // Evaluate the object expression
-                    let obj = evaluate_expr_async(obj_expr, env, tools).await?;
+                    let obj = evaluate_expr_async(obj_expr, env, tools, ctx).await?;
 
                     // If it's a string, dispatch to string methods
                     if let Value::String(s) = &obj {
                         // Evaluate method arguments
                         let mut arg_values = Vec::new();
                         for arg in args {
-                            let val = evaluate_expr_async(arg, env, tools).await?;
+                            let val = evaluate_expr_async(arg, env, tools, ctx).await?;
                             arg_values.push(val);
                         }
                         return call_string_method(s, method_name, &arg_values);
@@ -430,7 +516,7 @@ pub fn evaluate_expr_async<'a>(
                                 });
                             }
 
-                            let arg = evaluate_expr_async(&args[0], env, tools).await?;
+                            let arg = evaluate_expr_async(&args[0], env, tools, ctx).await?;
                             let matches = match arg {
                                 Value::Enum(other) => {
                                     enum_val.enum_name == other.enum_name && enum_val.variant == other.variant
@@ -453,7 +539,7 @@ pub fn evaluate_expr_async<'a>(
                                 });
                             }
 
-                            let arg = evaluate_expr_async(&args[0], env, tools).await?;
+                            let arg = evaluate_expr_async(&args[0], env, tools, ctx).await?;
 
                             match arg {
                                 Value::Number(n) => {
@@ -484,7 +570,7 @@ pub fn evaluate_expr_async<'a>(
                         // Evaluate method arguments
                         let mut arg_values = Vec::new();
                         for arg in args {
-                            let val = evaluate_expr_async(arg, env, tools).await?;
+                            let val = evaluate_expr_async(arg, env, tools, ctx).await?;
                             arg_values.push(val);
                         }
 
@@ -517,9 +603,71 @@ pub fn evaluate_expr_async<'a>(
                         return Ok(result);
                     }
 
+                    // Handle Agent method calls (userPrompt, systemPrompt, run)
+                    if let Value::Agent(mut agent) = obj {
+                        match method_name.as_str() {
+                            "userPrompt" => {
+                                // Set user_prompt and return modified agent
+                                if args.is_empty() {
+                                    return Err(GentError::SyntaxError {
+                                        message: "userPrompt() requires an argument".to_string(),
+                                        span: span.clone(),
+                                    });
+                                }
+                                let arg = evaluate_expr_async(&args[0], env, tools, ctx).await?;
+                                let prompt = match arg {
+                                    Value::String(s) => s,
+                                    other => format!("{}", other),
+                                };
+                                agent.user_prompt = Some(prompt);
+                                return Ok(Value::Agent(agent));
+                            }
+                            "systemPrompt" => {
+                                // Set system_prompt and return modified agent
+                                if args.is_empty() {
+                                    return Err(GentError::SyntaxError {
+                                        message: "systemPrompt() requires an argument".to_string(),
+                                        span: span.clone(),
+                                    });
+                                }
+                                let arg = evaluate_expr_async(&args[0], env, tools, ctx).await?;
+                                let prompt = match arg {
+                                    Value::String(s) => s,
+                                    other => format!("{}", other),
+                                };
+                                agent.system_prompt = prompt;
+                                return Ok(Value::Agent(agent));
+                            }
+                            "run" => {
+                                // Execute the agent - requires LLM client
+                                if let Some(llm) = ctx.llm {
+                                    let result = run_agent_with_tools(&agent, None, llm, tools, ctx.logger).await?;
+                                    // If agent has structured output, parse as JSON
+                                    if agent.output_schema.is_some() {
+                                        if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&result) {
+                                            return Ok(json_to_value(&json_val));
+                                        }
+                                    }
+                                    return Ok(Value::String(result));
+                                } else {
+                                    return Err(GentError::SyntaxError {
+                                        message: "Cannot call .run() on agent in this context (no LLM client available)".to_string(),
+                                        span: span.clone(),
+                                    });
+                                }
+                            }
+                            _ => {
+                                return Err(GentError::SyntaxError {
+                                    message: format!("Unknown agent method: {}", method_name),
+                                    span: span.clone(),
+                                });
+                            }
+                        }
+                    }
+
                     // For other types, return an error for now
                     return Err(GentError::TypeError {
-                        expected: "String or Array".to_string(),
+                        expected: "String, Array, or Agent".to_string(),
                         got: obj.type_name().to_string(),
                         span: span.clone(),
                     });
@@ -540,7 +688,7 @@ pub fn evaluate_expr_async<'a>(
                 // Evaluate arguments first (needed for both functions and tools)
                 let mut arg_values = Vec::new();
                 for arg in args {
-                    let val = evaluate_expr_async(arg, env, tools).await?;
+                    let val = evaluate_expr_async(arg, env, tools, ctx).await?;
                     arg_values.push(val);
                 }
 
@@ -577,7 +725,7 @@ pub fn evaluate_expr_async<'a>(
                     }
 
                     // Evaluate the function body
-                    let result = evaluate_block(&fn_val.body, &mut fn_env, tools).await?;
+                    let result = evaluate_block_with_ctx(&fn_val.body, &mut fn_env, tools, ctx).await?;
                     return Ok(result);
                 }
 
@@ -608,7 +756,7 @@ pub fn evaluate_expr_async<'a>(
 
             // Match expression
             Expression::Match(match_expr) => {
-                let subject = evaluate_expr_async(&match_expr.subject, env, tools).await?;
+                let subject = evaluate_expr_async(&match_expr.subject, env, tools, ctx).await?;
 
                 for arm in &match_expr.arms {
                     if let Some(bindings) = match_pattern(&subject, &arm.pattern) {
@@ -622,10 +770,10 @@ pub fn evaluate_expr_async<'a>(
                         // Evaluate arm body
                         let result = match &arm.body {
                             MatchBody::Expression(expr) => {
-                                evaluate_expr_async(expr, &match_env, tools).await?
+                                evaluate_expr_async(expr, &match_env, tools, ctx).await?
                             }
                             MatchBody::Block(block) => {
-                                evaluate_block(block, &mut match_env, tools).await?
+                                evaluate_block_with_ctx(block, &mut match_env, tools, ctx).await?
                             }
                         };
 
@@ -736,6 +884,33 @@ fn match_pattern(value: &Value, pattern: &MatchPattern) -> Option<Vec<(String, V
                 }
             }
             None
+        }
+    }
+}
+
+/// Convert a JSON value to a GENT Value
+fn json_to_value(json: &serde_json::Value) -> Value {
+    match json {
+        serde_json::Value::Null => Value::Null,
+        serde_json::Value::Bool(b) => Value::Boolean(*b),
+        serde_json::Value::Number(n) => {
+            if let Some(f) = n.as_f64() {
+                Value::Number(f)
+            } else {
+                Value::Null
+            }
+        }
+        serde_json::Value::String(s) => Value::String(s.clone()),
+        serde_json::Value::Array(arr) => {
+            let items = arr.iter().map(json_to_value).collect();
+            Value::Array(items)
+        }
+        serde_json::Value::Object(obj) => {
+            let mut map = HashMap::new();
+            for (k, v) in obj {
+                map.insert(k.clone(), json_to_value(v));
+            }
+            Value::Object(map)
         }
     }
 }
