@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Publishing gent to crates.io"
+echo "🚀 Publishing gent-lang to crates.io"
 echo ""
 
 # Check if logged in to crates.io
