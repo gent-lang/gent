@@ -37,9 +37,9 @@ pub enum ChunkStrategy {
 /// Configuration for chunking
 #[derive(Debug, Clone)]
 pub struct ChunkConfig {
-    /// Target chunk size in characters
+    /// Target chunk size (in characters for SemanticChunker, in lines for FixedChunker)
     pub chunk_size: usize,
-    /// Overlap between chunks in characters
+    /// Overlap between chunks (in characters for SemanticChunker, in lines for FixedChunker)
     pub chunk_overlap: usize,
     /// Chunking strategy
     pub strategy: ChunkStrategy,
@@ -124,8 +124,9 @@ impl Default for FixedChunker {
     fn default() -> Self {
         Self {
             config: ChunkConfig {
+                chunk_size: 20,     // 20 lines per chunk
+                chunk_overlap: 5,   // 5 lines overlap
                 strategy: ChunkStrategy::Fixed,
-                ..ChunkConfig::default()
             },
         }
     }
@@ -263,15 +264,21 @@ pub fn chunk_code(content: &str, max_size: usize) -> Vec<Chunk> {
 }
 
 /// Chunk content by fixed line count with overlap
-pub fn chunk_fixed(content: &str, chunk_size: usize, overlap: usize) -> Vec<Chunk> {
+///
+/// # Arguments
+/// * `content` - The text content to chunk
+/// * `lines_per_chunk` - Number of lines per chunk
+/// * `overlap_lines` - Number of overlapping lines between chunks
+pub fn chunk_fixed(content: &str, lines_per_chunk: usize, overlap_lines: usize) -> Vec<Chunk> {
     let lines: Vec<&str> = content.lines().collect();
     if lines.is_empty() {
         return vec![];
     }
 
-    // Estimate lines per chunk (assume ~80 chars per line)
-    let lines_per_chunk = (chunk_size / 80).max(5);
-    let overlap_lines = (overlap / 80).max(1);
+    // Ensure we have at least 1 line per chunk
+    let lines_per_chunk = lines_per_chunk.max(1);
+    // Overlap must be less than chunk size to make progress
+    let overlap_lines = overlap_lines.min(lines_per_chunk.saturating_sub(1));
 
     let mut chunks = Vec::new();
     let mut i = 0;
@@ -290,11 +297,8 @@ pub fn chunk_fixed(content: &str, chunk_size: usize, overlap: usize) -> Vec<Chun
         }
 
         // Move forward, accounting for overlap
-        i += lines_per_chunk.saturating_sub(overlap_lines);
-        if i == start {
-            // Avoid infinite loop
-            i = end;
-        }
+        let step = lines_per_chunk.saturating_sub(overlap_lines);
+        i += step.max(1); // Ensure we always make progress
     }
 
     chunks
@@ -343,10 +347,16 @@ mod tests {
             .map(|i| format!("Line {}", i))
             .collect::<Vec<_>>()
             .join("\n");
-        let chunks = chunk_fixed(&content, 100, 20);
+        // chunk_size=5 means 5 lines per chunk, overlap=2 means 2 overlapping lines
+        let chunks = chunk_fixed(&content, 5, 2);
         assert!(!chunks.is_empty());
         // First chunk should start at line 1
         assert_eq!(chunks[0].start_line, 1);
+        // First chunk should end at line 5 (5 lines)
+        assert_eq!(chunks[0].end_line, 5);
+        // With 20 lines, 5 lines per chunk, 2 overlap (step=3), we expect ~7 chunks
+        // Lines: 1-5, 4-8, 7-11, 10-14, 13-17, 16-20
+        assert!(chunks.len() >= 6);
     }
 
     #[test]
@@ -357,7 +367,7 @@ mod tests {
         let chunks = chunk_code("", 500);
         assert!(chunks.is_empty());
 
-        let chunks = chunk_fixed("", 500, 50);
+        let chunks = chunk_fixed("", 10, 2);
         assert!(chunks.is_empty());
     }
 

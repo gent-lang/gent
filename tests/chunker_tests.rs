@@ -19,14 +19,18 @@ fn test_fixed_chunker() {
         .map(|i| format!("Line {}", i))
         .collect::<Vec<_>>()
         .join("\n");
+    // For FixedChunker, chunk_size is number of lines, chunk_overlap is overlapping lines
     let config = ChunkConfig {
-        chunk_size: 100,
-        chunk_overlap: 20,
+        chunk_size: 5,       // 5 lines per chunk
+        chunk_overlap: 2,    // 2 overlapping lines
         strategy: ChunkStrategy::Fixed,
     };
     let chunker = FixedChunker::new(config);
     let chunks = chunker.chunk(&content, Path::new("test.txt"));
     assert!(!chunks.is_empty());
+    // First chunk should have exactly 5 lines (lines 1-5)
+    assert_eq!(chunks[0].start_line, 1);
+    assert_eq!(chunks[0].end_line, 5);
 }
 
 #[test]
@@ -74,19 +78,26 @@ fn test_fixed_chunker_overlap() {
         .collect::<Vec<_>>()
         .join("\n");
 
+    // For FixedChunker, chunk_size is number of lines, chunk_overlap is overlapping lines
     let config = ChunkConfig {
-        chunk_size: 200,
-        chunk_overlap: 40,
+        chunk_size: 10,      // 10 lines per chunk
+        chunk_overlap: 3,    // 3 overlapping lines
         strategy: ChunkStrategy::Fixed,
     };
     let chunker = FixedChunker::new(config);
     let chunks = chunker.chunk(&content, Path::new("test.txt"));
 
-    // Should have multiple chunks due to content length
-    assert!(chunks.len() >= 2);
+    // With 30 lines, 10 lines per chunk, 3 overlap (step=7), we expect:
+    // Chunk 1: lines 1-10, Chunk 2: lines 8-17, Chunk 3: lines 15-24, Chunk 4: lines 22-30
+    assert!(chunks.len() >= 4);
 
     // Verify line numbers are 1-indexed
     assert_eq!(chunks[0].start_line, 1);
+    assert_eq!(chunks[0].end_line, 10);
+
+    // Second chunk should start with overlap from first
+    assert_eq!(chunks[1].start_line, 8);
+    assert_eq!(chunks[1].end_line, 17);
 }
 
 #[test]
