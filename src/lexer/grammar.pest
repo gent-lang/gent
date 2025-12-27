@@ -151,6 +151,11 @@ string_chars = @{ (!(("\"" | "\\") | "{") ~ ANY | escape_sequence)+ }
 escape_sequence = @{ "\\" ~ ("\"" | "\\" | "n" | "r" | "t" | "{" | "}") }
 
 number_literal = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+
+// === Duration Literal ===
+duration_literal = @{ ASCII_DIGIT+ ~ duration_unit }
+duration_unit = { "ms" | "s" | "m" }
+
 boolean_literal = { "true" | "false" }
 
 // === Identifiers ===
