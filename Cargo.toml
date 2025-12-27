@@ -12,6 +12,10 @@ categories = ["development-tools", "command-line-utilities"]
 authors = ["GENT Contributors"]
 rust-version = "1.70"
 
+[lib]
+name = "gent"
+path = "src/lib.rs"
+
 [[bin]]
 name = "gent"
 path = "src/main.rs"
