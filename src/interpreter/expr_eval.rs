@@ -218,6 +218,25 @@ pub fn evaluate_expr(expr: &Expression, env: &Environment) -> GentResult<Value> 
     }
 }
 
+/// Public wrapper for evaluate_binary_op (used by block_eval for async evaluation)
+pub fn evaluate_binary_op_public(
+    op: &BinaryOp,
+    left: Value,
+    right: Value,
+    span: &crate::Span,
+) -> GentResult<Value> {
+    evaluate_binary_op(op, left, right, span)
+}
+
+/// Public wrapper for evaluate_unary_op (used by block_eval for async evaluation)
+pub fn evaluate_unary_op_public(
+    op: &UnaryOp,
+    operand: Value,
+    span: &crate::Span,
+) -> GentResult<Value> {
+    evaluate_unary_op(op, operand, span)
+}
+
 /// Evaluate a binary operation
 fn evaluate_binary_op(
     op: &BinaryOp,

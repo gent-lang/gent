@@ -862,8 +862,136 @@ fn evaluate_expr_with_env<'a>(
                     span: span.clone(),
                 })
             }
-            // For other expression types, delegate to expr_eval which supports
-            // arrays, objects, binary ops, etc.
+            // Binary operations - need async evaluation for operands that might contain calls
+            Expression::Binary(op, left, right, span) => {
+                let left_val = evaluate_expr_with_env(left, env, llm, tools, logger).await?;
+                let right_val = evaluate_expr_with_env(right, env, llm, tools, logger).await?;
+                crate::interpreter::expr_eval::evaluate_binary_op_public(op, left_val, right_val, span)
+            }
+
+            // Unary operations - need async evaluation for operand
+            Expression::Unary(op, operand, span) => {
+                let val = evaluate_expr_with_env(operand, env, llm, tools, logger).await?;
+                crate::interpreter::expr_eval::evaluate_unary_op_public(op, val, span)
+            }
+
+            // Array literals - need async evaluation for elements
+            Expression::Array(elements, _) => {
+                let mut values = Vec::new();
+                for elem in elements {
+                    values.push(evaluate_expr_with_env(elem, env, llm, tools, logger).await?);
+                }
+                Ok(Value::Array(values))
+            }
+
+            // Object literals - need async evaluation for values
+            Expression::Object(fields, _) => {
+                let mut map = std::collections::HashMap::new();
+                for (key, value_expr) in fields {
+                    let value = evaluate_expr_with_env(value_expr, env, llm, tools, logger).await?;
+                    map.insert(key.clone(), value);
+                }
+                Ok(Value::Object(map))
+            }
+
+            // Member access - need async evaluation for object expression
+            Expression::Member(object_expr, property, span) => {
+                // Check if this is an enum construction: EnumName.Variant
+                if let Expression::Identifier(name, _) = object_expr.as_ref() {
+                    if let Some(enum_def) = env.get_enum(name) {
+                        use crate::interpreter::types::{EnumConstructor, EnumValue};
+                        let variant = enum_def.variants.iter().find(|v| v.name == *property);
+                        if let Some(v) = variant {
+                            if v.fields.is_empty() {
+                                return Ok(Value::Enum(EnumValue {
+                                    enum_name: name.clone(),
+                                    variant: property.clone(),
+                                    data: vec![],
+                                }));
+                            } else {
+                                return Ok(Value::EnumConstructor(EnumConstructor {
+                                    enum_name: name.clone(),
+                                    variant: property.clone(),
+                                    expected_fields: v.fields.len(),
+                                }));
+                            }
+                        } else {
+                            return Err(GentError::TypeError {
+                                expected: format!("valid variant of enum '{}'", name),
+                                got: property.clone(),
+                                span: span.clone(),
+                            });
+                        }
+                    }
+                }
+
+                let object = evaluate_expr_with_env(object_expr, env, llm, tools, logger).await?;
+                match object {
+                    Value::Object(map) => {
+                        map.get(property)
+                            .cloned()
+                            .ok_or_else(|| GentError::UndefinedProperty {
+                                property: property.clone(),
+                                type_name: "Object".to_string(),
+                                span: span.clone(),
+                            })
+                    }
+                    _ => Err(GentError::UndefinedProperty {
+                        property: property.clone(),
+                        type_name: object.type_name().to_string(),
+                        span: span.clone(),
+                    }),
+                }
+            }
+
+            // Index access - need async evaluation for target and index
+            Expression::Index(target_expr, index_expr, span) => {
+                let target = evaluate_expr_with_env(target_expr, env, llm, tools, logger).await?;
+                let index = evaluate_expr_with_env(index_expr, env, llm, tools, logger).await?;
+
+                match target {
+                    Value::Array(ref items) => {
+                        if let Value::Number(n) = index {
+                            let idx = n as i64;
+                            if idx < 0 || idx >= items.len() as i64 {
+                                return Err(GentError::IndexOutOfBounds {
+                                    index: idx,
+                                    length: items.len(),
+                                    span: span.clone(),
+                                });
+                            }
+                            Ok(items[idx as usize].clone())
+                        } else {
+                            Err(GentError::NotIndexable {
+                                type_name: format!("Array with {} index", index.type_name()),
+                                span: span.clone(),
+                            })
+                        }
+                    }
+                    Value::Object(ref map) => {
+                        if let Value::String(key) = index {
+                            map.get(&key)
+                                .cloned()
+                                .ok_or_else(|| GentError::UndefinedProperty {
+                                    property: key.clone(),
+                                    type_name: "Object".to_string(),
+                                    span: span.clone(),
+                                })
+                        } else {
+                            Err(GentError::NotIndexable {
+                                type_name: format!("Object with {} index", index.type_name()),
+                                span: span.clone(),
+                            })
+                        }
+                    }
+                    _ => Err(GentError::NotIndexable {
+                        type_name: target.type_name().to_string(),
+                        span: span.clone(),
+                    }),
+                }
+            }
+
+            // For remaining simple expression types, delegate to expr_eval
             other => evaluate_expr(other, env),
         }
     })

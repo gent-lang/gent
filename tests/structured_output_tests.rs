@@ -347,3 +347,93 @@ async fn test_nested_struct_with_wrong_property_names_should_fail_validation() {
         "Error should be from validation, not runtime. Got: {}", err_msg
     );
 }
+
+#[tokio::test]
+async fn test_array_length_in_if_condition() {
+    // This reproduces the bug from puzzle_ideation.gnt:102
+    // if ideas.ideas.length() > 0 { ... }
+    // Error: "expected synchronous expression, got function call (requires async context)"
+    let source = r#"
+        struct GameIdea {
+            title: string
+        }
+
+        struct IdeationSession {
+            ideas: GameIdea[]
+        }
+
+        agent Ideator {
+            systemPrompt: "Generate ideas"
+            model: "gpt-4o"
+            output: IdeationSession
+        }
+
+        fn main() {
+            let session = Ideator.userPrompt("generate").run()
+            if session.ideas.length() > 0 {
+                let first = session.ideas[0]
+                println("First idea: {first.title}")
+            }
+        }
+
+        main()
+    "#;
+
+    let program = parse(source).unwrap();
+    let mock = MockLLMClient::with_response(
+        r#"{"ideas": [{"title": "Puzzle Quest"}, {"title": "Logic Land"}]}"#,
+    );
+    let mut tools = ToolRegistry::new();
+
+    let result = evaluate_with_output(&program, &mock, &mut tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
+
+#[tokio::test]
+async fn test_array_length_in_if_condition_with_ideas_variable() {
+    // Exact pattern from user's puzzle_ideation.gnt:102
+    // let ideas = generateIdeas(prompt)
+    // if ideas.ideas.length() > 0 { ... }
+    let source = r#"
+        struct GameIdea {
+            title: string
+            coreMechanic: string
+        }
+
+        struct IdeationSession {
+            ideas: GameIdea[]
+        }
+
+        agent Ideator {
+            systemPrompt: "Generate ideas"
+            model: "gpt-4o"
+            output: IdeationSession
+        }
+
+        fn generateIdeas(prompt: string) -> object {
+            let result = Ideator.userPrompt("Generate ideas for: {prompt}").run()
+            return result
+        }
+
+        fn main() {
+            let ideas = generateIdeas("puzzle games")
+            if ideas.ideas.length() > 0 {
+                for idea in ideas.ideas {
+                    println("Title: {idea.title}")
+                    println("Mechanic: {idea.coreMechanic}")
+                }
+            }
+        }
+
+        main()
+    "#;
+
+    let program = parse(source).unwrap();
+    let mock = MockLLMClient::with_response(
+        r#"{"ideas": [{"title": "Puzzle Quest", "coreMechanic": "Match tiles"}, {"title": "Logic Land", "coreMechanic": "Solve equations"}]}"#,
+    );
+    let mut tools = ToolRegistry::new();
+
+    let result = evaluate_with_output(&program, &mock, &mut tools).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
