@@ -236,8 +236,7 @@ pub struct TopLevelCall {
 pub struct AgentDecl {
     pub name: String,
     pub fields: Vec<AgentField>,
-    pub tools: Vec<String>,           // Tool names from `use` statements
-    pub tools_expr: Option<Expression>, // From `tools:` field (dynamic tools)
+    pub tools_expr: Option<Expression>, // From `tools:` field
     pub output: Option<OutputType>,
     pub span: Span,
 }

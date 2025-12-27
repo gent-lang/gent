@@ -269,7 +269,7 @@ async fn test_tool_declaration_registers() {
         agent Greeter {
             systemPrompt: "Greet users"
             model: "gpt-4o-mini"
-            use greet
+            tools: [greet]
         }
 
         let result = Greeter.userPrompt("test").run()
@@ -297,7 +297,7 @@ async fn test_multiple_tool_declarations() {
         agent Calculator {
             systemPrompt: "Do math"
             model: "gpt-4o-mini"
-            use add
+            tools: [add]
         }
 
         let result = Calculator.userPrompt("2 + 2").run()

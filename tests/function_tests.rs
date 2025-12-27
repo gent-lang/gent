@@ -58,7 +58,7 @@ async fn test_eval_fn_call_simple() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let output = TestAgent.run()
@@ -85,7 +85,7 @@ async fn test_eval_fn_multiple_params() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let output = TestAgent.run()
@@ -112,7 +112,7 @@ async fn test_eval_fn_string_return() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let output = TestAgent.run()
@@ -139,7 +139,7 @@ async fn test_eval_fn_no_params() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let output = TestAgent.run()
@@ -170,7 +170,7 @@ async fn test_eval_fn_nested_call() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let output = TestAgent.run()
@@ -200,7 +200,7 @@ async fn test_eval_fn_with_conditionals() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let output = TestAgent.run()
@@ -301,7 +301,7 @@ async fn test_eval_fn_with_local_vars() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let output = TestAgent.run()

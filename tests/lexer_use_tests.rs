@@ -1,44 +1,46 @@
+//! Tests for agent tools field lexing
+
 use gent::lexer::{GentParser, Rule};
 use pest::Parser;
 
 #[test]
-fn test_parse_use_single_tool() {
-    let result = GentParser::parse(Rule::use_stmt, "use web_fetch");
+fn test_parse_tools_field_single() {
+    let result = GentParser::parse(Rule::tools_field, "tools: [web_fetch]");
     assert!(result.is_ok());
 }
 
 #[test]
-fn test_parse_use_multiple_tools() {
-    let result = GentParser::parse(Rule::use_stmt, "use web_fetch, read_file, write_file");
+fn test_parse_tools_field_multiple() {
+    let result = GentParser::parse(Rule::tools_field, "tools: [web_fetch, read_file, write_file]");
     assert!(result.is_ok());
 }
 
 #[test]
-fn test_parse_agent_with_use() {
+fn test_parse_agent_with_tools() {
     let input = r#"agent Bot {
-        prompt: "Hello"
-        use web_fetch
+        systemPrompt: "Hello"
+        tools: [web_fetch]
     }"#;
     let result = GentParser::parse(Rule::agent_decl, input);
     assert!(result.is_ok());
 }
 
 #[test]
-fn test_parse_agent_with_use_and_fields() {
+fn test_parse_agent_with_tools_and_fields() {
     let input = r#"agent Bot {
-        prompt: "Hello"
-        use web_fetch, read_file
-        max_steps: 5
+        systemPrompt: "Hello"
+        tools: [web_fetch, read_file]
+        maxSteps: 5
     }"#;
     let result = GentParser::parse(Rule::agent_decl, input);
     assert!(result.is_ok());
 }
 
 #[test]
-fn test_parse_use_before_prompt() {
+fn test_parse_tools_before_prompt() {
     let input = r#"agent Bot {
-        use web_fetch
-        prompt: "Hello"
+        tools: [web_fetch]
+        systemPrompt: "Hello"
     }"#;
     let result = GentParser::parse(Rule::agent_decl, input);
     assert!(result.is_ok());

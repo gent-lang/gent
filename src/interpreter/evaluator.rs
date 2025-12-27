@@ -745,8 +745,8 @@ fn evaluate_agent_decl(
             }
         }
     } else {
-        // Fall back to legacy `use` syntax
-        decl.tools.clone()
+        // No tools specified
+        Vec::new()
     };
 
     // Build agent with all fields

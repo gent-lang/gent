@@ -174,8 +174,8 @@ fn test_parse_agent_with_identifier_tools() {
 }
 
 #[test]
-fn test_parse_agent_with_both_use_and_tools() {
-    // Test that both use statements and tools field can coexist
+fn test_parse_agent_with_all_tools_in_array() {
+    // Test combining multiple tools in tools array
     let source = r#"
         tool greet(name: string) -> string {
             return "Hello, " + name
@@ -184,8 +184,7 @@ fn test_parse_agent_with_both_use_and_tools() {
             return "Results for: " + query
         }
         agent Helper {
-            use greet
-            tools: [search]
+            tools: [greet, search]
             model: "gpt-4o"
             systemPrompt: "You help people"
         }
@@ -204,13 +203,16 @@ fn test_parse_agent_with_both_use_and_tools() {
     assert!(agent.is_some());
 
     let agent = agent.unwrap();
-    // Should have both use-declared tools and tools_expr
-    assert_eq!(agent.tools.len(), 1, "Expected one tool from use statement");
-    assert_eq!(agent.tools[0], "greet");
+    // Should have tools_expr with both tools
     assert!(
         agent.tools_expr.is_some(),
         "Expected tools_expr from tools field"
     );
+    if let Some(Expression::Array(elements, _)) = &agent.tools_expr {
+        assert_eq!(elements.len(), 2, "Expected two tools in the array");
+    } else {
+        panic!("Expected tools_expr to be an array");
+    }
 }
 
 #[tokio::test]

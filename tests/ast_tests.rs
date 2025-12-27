@@ -170,7 +170,6 @@ fn test_agent_decl_creation() {
             value: string_expr("You are friendly.", Span::new(20, 39)),
             span: Span::new(12, 39),
         }],
-        tools: vec![],
         tools_expr: None,
         output: None,
         span: Span::new(0, 41),
@@ -195,7 +194,6 @@ fn test_agent_decl_multiple_fields() {
                 span: Span::new(0, 7),
             },
         ],
-        tools: vec![],
         tools_expr: None,
         output: None,
         span: Span::new(0, 50),
@@ -208,7 +206,6 @@ fn test_agent_decl_empty_fields() {
     let agent = AgentDecl {
         name: "Empty".to_string(),
         fields: vec![],
-        tools: vec![],
         tools_expr: None,
         output: None,
         span: Span::new(0, 10),
@@ -221,7 +218,6 @@ fn test_agent_decl_equality() {
     let a1 = AgentDecl {
         name: "Test".to_string(),
         fields: vec![],
-        tools: vec![],
         tools_expr: None,
         output: None,
         span: Span::new(0, 10),
@@ -282,7 +278,6 @@ fn test_statement_agent_decl() {
     let stmt = Statement::AgentDecl(AgentDecl {
         name: "Hello".to_string(),
         fields: vec![],
-        tools: vec![],
         tools_expr: None,
         output: None,
         span: Span::new(0, 10),
@@ -350,7 +345,6 @@ fn test_program_multiple_statements() {
             Statement::AgentDecl(AgentDecl {
                 name: "Hello".to_string(),
                 fields: vec![],
-                tools: vec![],
                 tools_expr: None,
                 output: None,
                 span: Span::new(0, 10),
@@ -402,7 +396,6 @@ fn test_hello_world_ast() {
                     value: string_expr("You are friendly.", Span::new(22, 41)),
                     span: Span::new(14, 41),
                 }],
-                tools: vec![],
                 tools_expr: None,
                 output: None,
                 span: Span::new(0, 43),

@@ -137,7 +137,7 @@ async fn test_string_methods_trim() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -159,7 +159,7 @@ async fn test_string_methods_case_conversion() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -180,7 +180,7 @@ async fn test_string_methods_chained() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -204,7 +204,7 @@ async fn test_string_methods_contains() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -225,7 +225,7 @@ async fn test_string_methods_split() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -246,7 +246,7 @@ async fn test_string_methods_replace() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -275,7 +275,7 @@ async fn test_while_loop_basic() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -297,7 +297,7 @@ async fn test_while_with_break() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -323,7 +323,7 @@ async fn test_while_with_continue() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -349,7 +349,7 @@ async fn test_while_with_break_in_if() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -375,7 +375,7 @@ async fn test_for_loop_array() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -397,7 +397,7 @@ async fn test_for_loop_range() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -421,7 +421,7 @@ async fn test_for_loop_with_break() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -445,7 +445,7 @@ async fn test_for_loop_with_continue() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -467,7 +467,7 @@ async fn test_for_loop_string_iteration() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -495,7 +495,7 @@ async fn test_try_catch_basic() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -519,7 +519,7 @@ async fn test_try_catch_with_return() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -547,7 +547,7 @@ async fn test_try_catch_nested() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -573,7 +573,7 @@ async fn test_try_catch_in_loop() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -601,7 +601,7 @@ async fn test_function_basic() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -625,7 +625,7 @@ async fn test_function_string_return() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -649,7 +649,7 @@ async fn test_function_no_params() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -677,7 +677,7 @@ async fn test_function_nested_calls() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -704,7 +704,7 @@ async fn test_function_with_conditionals() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -728,7 +728,7 @@ async fn test_function_with_string_methods() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -769,7 +769,7 @@ async fn test_all_features_combined() {
             Process items carefully.
             """
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -810,7 +810,7 @@ async fn test_while_loop_with_string_processing() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -840,7 +840,7 @@ async fn test_function_with_loop_and_break() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -867,7 +867,7 @@ async fn test_try_catch_with_while_and_break() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -919,7 +919,7 @@ async fn test_comprehensive_program() {
             Help customers calculate their order totals.
             Apply discounts when appropriate.
             """
-            use processOrder
+            tools: [processOrder]
             maxSteps: 20
             model: "gpt-4o-mini"
         }
@@ -948,7 +948,7 @@ async fn test_while_false_condition() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -970,7 +970,7 @@ async fn test_empty_for_body() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -1015,7 +1015,7 @@ async fn test_deeply_nested_loops() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()
@@ -1036,7 +1036,7 @@ async fn test_string_methods_on_interpolated_string() {
         agent TestAgent {
             systemPrompt: "Test"
             model: "gpt-4o-mini"
-            use test
+            tools: [test]
         }
 
         let result = TestAgent.run()

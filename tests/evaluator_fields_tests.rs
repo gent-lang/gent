@@ -41,7 +41,7 @@ async fn test_evaluate_agent_with_tools() {
         agent Bot {
             systemPrompt: "Hello"
             model: "gpt-4o-mini"
-            use web_fetch, read_file
+            tools: [web_fetch, read_file]
         }
         let result = Bot.run()
     "#;
@@ -57,7 +57,7 @@ async fn test_evaluate_agent_all_fields() {
     let source = r#"
         agent Bot {
             systemPrompt: "Hello"
-            use web_fetch
+            tools: [web_fetch]
             maxSteps: 20
             model: "gpt-4o-mini"
         }

@@ -201,7 +201,7 @@ async fn test_tool_with_agent_fields() {
             systemPrompt: "You are a math expert"
             maxSteps: 10
             model: "gpt-4o"
-            use web_fetch
+            tools: [web_fetch]
         }
 
         let result = MathBot.run()
@@ -519,7 +519,7 @@ async fn test_full_milestone3_program() {
 
         agent ShoppingAssistant {
             systemPrompt: "You help customers with shopping"
-            use web_fetch, read_file
+            tools: [web_fetch, read_file]
             maxSteps: 20
             model: "gpt-4o-mini"
         }

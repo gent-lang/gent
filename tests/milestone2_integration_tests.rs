@@ -9,7 +9,7 @@ async fn test_agent_with_tools_parses() {
         agent Bot {
             systemPrompt: "Hello"
             model: "gpt-4o-mini"
-            use web_fetch, read_file
+            tools: [web_fetch, read_file]
         }
         let result = Bot.run()
     "#;
@@ -65,7 +65,7 @@ async fn test_full_researcher_example() {
         agent Researcher {
             systemPrompt: "You help research topics."
             model: "gpt-4o-mini"
-            use web_fetch
+            tools: [web_fetch]
             maxSteps: 5
         }
         let result = Researcher.userPrompt("Tell me about Rust").run()
@@ -85,12 +85,12 @@ async fn test_multiple_agents_with_different_tools() {
         agent Reader {
             systemPrompt: "Read files"
             model: "gpt-4o-mini"
-            use read_file
+            tools: [read_file]
         }
         agent Writer {
             systemPrompt: "Write files"
             model: "gpt-4o-mini"
-            use write_file
+            tools: [write_file]
         }
         let r1 = Reader.run()
         let r2 = Writer.run()
