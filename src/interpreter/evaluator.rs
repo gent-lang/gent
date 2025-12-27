@@ -226,7 +226,7 @@ pub async fn evaluate_with_imports(
                         env.define(&fn_decl.name, fn_value);
                     }
                     Statement::AgentDecl(decl) if names.contains(&decl.name) => {
-                        evaluate_agent_decl(decl, &mut env, &structs)?;
+                        evaluate_agent_decl(decl, &mut env, &structs, tools)?;
                     }
                     Statement::ToolDecl(decl) if names.contains(&decl.name) => {
                         evaluate_tool_decl(decl, &mut env, tools)?;
@@ -325,7 +325,7 @@ async fn evaluate_statement(
                 "eval",
                 &format!("Declaring agent '{}'", decl.name),
             );
-            evaluate_agent_decl(decl, env, structs)?;
+            evaluate_agent_decl(decl, env, structs, tools)?;
         }
         Statement::ToolDecl(decl) => {
             logger.log(
@@ -450,7 +450,7 @@ async fn evaluate_statement_with_output(
                 "eval",
                 &format!("Declaring agent '{}'", decl.name),
             );
-            evaluate_agent_decl(decl, env, structs)?;
+            evaluate_agent_decl(decl, env, structs, tools)?;
             Ok(None)
         }
         Statement::ToolDecl(decl) => {
@@ -572,6 +572,7 @@ fn evaluate_agent_decl(
     decl: &AgentDecl,
     env: &mut Environment,
     structs: &HashMap<String, Vec<StructField>>,
+    tools: &mut ToolRegistry,
 ) -> GentResult<()> {
     let mut prompt: Option<String> = None;
     let mut user_prompt: Option<String> = None;
@@ -694,9 +695,20 @@ fn evaluate_agent_decl(
                     match item {
                         Value::Tool(t) => names.push(t.name.clone()),
                         Value::String(s) => names.push(s),
+                        Value::KnowledgeBase(kb) => {
+                            // Generate a unique name for the KB tool
+                            let tool_name = format!("kb_{}", names.len());
+                            // Create and register the KnowledgeBase tool
+                            let kb_tool = crate::runtime::rag::KnowledgeBaseTool::new(
+                                kb.clone(),
+                                tool_name.clone(),
+                            );
+                            tools.register(Box::new(kb_tool));
+                            names.push(tool_name);
+                        }
                         _ => {
                             return Err(GentError::TypeError {
-                                expected: "Tool or String".to_string(),
+                                expected: "Tool, String, or KnowledgeBase".to_string(),
                                 got: item.type_name().to_string(),
                                 span: decl.span.clone(),
                             })

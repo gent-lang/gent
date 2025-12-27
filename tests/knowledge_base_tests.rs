@@ -261,3 +261,42 @@ async fn test_knowledge_base_as_tool() {
     // Cleanup
     std::fs::remove_dir_all(&temp_dir).ok();
 }
+
+#[tokio::test]
+async fn test_agent_with_knowledge_base_tool() {
+    // Create a temp directory with test files
+    let temp_dir = std::env::temp_dir().join("gent_test_kb_agent");
+    std::fs::create_dir_all(&temp_dir).unwrap();
+    std::fs::write(
+        temp_dir.join("info.md"),
+        "# Info\n\nThis document explains the system.",
+    )
+    .unwrap();
+
+    let source = format!(
+        r#"
+        let kb = KnowledgeBase("{}")
+        let indexCount = kb.index({{}})
+
+        agent Helper {{
+            tools: [kb]
+            model: "gpt-4o"
+            systemPrompt: "You help users"
+        }}
+
+        println("Agent created with KB tool")
+    "#,
+        temp_dir.display().to_string().replace("\\", "/")
+    );
+
+    let program = gent::parser::parse(&source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+
+    // Cleanup
+    std::fs::remove_dir_all(&temp_dir).ok();
+
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
