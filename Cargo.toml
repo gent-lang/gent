@@ -4,6 +4,17 @@ version = "0.1.0"
 edition = "2021"
 description = "A programming language for AI agents"
 license = "MIT"
+repository = "https://github.com/gent-lang/gent"
+homepage = "https://github.com/gent-lang/gent"
+readme = "README.md"
+keywords = ["ai", "agents", "llm", "programming-language", "dsl"]
+categories = ["development-tools", "command-line-utilities"]
+authors = ["GENT Contributors"]
+rust-version = "1.70"
+
+[[bin]]
+name = "gent"
+path = "src/main.rs"
 
 [dependencies]
 pest = "2.7"
