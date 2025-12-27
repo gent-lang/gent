@@ -986,6 +986,30 @@ fn evaluate_expr_with_env<'a>(
                         let result = crate::interpreter::evaluate_block_with_llm(&fn_val.body, &mut fn_env, tools, llm, logger).await?;
                         return Ok(result);
                     }
+
+                    // Check if it's a KnowledgeBase constructor
+                    if name == "KnowledgeBase" {
+                        if args.len() != 1 {
+                            return Err(GentError::SyntaxError {
+                                message: format!("KnowledgeBase expects 1 argument, got {}", args.len()),
+                                span: span.clone(),
+                            });
+                        }
+                        let arg = evaluate_expr_with_env(&args[0], env, llm, tools, logger).await?;
+                        let path = match arg {
+                            Value::String(s) => s,
+                            _ => {
+                                return Err(GentError::TypeError {
+                                    expected: "String".to_string(),
+                                    got: arg.type_name(),
+                                    span: span.clone(),
+                                });
+                            }
+                        };
+
+                        let kb = crate::runtime::rag::KnowledgeBase::new(path);
+                        return Ok(Value::KnowledgeBase(Arc::new(tokio::sync::RwLock::new(kb))));
+                    }
                 }
                 // Not a known callable type
                 Err(GentError::SyntaxError {
