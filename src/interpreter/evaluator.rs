@@ -683,9 +683,44 @@ fn evaluate_agent_decl(
         span: decl.span.clone(),
     })?;
 
+    // Determine tool names from either tools_expr or legacy `use` syntax
+    let tool_names = if let Some(ref tools_expr) = decl.tools_expr {
+        // Evaluate the tools expression (should be an array)
+        let tools_value = evaluate_expr(tools_expr, env)?;
+        match tools_value {
+            Value::Array(items) => {
+                let mut names = Vec::new();
+                for item in items {
+                    match item {
+                        Value::Tool(t) => names.push(t.name.clone()),
+                        Value::String(s) => names.push(s),
+                        _ => {
+                            return Err(GentError::TypeError {
+                                expected: "Tool or String".to_string(),
+                                got: item.type_name().to_string(),
+                                span: decl.span.clone(),
+                            })
+                        }
+                    }
+                }
+                names
+            }
+            _ => {
+                return Err(GentError::TypeError {
+                    expected: "Array".to_string(),
+                    got: tools_value.type_name().to_string(),
+                    span: decl.span.clone(),
+                })
+            }
+        }
+    } else {
+        // Fall back to legacy `use` syntax
+        decl.tools.clone()
+    };
+
     // Build agent with all fields
     let mut agent = AgentValue::new(&decl.name, prompt)
-        .with_tools(decl.tools.clone())
+        .with_tools(tool_names)
         .with_model(model);
 
     if let Some(steps) = max_steps {

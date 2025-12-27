@@ -212,3 +212,26 @@ fn test_parse_agent_with_both_use_and_tools() {
         "Expected tools_expr from tools field"
     );
 }
+
+#[tokio::test]
+async fn test_eval_agent_with_tools_field() {
+    let source = r#"
+        tool greet(name: string) -> string {
+            return "Hello, " + name
+        }
+
+        agent Helper {
+            tools: [greet]
+            model: "gpt-4o"
+            systemPrompt: "You help"
+        }
+
+        println("ok")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Failed: {:?}", result.err());
+}
