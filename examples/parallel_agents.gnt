@@ -1,0 +1,28 @@
+// Parallel Agent Execution Example
+
+agent FastResponder {
+  systemPrompt: "Respond with exactly one word: 'fast'"
+  model: "gpt-4o-mini"
+}
+
+agent SlowResponder {
+  systemPrompt: "Respond with exactly one word: 'slow'"
+  model: "gpt-4o-mini"
+}
+
+agent MediumResponder {
+  systemPrompt: "Respond with exactly one word: 'medium'"
+  model: "gpt-4o-mini"
+}
+
+parallel trio {
+  agents: [
+    FastResponder.userPrompt("Reply now"),
+    SlowResponder.userPrompt("Reply now"),
+    MediumResponder.userPrompt("Reply now")
+  ]
+  timeout: 30s
+}
+
+let results = trio.run()
+println("Results: {results}")
