@@ -199,6 +199,27 @@ pub struct EnumConstructor {
     pub expected_fields: usize,
 }
 
+/// Definition of an interface type
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterfaceDef {
+    pub name: String,
+    pub members: Vec<InterfaceMemberDef>,
+}
+
+/// Definition of an interface member
+#[derive(Debug, Clone, PartialEq)]
+pub enum InterfaceMemberDef {
+    Field {
+        name: String,
+        type_name: crate::parser::ast::TypeName,
+    },
+    Method {
+        name: String,
+        params: Vec<crate::parser::ast::Param>,
+        return_type: Option<crate::parser::ast::TypeName>,
+    },
+}
+
 /// Runtime values in GENT
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {

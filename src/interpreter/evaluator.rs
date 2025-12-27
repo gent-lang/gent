@@ -65,6 +65,35 @@ pub async fn evaluate(
         }
     }
 
+    // Collect interface definitions
+    for statement in &program.statements {
+        if let Statement::InterfaceDecl(decl) = statement {
+            let def = crate::interpreter::types::InterfaceDef {
+                name: decl.name.clone(),
+                members: decl
+                    .members
+                    .iter()
+                    .map(|m| match m {
+                        crate::parser::ast::InterfaceMember::Field(f) => {
+                            crate::interpreter::types::InterfaceMemberDef::Field {
+                                name: f.name.clone(),
+                                type_name: f.type_name.clone(),
+                            }
+                        }
+                        crate::parser::ast::InterfaceMember::Method(method) => {
+                            crate::interpreter::types::InterfaceMemberDef::Method {
+                                name: method.name.clone(),
+                                params: method.params.clone(),
+                                return_type: method.return_type.clone(),
+                            }
+                        }
+                    })
+                    .collect(),
+            };
+            env.define_interface(def);
+        }
+    }
+
     // Second pass: evaluate statements
     for statement in &program.statements {
         evaluate_statement(statement, &mut env, llm, tools, logger, &structs).await?;
@@ -113,6 +142,35 @@ pub async fn evaluate_with_output(
                     .collect(),
             };
             env.define_enum(def);
+        }
+    }
+
+    // Collect interface definitions
+    for statement in &program.statements {
+        if let Statement::InterfaceDecl(decl) = statement {
+            let def = crate::interpreter::types::InterfaceDef {
+                name: decl.name.clone(),
+                members: decl
+                    .members
+                    .iter()
+                    .map(|m| match m {
+                        crate::parser::ast::InterfaceMember::Field(f) => {
+                            crate::interpreter::types::InterfaceMemberDef::Field {
+                                name: f.name.clone(),
+                                type_name: f.type_name.clone(),
+                            }
+                        }
+                        crate::parser::ast::InterfaceMember::Method(method) => {
+                            crate::interpreter::types::InterfaceMemberDef::Method {
+                                name: method.name.clone(),
+                                params: method.params.clone(),
+                                return_type: method.return_type.clone(),
+                            }
+                        }
+                    })
+                    .collect(),
+            };
+            env.define_interface(def);
         }
     }
 
@@ -208,6 +266,35 @@ pub async fn evaluate_with_imports(
                     .collect(),
             };
             env.define_enum(def);
+        }
+    }
+
+    // Collect interface definitions
+    for statement in &program.statements {
+        if let Statement::InterfaceDecl(decl) = statement {
+            let def = crate::interpreter::types::InterfaceDef {
+                name: decl.name.clone(),
+                members: decl
+                    .members
+                    .iter()
+                    .map(|m| match m {
+                        crate::parser::ast::InterfaceMember::Field(f) => {
+                            crate::interpreter::types::InterfaceMemberDef::Field {
+                                name: f.name.clone(),
+                                type_name: f.type_name.clone(),
+                            }
+                        }
+                        crate::parser::ast::InterfaceMember::Method(method) => {
+                            crate::interpreter::types::InterfaceMemberDef::Method {
+                                name: method.name.clone(),
+                                params: method.params.clone(),
+                                return_type: method.return_type.clone(),
+                            }
+                        }
+                    })
+                    .collect(),
+            };
+            env.define_interface(def);
         }
     }
 

@@ -291,3 +291,20 @@ fn test_parse_struct_no_implements() {
         panic!("Expected StructDecl");
     }
 }
+
+#[tokio::test]
+async fn test_interface_definition_registered() {
+    let source = r#"
+        interface Tool {
+            name: string
+            execute(input: string) -> string
+        }
+        println("ok")
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_ok(), "Interface evaluation failed: {:?}", result.err());
+}

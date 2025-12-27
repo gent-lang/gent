@@ -1,6 +1,6 @@
 //! Environment for scoped variable storage
 
-use crate::interpreter::types::EnumDef;
+use crate::interpreter::types::{EnumDef, InterfaceDef};
 use crate::interpreter::Value;
 use std::collections::HashMap;
 
@@ -11,6 +11,8 @@ pub struct Environment {
     scopes: Vec<HashMap<String, Value>>,
     /// Enum type definitions
     enums: HashMap<String, EnumDef>,
+    /// Interface type definitions
+    interfaces: HashMap<String, InterfaceDef>,
 }
 
 impl Environment {
@@ -19,6 +21,7 @@ impl Environment {
         Self {
             scopes: vec![HashMap::new()],
             enums: HashMap::new(),
+            interfaces: HashMap::new(),
         }
     }
 
@@ -80,6 +83,16 @@ impl Environment {
     /// Get an enum definition
     pub fn get_enum(&self, name: &str) -> Option<&EnumDef> {
         self.enums.get(name)
+    }
+
+    /// Define an interface type
+    pub fn define_interface(&mut self, def: InterfaceDef) {
+        self.interfaces.insert(def.name.clone(), def);
+    }
+
+    /// Get an interface definition
+    pub fn get_interface(&self, name: &str) -> Option<&InterfaceDef> {
+        self.interfaces.get(name)
     }
 }
 
