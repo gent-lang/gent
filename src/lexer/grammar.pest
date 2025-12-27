@@ -1,6 +1,6 @@
 // === Program Structure ===
 program = { SOI ~ statement* ~ EOI }
-statement = { import_stmt | struct_decl | enum_decl | fn_decl | tool_decl | agent_decl | top_level_let | top_level_call }
+statement = { import_stmt | struct_decl | enum_decl | fn_decl | tool_decl | agent_decl | parallel_decl | top_level_let | top_level_call }
 
 // === Import Statement ===
 import_stmt = { "import" ~ "{" ~ import_list ~ "}" ~ "from" ~ string_literal }
@@ -50,6 +50,13 @@ enum_variant = { identifier ~ enum_variant_data? }
 enum_variant_data = { "(" ~ enum_field_list ~ ")" }
 enum_field_list = { enum_field ~ ("," ~ enum_field)* }
 enum_field = { (identifier ~ ":")? ~ identifier }
+
+// === Parallel Declaration ===
+parallel_decl = { "parallel" ~ identifier ~ "{" ~ parallel_body ~ "}" }
+parallel_body = { parallel_field* }
+parallel_field = { agents_field | timeout_field }
+agents_field = { "agents" ~ ":" ~ "[" ~ (expression ~ ("," ~ expression)*)? ~ "]" }
+timeout_field = { "timeout" ~ ":" ~ duration_literal }
 
 // === Output Type (for agent output field) ===
 output_type = { field_type_object | identifier }
