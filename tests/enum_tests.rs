@@ -340,3 +340,46 @@ async fn test_enum_data_out_of_bounds() {
     let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
     assert!(result.is_ok()); // Returns null for out of bounds
 }
+
+// ============================================
+// Edge Case Tests
+// ============================================
+
+#[tokio::test]
+async fn test_enum_unknown_variant_error() {
+    let source = r#"
+        enum Status { Pending }
+        fn test() {
+            let s = Status.Unknown
+            return s
+        }
+        test()
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_match_non_exhaustive() {
+    let source = r#"
+        enum Status { Pending, Active }
+        fn test() {
+            let s = Status.Active
+            let result = match s {
+                Status.Pending => "waiting"
+            }
+            return result
+        }
+        test()
+    "#;
+    let program = gent::parser::parse(source).unwrap();
+    let llm = gent::runtime::llm::MockLLMClient::new();
+    let mut tools = gent::runtime::ToolRegistry::new();
+    let logger = gent::logging::NullLogger;
+    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    assert!(result.is_err()); // Non-exhaustive match error
+}

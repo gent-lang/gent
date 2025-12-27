@@ -1,0 +1,93 @@
+// Enum Examples
+
+enum Status {
+    Pending
+    Active
+    Completed
+    Failed(message)
+}
+
+enum Color {
+    Red
+    Green
+    Blue
+    RGB(r: number, g: number, b: number)
+}
+
+fn demoBasicEnums() {
+    println("=== Basic Enums ===")
+
+    let s1 = Status.Pending
+    let s2 = Status.Failed("connection timeout")
+
+    println("s1: {s1}")
+    println("s2: {s2}")
+    println()
+}
+
+fn demoIsMethod() {
+    println("=== .is() Method ===")
+
+    let status = Status.Active
+
+    if status.is(Status.Active) {
+        println("Status is active!")
+    }
+
+    if status.is(Status.Pending) {
+        println("This won't print")
+    } else {
+        println("Status is not pending")
+    }
+    println()
+}
+
+fn demoMatch() {
+    println("=== Match Expression ===")
+
+    let status = Status.Failed("disk full")
+
+    let message = match status {
+        Status.Pending => "Waiting to start..."
+        Status.Active => "Currently running"
+        Status.Completed => "All done!"
+        Status.Failed(msg) => "Error: {msg}"
+    }
+
+    println("Result: {message}")
+    println()
+}
+
+fn demoColorMatch() {
+    println("=== Color Match ===")
+
+    let color = Color.RGB(255, 128, 0)
+
+    let desc = match color {
+        Color.Red => "Pure red"
+        Color.Green => "Pure green"
+        Color.Blue => "Pure blue"
+        Color.RGB(r, g, b) => "RGB({r}, {g}, {b})"
+    }
+
+    println("Color: {desc}")
+    println()
+}
+
+fn demoDataMethod() {
+    println("=== .data() Method ===")
+
+    let result = Status.Failed("not found")
+    let msg = result.data(0)
+    println("Error message: {msg}")
+    println()
+}
+
+// Run all demos
+demoBasicEnums()
+demoIsMethod()
+demoMatch()
+demoColorMatch()
+demoDataMethod()
+
+println("=== Enum examples complete! ===")
