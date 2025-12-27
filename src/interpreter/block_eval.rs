@@ -105,6 +105,19 @@ fn evaluate_block_internal<'a>(
                     env.define(&let_stmt.name, value);
                 }
 
+                BlockStmt::Assignment(assign_stmt) => {
+                    // Evaluate the right-hand side expression
+                    let value = evaluate_expr_async(&assign_stmt.value, env, tools).await?;
+
+                    // Update the variable in the environment
+                    if !env.set(&assign_stmt.name, value) {
+                        return Err(GentError::SyntaxError {
+                            message: format!("Undefined variable: '{}'", assign_stmt.name),
+                            span: assign_stmt.span.clone(),
+                        });
+                    }
+                }
+
                 BlockStmt::Return(return_stmt) => {
                     // Evaluate the return value (if any)
                     result = if let Some(ref expr) = return_stmt.value {

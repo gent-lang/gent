@@ -276,6 +276,7 @@ pub struct Block {
 #[derive(Debug, Clone, PartialEq)]
 pub enum BlockStmt {
     Let(LetStmt),
+    Assignment(AssignmentStmt),
     Return(ReturnStmt),
     If(IfStmt),
     For(ForStmt),
@@ -289,6 +290,14 @@ pub enum BlockStmt {
 /// Let statement: `let x = expr`
 #[derive(Debug, Clone, PartialEq)]
 pub struct LetStmt {
+    pub name: String,
+    pub value: Expression,
+    pub span: Span,
+}
+
+/// Assignment statement: `x = expr`
+#[derive(Debug, Clone, PartialEq)]
+pub struct AssignmentStmt {
     pub name: String,
     pub value: Expression,
     pub span: Span,

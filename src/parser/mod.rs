@@ -3,11 +3,11 @@
 pub mod ast;
 
 pub use ast::{
-    AgentDecl, AgentField, BinaryOp, Block, BlockStmt, EnumDecl, EnumField, EnumVariant, Expression,
-    FieldType, FnDecl, ForStmt, IfStmt, ImportStmt, Lambda, LambdaBody, LetStmt, MatchArm,
-    MatchBody, MatchExpr, MatchPattern, OutputType, Param, Program, ReturnStmt, Statement,
-    StringPart, StructDecl, StructField, ToolDecl, TopLevelCall, TryStmt, TypeName, UnaryOp,
-    WhileStmt,
+    AgentDecl, AgentField, AssignmentStmt, BinaryOp, Block, BlockStmt, EnumDecl, EnumField,
+    EnumVariant, Expression, FieldType, FnDecl, ForStmt, IfStmt, ImportStmt, Lambda, LambdaBody,
+    LetStmt, MatchArm, MatchBody, MatchExpr, MatchPattern, OutputType, Param, Program, ReturnStmt,
+    Statement, StringPart, StructDecl, StructField, ToolDecl, TopLevelCall, TryStmt, TypeName,
+    UnaryOp, WhileStmt,
 };
 
 use crate::errors::{GentError, GentResult, Span};
@@ -776,6 +776,7 @@ fn parse_block_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<BlockStmt> 
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
         Rule::let_stmt => Ok(BlockStmt::Let(parse_let_stmt(inner)?)),
+        Rule::assignment_stmt => Ok(BlockStmt::Assignment(parse_assignment_stmt(inner)?)),
         Rule::return_stmt => Ok(BlockStmt::Return(parse_return_stmt(inner)?)),
         Rule::if_stmt => Ok(BlockStmt::If(parse_if_stmt(inner)?)),
         Rule::for_stmt => Ok(BlockStmt::For(parse_for_stmt(inner)?)),
@@ -808,6 +809,16 @@ fn parse_let_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<LetStmt> {
     let value = parse_expression(inner.next().unwrap())?;
 
     Ok(LetStmt { name, value, span })
+}
+
+fn parse_assignment_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<AssignmentStmt> {
+    let span = Span::new(pair.as_span().start(), pair.as_span().end());
+    let mut inner = pair.into_inner();
+
+    let name = inner.next().unwrap().as_str().to_string();
+    let value = parse_expression(inner.next().unwrap())?;
+
+    Ok(AssignmentStmt { name, value, span })
 }
 
 fn parse_return_stmt(pair: pest::iterators::Pair<Rule>) -> GentResult<ReturnStmt> {
