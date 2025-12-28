@@ -102,17 +102,23 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
     let name = inner.next().unwrap().as_str().to_string();
     let mut fields = Vec::new();
     let mut tools_expr = None;
+    let mut knowledge_expr = None;
     let mut output = None;
 
     if let Some(body) = inner.next() {
         for item_pair in body.into_inner() {
-            // item_pair is agent_item which contains tools_field, output_field, or agent_field
+            // item_pair is agent_item which contains tools_field, knowledge_field, output_field, or agent_field
             let item_inner = item_pair.into_inner().next().unwrap();
             match item_inner.as_rule() {
                 Rule::tools_field => {
                     // Parse tools field: tools: expression
                     let expr_pair = item_inner.into_inner().next().unwrap();
                     tools_expr = Some(parse_expression(expr_pair)?);
+                }
+                Rule::knowledge_field => {
+                    // Parse knowledge field: knowledge: expression
+                    let expr_pair = item_inner.into_inner().next().unwrap();
+                    knowledge_expr = Some(parse_expression(expr_pair)?);
                 }
                 Rule::output_field => {
                     // Parse output field directly from grammar rule
@@ -136,6 +142,7 @@ fn parse_agent_decl(pair: pest::iterators::Pair<Rule>) -> GentResult<AgentDecl> 
         name,
         fields,
         tools_expr,
+        knowledge_expr,
         output,
         span,
     })

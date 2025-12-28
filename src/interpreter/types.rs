@@ -281,6 +281,26 @@ impl PartialEq for Value {
     }
 }
 
+/// Configuration for auto-RAG (knowledge base integration)
+#[derive(Debug, Clone)]
+pub struct KnowledgeConfig {
+    /// Reference to the knowledge base
+    pub source: Arc<RwLock<crate::runtime::rag::KnowledgeBase>>,
+    /// Maximum number of chunks to inject (default: 3)
+    pub chunk_limit: usize,
+    /// Minimum relevance score threshold (default: 0.5)
+    pub score_threshold: f64,
+}
+
+impl PartialEq for KnowledgeConfig {
+    fn eq(&self, other: &Self) -> bool {
+        // Compare by Arc pointer equality and config values
+        Arc::ptr_eq(&self.source, &other.source)
+            && self.chunk_limit == other.chunk_limit
+            && self.score_threshold == other.score_threshold
+    }
+}
+
 /// Represents a defined agent at runtime
 #[derive(Debug, Clone, PartialEq)]
 pub struct AgentValue {
@@ -292,6 +312,8 @@ pub struct AgentValue {
     pub user_prompt: Option<String>,
     /// Tools available to this agent
     pub tools: Vec<String>,
+    /// Knowledge base configuration for auto-RAG (optional)
+    pub knowledge_config: Option<KnowledgeConfig>,
     /// Maximum steps before stopping (None = default 10)
     pub max_steps: Option<u32>,
     /// Model to use (None = default)
@@ -314,6 +336,7 @@ impl AgentValue {
             system_prompt: system_prompt.into(),
             user_prompt: None,
             tools: Vec::new(),
+            knowledge_config: None,
             max_steps: None,
             model: None,
             output_schema: None,

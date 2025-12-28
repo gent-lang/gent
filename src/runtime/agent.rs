@@ -53,9 +53,82 @@ pub async fn run_agent_with_tools(
     // Build messages based on which prompts are present
     let mut messages = Vec::new();
 
+    // Determine user query for RAG (if applicable)
+    let user_query = agent
+        .user_prompt
+        .as_ref()
+        .or(input.as_ref())
+        .cloned();
+
+    // Perform RAG search if knowledge config is present
+    let rag_context = if let Some(ref knowledge_config) = agent.knowledge_config {
+        if let Some(ref query) = user_query {
+            logger.log(
+                LogLevel::Debug,
+                "agent",
+                &format!("Searching knowledge base with query: '{}'", query),
+            );
+
+            // Search the knowledge base
+            let kb = knowledge_config.source.read().await;
+            match kb.search(query, knowledge_config.chunk_limit).await {
+                Ok(results) => {
+                    // Filter by score threshold
+                    let filtered: Vec<_> = results
+                        .into_iter()
+                        .filter(|r| r.score >= knowledge_config.score_threshold as f32)
+                        .collect();
+
+                    if filtered.is_empty() {
+                        logger.log(
+                            LogLevel::Debug,
+                            "agent",
+                            "No relevant context found above threshold",
+                        );
+                        None
+                    } else {
+                        logger.log(
+                            LogLevel::Debug,
+                            "agent",
+                            &format!("Found {} relevant chunks for context", filtered.len()),
+                        );
+
+                        // Format results for injection
+                        let mut context = String::from("\n---\nRelevant context from knowledge base:\n\n");
+                        for (i, result) in filtered.iter().enumerate() {
+                            context.push_str(&format!(
+                                "[{}] (source: {}, lines {}-{}, score: {:.2})\n{}\n\n",
+                                i + 1,
+                                result.metadata.source,
+                                result.metadata.start_line,
+                                result.metadata.end_line,
+                                result.score,
+                                result.metadata.content
+                            ));
+                        }
+                        context.push_str("---");
+                        Some(context)
+                    }
+                }
+                Err(e) => {
+                    logger.log(
+                        LogLevel::Warn,
+                        "agent",
+                        &format!("Knowledge base search failed: {}", e),
+                    );
+                    None
+                }
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     // Add system message if prompt is not empty
     if !agent.system_prompt.is_empty() {
-        let system_prompt = if let Some(schema) = &agent.output_schema {
+        let mut system_prompt = if let Some(schema) = &agent.output_schema {
             logger.log(
                 LogLevel::Debug,
                 "agent",
@@ -76,6 +149,12 @@ pub async fn run_agent_with_tools(
         } else {
             agent.system_prompt.clone()
         };
+
+        // Append RAG context if available
+        if let Some(context) = rag_context {
+            system_prompt.push_str(&context);
+        }
+
         messages.push(Message::system(&system_prompt));
     }
 

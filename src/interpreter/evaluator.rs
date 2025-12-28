@@ -6,7 +6,7 @@ use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::imports::collect_imports;
 use crate::interpreter::string_methods::call_string_method;
-use crate::interpreter::{parse_index_options, AgentValue, Environment, FnValue, OutputSchema, ParallelValue, UserToolValue, Value};
+use crate::interpreter::{parse_index_options, AgentValue, Environment, FnValue, KnowledgeConfig, OutputSchema, ParallelValue, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
@@ -749,10 +749,86 @@ fn evaluate_agent_decl(
         Vec::new()
     };
 
+    // Parse knowledge config if present
+    let knowledge_config = if let Some(ref knowledge_expr) = decl.knowledge_expr {
+        let knowledge_value = evaluate_expr(knowledge_expr, env)?;
+        match knowledge_value {
+            Value::Object(fields) => {
+                // Extract source (required)
+                let source = fields
+                    .get("source")
+                    .ok_or_else(|| GentError::TypeError {
+                        expected: "knowledge config with 'source' field".to_string(),
+                        got: "object without 'source'".to_string(),
+                        span: decl.span.clone(),
+                    })?;
+
+                let kb = match source {
+                    Value::KnowledgeBase(kb) => kb.clone(),
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "KnowledgeBase".to_string(),
+                            got: source.type_name().to_string(),
+                            span: decl.span.clone(),
+                        })
+                    }
+                };
+
+                // Extract chunkLimit (optional, default 3)
+                let chunk_limit = fields
+                    .get("chunkLimit")
+                    .map(|v| match v {
+                        Value::Number(n) => Ok(*n as usize),
+                        _ => Err(GentError::TypeError {
+                            expected: "Number".to_string(),
+                            got: v.type_name().to_string(),
+                            span: decl.span.clone(),
+                        }),
+                    })
+                    .transpose()?
+                    .unwrap_or(3);
+
+                // Extract scoreThreshold (optional, default 0.5)
+                let score_threshold = fields
+                    .get("scoreThreshold")
+                    .map(|v| match v {
+                        Value::Number(n) => Ok(*n),
+                        _ => Err(GentError::TypeError {
+                            expected: "Number".to_string(),
+                            got: v.type_name().to_string(),
+                            span: decl.span.clone(),
+                        }),
+                    })
+                    .transpose()?
+                    .unwrap_or(0.5);
+
+                Some(KnowledgeConfig {
+                    source: kb,
+                    chunk_limit,
+                    score_threshold,
+                })
+            }
+            _ => {
+                return Err(GentError::TypeError {
+                    expected: "Object (knowledge config)".to_string(),
+                    got: knowledge_value.type_name().to_string(),
+                    span: decl.span.clone(),
+                })
+            }
+        }
+    } else {
+        None
+    };
+
     // Build agent with all fields
     let mut agent = AgentValue::new(&decl.name, prompt)
         .with_tools(tool_names)
         .with_model(model);
+
+    // Set knowledge config if present
+    if let Some(config) = knowledge_config {
+        agent.knowledge_config = Some(config);
+    }
 
     if let Some(steps) = max_steps {
         agent = agent.with_max_steps(steps);

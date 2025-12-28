@@ -236,7 +236,8 @@ pub struct TopLevelCall {
 pub struct AgentDecl {
     pub name: String,
     pub fields: Vec<AgentField>,
-    pub tools_expr: Option<Expression>, // From `tools:` field
+    pub tools_expr: Option<Expression>,     // From `tools:` field
+    pub knowledge_expr: Option<Expression>, // From `knowledge:` field (auto-RAG)
     pub output: Option<OutputType>,
     pub span: Span,
 }

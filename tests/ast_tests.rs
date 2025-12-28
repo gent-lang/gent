@@ -171,6 +171,7 @@ fn test_agent_decl_creation() {
             span: Span::new(12, 39),
         }],
         tools_expr: None,
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 41),
     };
@@ -195,6 +196,7 @@ fn test_agent_decl_multiple_fields() {
             },
         ],
         tools_expr: None,
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 50),
     };
@@ -207,6 +209,7 @@ fn test_agent_decl_empty_fields() {
         name: "Empty".to_string(),
         fields: vec![],
         tools_expr: None,
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 10),
     };
@@ -219,6 +222,7 @@ fn test_agent_decl_equality() {
         name: "Test".to_string(),
         fields: vec![],
         tools_expr: None,
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 10),
     };
@@ -279,6 +283,7 @@ fn test_statement_agent_decl() {
         name: "Hello".to_string(),
         fields: vec![],
         tools_expr: None,
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 10),
     });
@@ -346,6 +351,7 @@ fn test_program_multiple_statements() {
                 name: "Hello".to_string(),
                 fields: vec![],
                 tools_expr: None,
+                knowledge_expr: None,
                 output: None,
                 span: Span::new(0, 10),
             }),
@@ -397,6 +403,7 @@ fn test_hello_world_ast() {
                     span: Span::new(14, 41),
                 }],
                 tools_expr: None,
+                knowledge_expr: None,
                 output: None,
                 span: Span::new(0, 43),
             }),

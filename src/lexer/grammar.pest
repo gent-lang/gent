@@ -86,10 +86,13 @@ expr_stmt = { expression }
 // === Agent Declaration ===
 agent_decl = { "agent" ~ identifier ~ "{" ~ agent_body ~ "}" }
 agent_body = { agent_item* }
-agent_item = { tools_field | output_field | agent_field }
+agent_item = { tools_field | knowledge_field | output_field | agent_field }
 
 // === Tools Field ===
 tools_field = { "tools" ~ ":" ~ expression }
+
+// === Knowledge Field (Auto-RAG) ===
+knowledge_field = { "knowledge" ~ ":" ~ expression }
 
 // === Agent Field ===
 // output_field must come before agent_field since "output" would also match as identifier

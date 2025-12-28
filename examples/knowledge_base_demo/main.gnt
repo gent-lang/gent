@@ -1,0 +1,117 @@
+// Knowledge Base Demo
+// This example demonstrates how to use the KnowledgeBase for automatic RAG
+
+// ============================================
+// Step 1: Create and index a knowledge base
+// ============================================
+
+println("=== Knowledge Base Demo ===")
+println("")
+
+// Create a knowledge base from the docs directory
+let docs = KnowledgeBase("./examples/knowledge_base_demo/docs")
+
+// Index all markdown files
+let chunkCount = docs.index({
+    extensions: [".md"],
+    recursive: true
+})
+
+println("Indexed {chunkCount} chunks from documentation")
+println("")
+
+// ============================================
+// Step 2: Test direct search
+// ============================================
+
+println("--- Direct Search Test ---")
+let results = docs.search("structured output", { limit: 2 })
+println("Found {results.length()} results for 'structured output'")
+println("")
+
+// ============================================
+// Step 3: Create an agent with auto-RAG
+// ============================================
+
+// The knowledge field automatically:
+//   1. Searches the KB using the user's query
+//   2. Filters results by score threshold
+//   3. Injects relevant context into the system prompt
+
+agent DocAssistant {
+    knowledge: {
+        source: docs,
+        chunkLimit: 3,
+        scoreThreshold: 0.3
+    }
+    model: "gpt-4o-mini"
+    systemPrompt: """
+        You are a helpful documentation assistant for the Gent programming language.
+        Answer questions based on the provided context from the documentation.
+        If the context doesn't contain enough information, say so.
+        Always be concise and accurate.
+    """
+}
+
+println("--- Agent with Auto-RAG ---")
+println("Created DocAssistant agent with knowledge base integration")
+println("")
+
+// ============================================
+// Step 4: Ask questions (uncomment to run with API)
+// ============================================
+
+// Uncomment these lines to test with the OpenAI API:
+
+// println("Q: How do I create an agent with tools?")
+// let answer1 = DocAssistant.userPrompt("How do I create an agent with tools?").run()
+// println("A: {answer1}")
+// println("")
+
+// println("Q: What is structured output?")
+// let answer2 = DocAssistant.userPrompt("What is structured output and how do I use it?").run()
+// println("A: {answer2}")
+// println("")
+
+// println("Q: How do I get started with Gent?")
+// let answer3 = DocAssistant.userPrompt("How do I get started with Gent?").run()
+// println("A: {answer3}")
+
+// ============================================
+// Step 5: Alternative - Tool-based RAG
+// ============================================
+
+// You can also use the KB as a tool for manual search control:
+
+agent ManualSearchAgent {
+    tools: [docs]
+    model: "gpt-4o-mini"
+    systemPrompt: """
+        You are a documentation assistant.
+        Use the knowledge base tool to search for information when needed.
+        You decide when and what to search for.
+    """
+}
+
+println("--- Agent with Tool-based RAG ---")
+println("Created ManualSearchAgent with KB as a tool")
+println("")
+
+// ============================================
+// Comparison: Auto-RAG vs Tool-based RAG
+// ============================================
+
+println("--- Auto-RAG vs Tool-based RAG ---")
+println("")
+println("Auto-RAG (knowledge field):")
+println("  - Context injected automatically on every query")
+println("  - No extra LLM round-trip for searching")
+println("  - Best for: Q&A, documentation assistants")
+println("")
+println("Tool-based RAG (tools field):")
+println("  - Agent decides when to search")
+println("  - More flexible for complex workflows")
+println("  - Best for: Research agents, multi-step tasks")
+println("")
+
+println("=== Demo Complete ===")

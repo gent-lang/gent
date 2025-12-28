@@ -16,6 +16,7 @@ fn test_agent_decl_with_tools_expr() {
             ],
             Span::new(0, 21),
         )),
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 10),
     };
@@ -31,6 +32,7 @@ fn test_agent_decl_without_tools() {
         name: "Bot".to_string(),
         fields: vec![],
         tools_expr: None,
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 10),
     };
@@ -50,6 +52,7 @@ fn test_agent_decl_with_tools_and_fields() {
             vec![Expression::Identifier("web_fetch".to_string(), Span::new(0, 9))],
             Span::new(0, 10),
         )),
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 50),
     };
@@ -64,6 +67,7 @@ fn test_agent_decl_with_identifier_tools_expr() {
         name: "Bot".to_string(),
         fields: vec![],
         tools_expr: Some(Expression::Identifier("myTools".to_string(), Span::new(0, 7))),
+        knowledge_expr: None,
         output: None,
         span: Span::new(0, 50),
     };
