@@ -1,4 +1,5 @@
 use gent::interpreter::evaluate_with_output;
+use gent::logging::NullLogger;
 use gent::parser::parse;
 use gent::runtime::{MockLLMClient, ToolRegistry};
 
@@ -66,7 +67,7 @@ async fn test_eval_fn_call_simple() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -93,7 +94,7 @@ async fn test_eval_fn_multiple_params() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -120,7 +121,7 @@ async fn test_eval_fn_string_return() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -147,7 +148,7 @@ async fn test_eval_fn_no_params() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -178,7 +179,7 @@ async fn test_eval_fn_nested_call() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -208,7 +209,7 @@ async fn test_eval_fn_with_conditionals() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -280,7 +281,7 @@ async fn test_eval_fn_declaration_only() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::with_response("Hello!");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -309,6 +310,6 @@ async fn test_eval_fn_with_local_vars() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }

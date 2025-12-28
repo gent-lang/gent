@@ -34,7 +34,8 @@ async fn run_program_with_output(source: &str) -> Result<Vec<String>, String> {
     let program = parse(source).map_err(|e| e.to_string())?;
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    evaluate_with_output(&program, &llm, &mut tools)
+    let logger = NullLogger;
+    evaluate_with_output(&program, &llm, &mut tools, &logger)
         .await
         .map_err(|e| e.to_string())
 }

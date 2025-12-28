@@ -103,13 +103,13 @@ async fn run(cli: &Cli, source: &str, logger: &dyn Logger) -> Result<(), GentErr
         } else {
             MockLLMClient::new()
         };
-        evaluate_with_output(&program, &llm, &mut tools).await?
+        evaluate_with_output(&program, &llm, &mut tools, logger).await?
     } else {
         let config = Config::load();
         let api_key = config.require_openai_key()?;
         logger.log(LogLevel::Debug, "cli", "Using OpenAI LLM");
         let llm = OpenAIClient::new(api_key.to_string());
-        evaluate_with_output(&program, &llm, &mut tools).await?
+        evaluate_with_output(&program, &llm, &mut tools, logger).await?
     };
 
     // Print outputs

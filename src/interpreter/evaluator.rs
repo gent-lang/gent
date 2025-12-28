@@ -7,7 +7,7 @@ use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::imports::collect_imports;
 use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::{parse_index_options, AgentValue, Environment, FnValue, KnowledgeConfig, OutputSchema, ParallelValue, UserToolValue, Value};
-use crate::logging::{LogLevel, Logger, NullLogger};
+use crate::logging::{LogLevel, Logger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
 use crate::runtime::{run_agent_with_tools, LLMClient, ToolRegistry, UserToolWrapper};
 use std::collections::HashMap;
@@ -113,8 +113,8 @@ pub async fn evaluate_with_output(
     program: &Program,
     llm: &dyn LLMClient,
     tools: &mut ToolRegistry,
+    logger: &dyn Logger,
 ) -> GentResult<Vec<String>> {
-    let logger = NullLogger;
     let mut env = Environment::new();
 
     // Register built-in tools in environment so they can be referenced by name
@@ -189,7 +189,7 @@ pub async fn evaluate_with_output(
     // Second pass: evaluate statements
     for statement in &program.statements {
         if let Some(output) =
-            evaluate_statement_with_output(statement, &mut env, llm, tools, &logger, &structs)
+            evaluate_statement_with_output(statement, &mut env, llm, tools, logger, &structs)
                 .await?
         {
             outputs.push(output);
@@ -1192,7 +1192,13 @@ fn evaluate_expr_with_env<'a>(
                             }
                         };
 
-                        let kb = crate::runtime::rag::KnowledgeBase::new(path);
+                        // Use OpenAI embeddings if API key is available, otherwise mock
+                        let config = crate::config::Config::load();
+                        let kb = if let Some(api_key) = config.openai_api_key {
+                            crate::runtime::rag::KnowledgeBase::with_openai(path, api_key)
+                        } else {
+                            crate::runtime::rag::KnowledgeBase::new(path)
+                        };
                         return Ok(Value::KnowledgeBase(Arc::new(tokio::sync::RwLock::new(kb))));
                     }
                 }

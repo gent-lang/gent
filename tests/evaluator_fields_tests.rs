@@ -1,4 +1,5 @@
 use gent::interpreter::evaluate_with_output;
+use gent::logging::NullLogger;
 use gent::parser::parse;
 use gent::runtime::{MockLLMClient, ToolRegistry};
 
@@ -15,7 +16,7 @@ async fn test_evaluate_agent_with_max_steps() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }
 
@@ -31,7 +32,7 @@ async fn test_evaluate_agent_with_model() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }
 
@@ -48,7 +49,7 @@ async fn test_evaluate_agent_with_tools() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }
 
@@ -66,6 +67,6 @@ async fn test_evaluate_agent_all_fields() {
     let program = parse(source).unwrap();
     let llm = MockLLMClient::new();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &llm, &mut tools).await;
+    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }

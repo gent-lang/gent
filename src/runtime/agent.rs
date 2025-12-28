@@ -35,6 +35,16 @@ pub async fn run_agent_with_tools(
     logger.log(
         LogLevel::Debug,
         "agent",
+        &format!(
+            "Agent '{}' - knowledge_config: {}, user_prompt: {:?}",
+            agent.name,
+            agent.knowledge_config.is_some(),
+            agent.user_prompt
+        ),
+    );
+    logger.log(
+        LogLevel::Debug,
+        "agent",
         &format!("Agent '{}' requested tools: {:?}", agent.name, agent.tools),
     );
     logger.log(
