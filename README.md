@@ -30,8 +30,8 @@ AI agent frameworks require endless boilerplate. GENT is a dedicated language th
 | **Parallel execution** | Manual async/await, error handling | `parallel { }` block |
 | **Structured output** | Runtime schema validation | Compile-time type checking |
 | **Tool definition** | Decorators, docstrings, type hints | `tool greet(name: string) -> string` |
+| **RAG** | Vector DB setup, chunking, retrieval | `knowledge: { source: docs }` |
 | **Error handling** | Try/except scattered everywhere | `try { } catch { }` with agent context |
-| **Learning curve** | Days to weeks | Hours |
 
 ### The Problem
 
@@ -71,7 +71,6 @@ Declarative agent definitions with all configuration in one place:
 agent DataAnalyst {
     systemPrompt: "You analyze data and provide insights."
     model: "gpt-4o-mini"
-    maxSteps: 10
 }
 
 let insight = DataAnalyst.userPrompt("Analyze this: [1,2,3,4,5]").run()
@@ -82,20 +81,71 @@ let insight = DataAnalyst.userPrompt("Analyze this: [1,2,3,4,5]").run()
 Type-safe tool definitions that agents can use:
 
 ```gent
-tool calculate(expression: string) -> number {
-    // Tool implementation
-    return eval(expression)
+tool Calculator {
+    description: "Perform math calculations"
+
+    fn add(a: number, b: number) -> number {
+        return a + b
+    }
+
+    fn multiply(a: number, b: number) -> number {
+        return a * b
+    }
 }
 
-tool fetchWeather(city: string) -> string {
-    return http_get("https://api.weather.com/{city}")
-}
-
-agent Assistant {
-    systemPrompt: "You help with calculations and weather."
-    use calculate, fetchWeather
+agent MathTutor {
+    systemPrompt: "Help with math problems."
+    tools: [Calculator]
     model: "gpt-4o-mini"
 }
+```
+
+### Built-in RAG
+
+First-class knowledge base support with automatic context injection:
+
+```gent
+// Create and index a knowledge base
+let docs = KnowledgeBase("./docs")
+docs.index({
+    extensions: [".md", ".txt"],
+    recursive: true
+})
+
+// Agent with automatic RAG
+agent DocHelper {
+    knowledge: {
+        source: docs,
+        chunkLimit: 5,
+        scoreThreshold: 0.7
+    }
+    model: "gpt-4o-mini"
+    systemPrompt: "Answer based on the documentation."
+}
+
+let answer = DocHelper.userPrompt("How do I configure tools?").run()
+```
+
+### Structured Output
+
+Get typed responses from agents with compile-time validation:
+
+```gent
+struct Analysis {
+    sentiment: string
+    confidence: number
+    keywords: string[]
+}
+
+agent Analyzer {
+    systemPrompt: "Analyze text sentiment."
+    model: "gpt-4o-mini"
+    output: Analysis
+    outputRetries: 3
+}
+
+let result = Analyzer.userPrompt("I love this product!").run()
+// result.sentiment, result.confidence, result.keywords are typed
 ```
 
 ### Parallel Execution
@@ -119,44 +169,92 @@ parallel research {
 let results = research.run()  // Returns array of all results
 ```
 
-### Structured Output
+### Enums & Pattern Matching
 
-Get typed responses from agents with compile-time validation:
+Define enums with optional data and match on them:
 
 ```gent
-struct Analysis {
-    sentiment: string
-    confidence: number
-    keywords: string[]
+enum Status {
+    Pending
+    Active
+    Completed
+    Failed(message)
 }
 
-agent Analyzer {
-    systemPrompt: "Analyze text sentiment."
-    model: "gpt-4o-mini"
-    output: Analysis
+let status = Status.Failed("connection timeout")
+
+let message = match status {
+    Status.Pending => "Waiting..."
+    Status.Active => "Running"
+    Status.Completed => "Done!"
+    Status.Failed(msg) => "Error: {msg}"
 }
 
-let result = Analyzer.userPrompt("I love this product!").run()
-// result.sentiment, result.confidence, result.keywords are typed
+// Check variants with .is()
+if status.is(Status.Failed) {
+    println("Something went wrong")
+}
 ```
 
-### Agent Chaining
+### Functions
 
-Compose agents naturally with variables:
+Define reusable functions with typed parameters:
 
 ```gent
-agent Summarizer {
-    systemPrompt: "Summarize in 2 sentences."
-    model: "gpt-4o-mini"
+fn formatName(first: string, last: string) -> string {
+    return "{first} {last}"
 }
 
-agent Translator {
-    systemPrompt: "Translate to French."
-    model: "gpt-4o-mini"
+fn isPositive(n: number) -> boolean {
+    return n > 0
 }
 
-let summary = Summarizer.userPrompt(longDocument).run()
-let french = Translator.userPrompt(summary).run()
+let name = formatName("John", "Doe")
+```
+
+### Array Methods
+
+Full suite of functional array operations:
+
+```gent
+let numbers = [1, 2, 3, 4, 5]
+
+// Transform with map
+let doubled = numbers.map((x) => x * 2)  // [2, 4, 6, 8, 10]
+
+// Filter elements
+let evens = numbers.filter((x) => x % 2 == 0)  // [2, 4]
+
+// Reduce to single value
+let sum = numbers.reduce((acc, x) => acc + x, 0)  // 15
+
+// Find first match
+let firstEven = numbers.find((x) => x % 2 == 0)  // 2
+
+// Chaining
+let result = numbers
+    .filter((x) => x > 2)
+    .map((x) => x * 2)
+    .reduce((a, b) => a + b, 0)
+
+// Other methods: indexOf, join, slice, concat, push, pop, length
+```
+
+### String Methods
+
+Built-in string manipulation:
+
+```gent
+let text = "  Hello, World!  "
+
+text.trim()              // "Hello, World!"
+text.toLowerCase()       // "  hello, world!  "
+text.toUpperCase()       // "  HELLO, WORLD!  "
+text.split(",")          // ["  Hello", " World!  "]
+text.contains("World")   // true
+text.startsWith("  H")   // true
+text.replace("World", "GENT")  // "  Hello, GENT!  "
+text.length()            // 17
 ```
 
 ### Error Handling
@@ -221,10 +319,13 @@ gent hello.gnt
 | Example | Description |
 |---------|-------------|
 | [hello.gnt](examples/hello.gnt) | Minimal agent example |
-| [chaining.gnt](examples/chaining.gnt) | Chain multiple agents |
-| [parallel_agents.gnt](examples/parallel_agents.gnt) | Run agents concurrently |
 | [structured_output.gnt](examples/structured_output.gnt) | Typed agent responses |
+| [parallel_agents.gnt](examples/parallel_agents.gnt) | Run agents concurrently |
+| [rag_example.gnt](examples/rag_example.gnt) | Knowledge base with auto-RAG |
 | [user_tools.gnt](examples/user_tools.gnt) | Define custom tools |
+| [enum_examples.gnt](examples/enum_examples.gnt) | Enums and pattern matching |
+| [array_examples.gnt](examples/array_examples.gnt) | Array methods and lambdas |
+| [functions.gnt](examples/functions.gnt) | Function definitions |
 | [try_catch.gnt](examples/try_catch.gnt) | Error handling |
 
 Run any example:
@@ -249,23 +350,46 @@ gent --mock examples/hello.gnt
 agent Name {
     systemPrompt: "Instructions for the agent"
     model: "gpt-4o-mini"          // Required: LLM model
-    maxSteps: 5                   // Optional: max tool calls
+    tools: [Tool1, Tool2]         // Optional: available tools
     output: StructName            // Optional: structured output type
     outputRetries: 3              // Optional: retry on parse failure
-    use tool1, tool2              // Optional: available tools
+    knowledge: {                  // Optional: auto-RAG configuration
+        source: knowledgeBase,
+        chunkLimit: 5,
+        scoreThreshold: 0.7
+    }
 }
 ```
 
 ### Tool Declaration
 
 ```gent
-tool name(param: type, ...) -> returnType {
-    // Implementation
+tool ToolName {
+    description: "What this tool does"
+
+    fn methodName(param: type) -> returnType {
+        return value
+    }
+}
+```
+
+### Function Declaration
+
+```gent
+fn name(param: type, ...) -> returnType {
     return value
 }
 ```
 
-**Types**: `string`, `number`, `boolean`, `array`, `object`, `any`
+### Enum Declaration
+
+```gent
+enum Name {
+    Variant1
+    Variant2(field)
+    Variant3(a: type, b: type)
+}
+```
 
 ### Parallel Block
 
@@ -296,6 +420,12 @@ if condition {
     // ...
 }
 
+// Pattern matching
+let result = match value {
+    Pattern1 => expression1
+    Pattern2(x) => expression2
+}
+
 // Loops
 for item in items {
     // ...
@@ -312,6 +442,10 @@ try {
     // ...
 }
 ```
+
+### Types
+
+`string`, `number`, `boolean`, `array`, `object`, `any`
 
 ---
 
@@ -347,9 +481,13 @@ GENT is in **alpha**. The language is functional but:
 - [x] Parallel execution
 - [x] Error handling (try/catch)
 - [x] Control flow (if/for/while)
-- [ ] Memory/context persistence
-- [ ] Multi-model support
-- [ ] Built-in observability
+- [x] Functions
+- [x] Enums & pattern matching
+- [x] Array methods (map, filter, reduce, find, etc.)
+- [x] String methods
+- [x] Built-in RAG (knowledge field)
+- [ ] Multi-model support (Anthropic, local models)
+- [ ] Built-in observability dashboard
 - [ ] Package system
 - [ ] LSP for editor support
 
