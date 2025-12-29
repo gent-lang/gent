@@ -4,7 +4,7 @@ use crate::errors::{GentError, GentResult};
 use crate::interpreter::{AgentValue, OutputSchema};
 use crate::logging::{LogLevel, Logger, NullLogger};
 use crate::runtime::validation::validate_output;
-use crate::runtime::{LLMClient, LLMResponse, Message, ToolDefinition, ToolRegistry, ToolResult};
+use crate::runtime::{LLMClient, LLMResponse, Message, ProviderFactory, ToolDefinition, ToolRegistry, ToolResult};
 
 const DEFAULT_MAX_STEPS: u32 = 10;
 
@@ -12,21 +12,25 @@ const DEFAULT_MAX_STEPS: u32 = 10;
 pub async fn run_agent(
     agent: &AgentValue,
     input: Option<String>,
-    llm: &dyn LLMClient,
+    provider_factory: &ProviderFactory,
 ) -> GentResult<String> {
     let registry = ToolRegistry::new();
     let logger = NullLogger;
-    run_agent_with_tools(agent, input, llm, &registry, &logger).await
+    run_agent_with_tools(agent, input, provider_factory, &registry, &logger).await
 }
 
 /// Run an agent with tools
 pub async fn run_agent_with_tools(
     agent: &AgentValue,
     input: Option<String>,
-    llm: &dyn LLMClient,
+    provider_factory: &ProviderFactory,
     tools: &ToolRegistry,
     logger: &dyn Logger,
 ) -> GentResult<String> {
+    // Create LLM client from factory using agent's provider setting
+    let llm = provider_factory.create(agent.provider.as_deref())?;
+    let llm = llm.as_ref();
+
     let max_steps = agent.max_steps.unwrap_or(DEFAULT_MAX_STEPS);
     let tool_defs = tools.definitions_for(&agent.tools);
     let model = agent.model.as_deref();
@@ -287,8 +291,12 @@ pub async fn run_agent_with_tools(
 pub async fn run_agent_full(
     agent: &AgentValue,
     input: Option<String>,
-    llm: &dyn LLMClient,
+    provider_factory: &ProviderFactory,
 ) -> GentResult<LLMResponse> {
+    // Create LLM client from factory using agent's provider setting
+    let llm = provider_factory.create(agent.provider.as_deref())?;
+    let llm = llm.as_ref();
+
     // Build messages based on which prompts are present
     let mut messages = Vec::new();
 
