@@ -13,26 +13,26 @@ use crate::interpreter::{parse_index_options, Environment, Value};
 use crate::logging::{Logger, NullLogger};
 use crate::parser::ast::{Block, BlockStmt, Expression, MatchBody, MatchPattern};
 use crate::runtime::tools::ToolRegistry;
-use crate::runtime::{run_agent_with_tools, LLMClient};
+use crate::runtime::{run_agent_with_tools, ProviderFactory};
 use std::collections::HashMap;
 
-/// Context for block evaluation that includes optional LLM client for agent execution
+/// Context for block evaluation that includes optional provider factory for agent execution
 pub struct BlockEvalContext<'a> {
-    pub llm: Option<&'a dyn LLMClient>,
+    pub provider_factory: Option<&'a ProviderFactory>,
     pub logger: &'a dyn Logger,
 }
 
 impl<'a> BlockEvalContext<'a> {
-    /// Create a new context with LLM client
-    pub fn with_llm(llm: &'a dyn LLMClient, logger: &'a dyn Logger) -> Self {
-        Self { llm: Some(llm), logger }
+    /// Create a new context with provider factory
+    pub fn with_provider_factory(provider_factory: &'a ProviderFactory, logger: &'a dyn Logger) -> Self {
+        Self { provider_factory: Some(provider_factory), logger }
     }
 
     /// Create an empty context (no agent execution support)
     pub fn empty() -> Self {
         // Use a static NullLogger for the empty context
         static NULL_LOGGER: NullLogger = NullLogger;
-        Self { llm: None, logger: &NULL_LOGGER }
+        Self { provider_factory: None, logger: &NULL_LOGGER }
     }
 }
 
@@ -86,21 +86,21 @@ pub fn evaluate_block<'a>(
     })
 }
 
-/// Evaluate a block with LLM support for agent execution
+/// Evaluate a block with provider factory support for agent execution
 ///
 /// This version supports calling agent methods like `.run()` within the block.
-pub fn evaluate_block_with_llm<'a>(
+pub fn evaluate_block_with_provider_factory<'a>(
     block: &'a Block,
     env: &'a mut Environment,
     tools: &'a ToolRegistry,
-    llm: &'a dyn LLMClient,
+    provider_factory: &'a ProviderFactory,
     logger: &'a dyn Logger,
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
     Box::pin(async move {
         // Create a new scope for this block
         env.push_scope();
 
-        let ctx = BlockEvalContext::with_llm(llm, logger);
+        let ctx = BlockEvalContext::with_provider_factory(provider_factory, logger);
         let (flow, result) = evaluate_block_internal(block, env, tools, &ctx).await?;
 
         // Pop the scope
@@ -639,9 +639,9 @@ pub fn evaluate_expr_async<'a>(
                                 return Ok(Value::Agent(agent));
                             }
                             "run" => {
-                                // Execute the agent - requires LLM client
-                                if let Some(llm) = ctx.llm {
-                                    let result = run_agent_with_tools(&agent, None, llm, tools, ctx.logger).await?;
+                                // Execute the agent - requires provider factory
+                                if let Some(provider_factory) = ctx.provider_factory {
+                                    let result = run_agent_with_tools(&agent, None, provider_factory, tools, ctx.logger).await?;
                                     // If agent has structured output, parse as JSON
                                     if agent.output_schema.is_some() {
                                         if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&result) {
@@ -651,7 +651,7 @@ pub fn evaluate_expr_async<'a>(
                                     return Ok(Value::String(result));
                                 } else {
                                     return Err(GentError::SyntaxError {
-                                        message: "Cannot call .run() on agent in this context (no LLM client available)".to_string(),
+                                        message: "Cannot call .run() on agent in this context (no provider factory available)".to_string(),
                                         span: span.clone(),
                                     });
                                 }
