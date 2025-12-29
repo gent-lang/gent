@@ -11,6 +11,10 @@ pub struct Config {
     pub openai_api_key: Option<String>,
     pub anthropic_api_key: Option<String>,
     pub default_model: Option<String>,
+    /// Whether to use mock LLM instead of real API calls
+    pub mock_mode: bool,
+    /// Custom response to return in mock mode
+    pub mock_response: Option<String>,
 }
 
 impl Config {
@@ -92,5 +96,22 @@ impl Config {
             .ok_or_else(|| crate::errors::GentError::MissingApiKey {
                 provider: "ANTHROPIC".to_string(),
             })
+    }
+
+    /// Create a config with mock mode enabled (for testing)
+    pub fn mock() -> Self {
+        Self {
+            mock_mode: true,
+            ..Default::default()
+        }
+    }
+
+    /// Create a config with mock mode and a custom response (for testing)
+    pub fn mock_with_response(response: impl Into<String>) -> Self {
+        Self {
+            mock_mode: true,
+            mock_response: Some(response.into()),
+            ..Default::default()
+        }
     }
 }

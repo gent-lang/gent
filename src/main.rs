@@ -11,7 +11,7 @@ use gent::errors::{ErrorReporter, GentError};
 use gent::interpreter::evaluate_with_output;
 use gent::logging::{GentLogger, LogLevel, Logger};
 use gent::parser::parse;
-use gent::runtime::{MockLLMClient, OpenAIClient, ToolRegistry};
+use gent::runtime::ToolRegistry;
 
 #[derive(Parser, Debug)]
 #[command(name = "gent")]
@@ -96,21 +96,17 @@ async fn run(cli: &Cli, source: &str, logger: &dyn Logger) -> Result<(), GentErr
 
     let mut tools = ToolRegistry::with_builtins();
 
-    let outputs = if cli.mock {
+    // Load config and apply CLI overrides
+    let mut config = Config::load();
+    if cli.mock {
         logger.log(LogLevel::Info, "cli", "Using mock LLM");
-        let llm = if let Some(response) = &cli.mock_response {
-            MockLLMClient::with_response(response)
-        } else {
-            MockLLMClient::new()
-        };
-        evaluate_with_output(&program, &llm, &mut tools, logger).await?
+        config.mock_mode = true;
+        config.mock_response = cli.mock_response.clone();
     } else {
-        let config = Config::load();
-        let api_key = config.require_openai_key()?;
-        logger.log(LogLevel::Debug, "cli", "Using OpenAI LLM");
-        let llm = OpenAIClient::new(api_key.to_string());
-        evaluate_with_output(&program, &llm, &mut tools, logger).await?
-    };
+        logger.log(LogLevel::Debug, "cli", "Using real LLM (provider determined by model)");
+    }
+
+    let outputs = evaluate_with_output(&program, &config, &mut tools, logger).await?;
 
     // Print outputs
     for output in outputs {

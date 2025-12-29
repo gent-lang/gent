@@ -1,3 +1,4 @@
+use gent::config::Config;
 use gent::parser::parse;
 use std::fs;
 use tempfile::tempdir;
@@ -134,11 +135,11 @@ async fn test_evaluate_with_imports() {
     let program = parse(&source).unwrap();
 
     // Evaluate with imports
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
     let logger = NullLogger;
 
-    let result = evaluate_with_imports(&program, Some(&main_path), &llm, &mut tools, &logger).await;
+    let result = evaluate_with_imports(&program, Some(&main_path), &config, &mut tools, &logger).await;
 
     // Should succeed without errors
     assert!(result.is_ok(), "Evaluation failed: {:?}", result.err());

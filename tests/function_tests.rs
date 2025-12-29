@@ -1,3 +1,4 @@
+use gent::config::Config;
 use gent::interpreter::evaluate_with_output;
 use gent::logging::NullLogger;
 use gent::parser::parse;
@@ -65,9 +66,9 @@ async fn test_eval_fn_call_simple() {
         let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -92,9 +93,9 @@ async fn test_eval_fn_multiple_params() {
         let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -119,9 +120,9 @@ async fn test_eval_fn_string_return() {
         let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -146,9 +147,9 @@ async fn test_eval_fn_no_params() {
         let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -177,9 +178,9 @@ async fn test_eval_fn_nested_call() {
         let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -207,9 +208,9 @@ async fn test_eval_fn_with_conditionals() {
         let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -279,9 +280,9 @@ async fn test_eval_fn_declaration_only() {
         let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Hello!");
+    let config = Config::mock_with_response("Hello!");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -308,8 +309,8 @@ async fn test_eval_fn_with_local_vars() {
         let output = TestAgent.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }

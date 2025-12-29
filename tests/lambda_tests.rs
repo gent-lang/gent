@@ -1,5 +1,6 @@
 //! Tests for lambda parsing
 
+use gent::config::Config;
 use gent::parser::parse;
 
 #[test]
@@ -39,9 +40,9 @@ async fn test_lambda_in_variable() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let config = gent::config::Config::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &config, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }

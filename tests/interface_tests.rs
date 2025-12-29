@@ -1,5 +1,6 @@
 //! Tests for interface declaration parsing
 
+use gent::config::Config;
 use gent::parser::{InterfaceMember, Statement, TypeName};
 
 #[test]
@@ -302,9 +303,9 @@ async fn test_interface_definition_registered() {
         println("ok")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let config = gent::config::Config::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &config, &mut tools, &logger).await;
     assert!(result.is_ok(), "Interface evaluation failed: {:?}", result.err());
 }

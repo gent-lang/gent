@@ -1,3 +1,4 @@
+use gent::config::Config;
 use gent::interpreter::evaluate;
 use gent::logging::NullLogger;
 use gent::parser::{parse, Statement};
@@ -61,10 +62,10 @@ fn test_parse_chained_agent_calls() {
 
 async fn run_program(source: &str) -> Result<(), String> {
     let program = parse(source).map_err(|e| e.to_string())?;
-    let llm = MockLLMClient::new();
+    let config = Config::mock();
     let mut tools = ToolRegistry::new();
     let logger = NullLogger;
-    evaluate(&program, &llm, &mut tools, &logger)
+    evaluate(&program, &config, &mut tools, &logger)
         .await
         .map_err(|e| e.to_string())
 }
