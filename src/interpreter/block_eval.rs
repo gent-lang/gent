@@ -3,6 +3,7 @@
 //! This module provides async block evaluation for executing tool bodies
 //! with let bindings, return statements, if/else, and expression statements.
 
+use crate::config::Config;
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
@@ -13,26 +14,26 @@ use crate::interpreter::{parse_index_options, Environment, Value};
 use crate::logging::{Logger, NullLogger};
 use crate::parser::ast::{Block, BlockStmt, Expression, MatchBody, MatchPattern};
 use crate::runtime::tools::ToolRegistry;
-use crate::runtime::{run_agent_with_tools, LLMClient};
+use crate::runtime::run_agent_with_tools;
 use std::collections::HashMap;
 
-/// Context for block evaluation that includes optional LLM client for agent execution
+/// Context for block evaluation that includes optional Config for agent execution
 pub struct BlockEvalContext<'a> {
-    pub llm: Option<&'a dyn LLMClient>,
+    pub config: Option<&'a Config>,
     pub logger: &'a dyn Logger,
 }
 
 impl<'a> BlockEvalContext<'a> {
-    /// Create a new context with LLM client
-    pub fn with_llm(llm: &'a dyn LLMClient, logger: &'a dyn Logger) -> Self {
-        Self { llm: Some(llm), logger }
+    /// Create a new context with Config
+    pub fn with_config(config: &'a Config, logger: &'a dyn Logger) -> Self {
+        Self { config: Some(config), logger }
     }
 
     /// Create an empty context (no agent execution support)
     pub fn empty() -> Self {
         // Use a static NullLogger for the empty context
         static NULL_LOGGER: NullLogger = NullLogger;
-        Self { llm: None, logger: &NULL_LOGGER }
+        Self { config: None, logger: &NULL_LOGGER }
     }
 }
 
@@ -86,21 +87,21 @@ pub fn evaluate_block<'a>(
     })
 }
 
-/// Evaluate a block with LLM support for agent execution
+/// Evaluate a block with Config support for agent execution
 ///
 /// This version supports calling agent methods like `.run()` within the block.
-pub fn evaluate_block_with_llm<'a>(
+pub fn evaluate_block_with_config<'a>(
     block: &'a Block,
     env: &'a mut Environment,
     tools: &'a ToolRegistry,
-    llm: &'a dyn LLMClient,
+    config: &'a Config,
     logger: &'a dyn Logger,
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
     Box::pin(async move {
         // Create a new scope for this block
         env.push_scope();
 
-        let ctx = BlockEvalContext::with_llm(llm, logger);
+        let ctx = BlockEvalContext::with_config(config, logger);
         let (flow, result) = evaluate_block_internal(block, env, tools, &ctx).await?;
 
         // Pop the scope
@@ -639,9 +640,9 @@ pub fn evaluate_expr_async<'a>(
                                 return Ok(Value::Agent(agent));
                             }
                             "run" => {
-                                // Execute the agent - requires LLM client
-                                if let Some(llm) = ctx.llm {
-                                    let result = run_agent_with_tools(&agent, None, llm, tools, ctx.logger).await?;
+                                // Execute the agent - requires Config
+                                if let Some(config) = ctx.config {
+                                    let result = run_agent_with_tools(&agent, None, config, tools, ctx.logger).await?;
                                     // If agent has structured output, parse as JSON
                                     if agent.output_schema.is_some() {
                                         if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&result) {
@@ -651,7 +652,7 @@ pub fn evaluate_expr_async<'a>(
                                     return Ok(Value::String(result));
                                 } else {
                                     return Err(GentError::SyntaxError {
-                                        message: "Cannot call .run() on agent in this context (no LLM client available)".to_string(),
+                                        message: "Cannot call .run() on agent in this context (no Config available)".to_string(),
                                         span: span.clone(),
                                     });
                                 }
