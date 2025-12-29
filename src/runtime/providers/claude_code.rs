@@ -63,17 +63,25 @@ impl ClaudeCodeClient {
         Ok(())
     }
 
-    /// Build a prompt string from messages
-    fn build_prompt(&self, messages: &[Message]) -> String {
+    /// Extract system prompt from messages (first system message)
+    fn extract_system_prompt(&self, messages: &[Message]) -> Option<String> {
+        messages
+            .iter()
+            .find(|m| matches!(m.role, Role::System))
+            .map(|m| m.content.clone())
+    }
+
+    /// Build user prompt from non-system messages
+    fn build_user_prompt(&self, messages: &[Message]) -> String {
         let mut parts = Vec::new();
 
         for msg in messages {
             match msg.role {
                 Role::System => {
-                    parts.push(format!("[System]\n{}", msg.content));
+                    // Handled separately via --system-prompt
                 }
                 Role::User => {
-                    parts.push(format!("[User]\n{}", msg.content));
+                    parts.push(msg.content.clone());
                 }
                 Role::Assistant => {
                     if !msg.content.is_empty() {
@@ -141,8 +149,9 @@ impl LLMClient for ClaudeCodeClient {
     ) -> GentResult<LLMResponse> {
         self.ensure_available().await?;
 
-        // Build prompt from messages
-        let prompt = self.build_prompt(&messages);
+        // Extract system prompt and user prompt separately
+        let system_prompt = self.extract_system_prompt(&messages);
+        let user_prompt = self.build_user_prompt(&messages);
 
         // Build CLI args
         let mut args = vec!["--print", "--output-format", "json"];
@@ -155,9 +164,22 @@ impl LLMClient for ClaudeCodeClient {
             args.push(&model_string);
         }
 
-        // Add prompt as argument
-        args.push("--prompt");
-        args.push(&prompt);
+        // Add system prompt if present
+        let system_prompt_string;
+        if let Some(ref sp) = system_prompt {
+            system_prompt_string = sp.clone();
+            args.push("--system-prompt");
+            args.push(&system_prompt_string);
+        }
+
+        // Add user prompt as positional argument (must be last)
+        // Only add if not empty - Claude CLI requires input when using --print
+        if user_prompt.trim().is_empty() {
+            return Err(GentError::ProviderError {
+                message: "No user prompt provided. Claude Code requires a prompt.".to_string(),
+            });
+        }
+        args.push(&user_prompt);
 
         // Spawn CLI process
         let output = tokio::time::timeout(
