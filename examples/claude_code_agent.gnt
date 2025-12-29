@@ -2,10 +2,10 @@
 // Requires: claude login (Claude Code CLI authenticated)
 
 agent Researcher {
-    model: "claude-sonnet-4"
+    model: "claude-sonnet-4-20250514"
     provider: "claude-code"
     systemPrompt: "You are a research assistant. Help the user find information."
 }
 
-let result = Researcher.run("What is the capital of France?")
+let result = Researcher.userPrompt("What is the capital of France?").run()
 print(result)
