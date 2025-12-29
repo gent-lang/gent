@@ -1,10 +1,20 @@
 //! Claude Code CLI client
 
 use async_trait::async_trait;
+use serde::Deserialize;
+use std::process::Stdio;
 use tokio::process::Command;
 
 use crate::errors::{GentError, GentResult};
-use crate::runtime::llm::{LLMClient, LLMResponse, Message, ToolDefinition};
+use crate::runtime::llm::{LLMClient, LLMResponse, Message, Role, ToolDefinition};
+
+/// Response from Claude CLI
+#[derive(Debug, Deserialize)]
+struct ClaudeResponse {
+    result: Option<String>,
+    #[serde(default)]
+    is_error: bool,
+}
 
 /// Claude Code CLI client
 pub struct ClaudeCodeClient {
@@ -52,6 +62,48 @@ impl ClaudeCodeClient {
 
         Ok(())
     }
+
+    /// Build a prompt string from messages
+    fn build_prompt(&self, messages: &[Message]) -> String {
+        let mut parts = Vec::new();
+
+        for msg in messages {
+            match msg.role {
+                Role::System => {
+                    parts.push(format!("[System]\n{}", msg.content));
+                }
+                Role::User => {
+                    parts.push(format!("[User]\n{}", msg.content));
+                }
+                Role::Assistant => {
+                    if !msg.content.is_empty() {
+                        parts.push(format!("[Assistant]\n{}", msg.content));
+                    }
+                }
+                Role::Tool => {
+                    parts.push(format!("[Tool Result]\n{}", msg.content));
+                }
+            }
+        }
+
+        parts.join("\n\n")
+    }
+
+    /// Parse Claude CLI response
+    fn parse_response(&self, output: &str) -> GentResult<LLMResponse> {
+        // Try to parse as JSON first
+        if let Ok(response) = serde_json::from_str::<ClaudeResponse>(output) {
+            if response.is_error {
+                return Err(GentError::ProviderError {
+                    message: response.result.unwrap_or_else(|| "Unknown error".to_string()),
+                });
+            }
+            return Ok(LLMResponse::new(response.result.unwrap_or_default()));
+        }
+
+        // If not JSON, treat as plain text response
+        Ok(LLMResponse::new(output.trim()))
+    }
 }
 
 impl Default for ClaudeCodeClient {
@@ -82,12 +134,57 @@ mod tests {
 impl LLMClient for ClaudeCodeClient {
     async fn chat(
         &self,
-        _messages: Vec<Message>,
+        messages: Vec<Message>,
         _tools: Vec<ToolDefinition>,
-        _model: Option<&str>,
+        model: Option<&str>,
         _json_mode: bool,
     ) -> GentResult<LLMResponse> {
-        // TODO: Implement in Task 2
-        Ok(LLMResponse::new("Claude Code provider not yet implemented"))
+        self.ensure_available().await?;
+
+        // Build prompt from messages
+        let prompt = self.build_prompt(&messages);
+
+        // Build CLI args
+        let mut args = vec!["--print", "--output-format", "json"];
+
+        let model_to_use = model.or(self.model.as_deref());
+        let model_string;
+        if let Some(m) = model_to_use {
+            model_string = m.to_string();
+            args.push("--model");
+            args.push(&model_string);
+        }
+
+        // Add prompt as argument
+        args.push("--prompt");
+        args.push(&prompt);
+
+        // Spawn CLI process
+        let output = tokio::time::timeout(
+            std::time::Duration::from_secs(300), // 5 minute timeout
+            Command::new(&self.cli_path)
+                .args(&args)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output(),
+        )
+        .await
+        .map_err(|_| GentError::ProviderError {
+            message: "Claude CLI timed out after 5 minutes".to_string(),
+        })?
+        .map_err(|e| GentError::ProviderError {
+            message: format!("Failed to run Claude CLI: {}", e),
+        })?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(GentError::ProviderError {
+                message: format!("Claude CLI failed: {}", stderr),
+            });
+        }
+
+        // Parse response
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        self.parse_response(&stdout)
     }
 }
