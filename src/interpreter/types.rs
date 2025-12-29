@@ -318,6 +318,8 @@ pub struct AgentValue {
     pub max_steps: Option<u32>,
     /// Model to use (None = default)
     pub model: Option<String>,
+    /// Provider to use (openai, claude-code)
+    pub provider: Option<String>,
     /// Output schema for structured responses
     pub output_schema: Option<OutputSchema>,
     /// Number of retries for output validation
@@ -339,6 +341,7 @@ impl AgentValue {
             knowledge_config: None,
             max_steps: None,
             model: None,
+            provider: None,
             output_schema: None,
             output_retries: 1, // default: retry once
             output_instructions: None,
@@ -361,6 +364,12 @@ impl AgentValue {
     /// Set model
     pub fn with_model(mut self, model: impl Into<String>) -> Self {
         self.model = Some(model.into());
+        self
+    }
+
+    /// Set provider
+    pub fn with_provider(mut self, provider: impl Into<String>) -> Self {
+        self.provider = Some(provider.into());
         self
     }
 
