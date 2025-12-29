@@ -425,10 +425,10 @@ async fn test_array_length_integration() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -442,10 +442,10 @@ async fn test_array_join_integration() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -464,10 +464,10 @@ async fn test_array_map() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -482,10 +482,10 @@ async fn test_array_filter() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -500,10 +500,10 @@ async fn test_array_reduce() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -518,10 +518,10 @@ async fn test_array_find() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -539,10 +539,10 @@ async fn test_array_map_with_function_ref() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -561,10 +561,10 @@ async fn test_array_map_empty_array() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Map on empty array should return empty array: {:?}", result.err());
 }
 
@@ -579,10 +579,10 @@ async fn test_array_filter_empty_array() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Filter on empty array should return empty array: {:?}", result.err());
 }
 
@@ -597,10 +597,10 @@ async fn test_array_find_empty_array() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Find on empty array should return null: {:?}", result.err());
 }
 
@@ -616,10 +616,10 @@ async fn test_array_reduce_empty_array_without_initial() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_err(), "Reduce on empty array without initial value should error");
 }
 
@@ -635,10 +635,10 @@ async fn test_array_map_wrong_callback_type() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_err(), "Passing a number instead of lambda should error");
 }
 
@@ -654,10 +654,10 @@ async fn test_array_reduce_wrong_param_count() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_err(), "Reduce with 1-param callback should error");
 }
 
@@ -673,10 +673,10 @@ async fn test_array_push_mutates() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Array should now have 5 elements after two pushes
 }
@@ -692,10 +692,10 @@ async fn test_array_pop_mutates() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Array should now have 3 elements after pop
 }
@@ -711,10 +711,10 @@ async fn test_array_pop_returns_value() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Pop should return 30
 }
@@ -735,10 +735,10 @@ async fn test_push_to_empty_array_mutates() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -755,10 +755,10 @@ async fn test_pop_until_empty() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Third pop should return null
 }
@@ -776,10 +776,10 @@ async fn test_push_pop_in_loop() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should have 3 elements after loop
 }
@@ -797,10 +797,10 @@ async fn test_push_different_types() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -820,10 +820,10 @@ async fn test_push_pop_conditional() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should have 4 elements (push happened, pop didn't)
 }
@@ -843,10 +843,10 @@ async fn test_slice_beyond_bounds() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should clamp to array length, return 3
 }
@@ -862,10 +862,10 @@ async fn test_slice_start_equals_end() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return empty array
 }
@@ -881,10 +881,10 @@ async fn test_slice_start_greater_than_end() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return empty array when start > end
 }
@@ -905,10 +905,10 @@ async fn test_map_with_index_simulation() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -923,10 +923,10 @@ async fn test_filter_all_match() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // All 4 should match
 }
@@ -942,10 +942,10 @@ async fn test_filter_none_match() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // None should match, empty array
 }
@@ -961,10 +961,10 @@ async fn test_reduce_single_element() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return 42
 }
@@ -980,10 +980,10 @@ async fn test_reduce_string_concatenation() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return "abc"
 }
@@ -1003,10 +1003,10 @@ async fn test_find_first_of_many() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return first 2
 }
@@ -1021,10 +1021,10 @@ async fn test_indexof_first_occurrence() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return 1 (first occurrence)
 }
@@ -1039,10 +1039,10 @@ async fn test_indexof_string_in_array() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return 1
 }
@@ -1061,10 +1061,10 @@ async fn test_join_single_element() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return "only" (no separator needed)
 }
@@ -1079,10 +1079,10 @@ async fn test_join_empty_separator() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return "abc"
 }
@@ -1099,10 +1099,10 @@ async fn test_concat_empty_arrays() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return 0
 }
@@ -1119,10 +1119,10 @@ async fn test_concat_to_empty() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Should return 3
 }
@@ -1142,10 +1142,10 @@ async fn test_chain_filter_map_reduce() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // filter: [2,4,6], map: [4,16,36], reduce: 56
 }
@@ -1161,10 +1161,10 @@ async fn test_chain_empty_result() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // filter returns empty, map on empty returns empty
 }
@@ -1184,10 +1184,10 @@ async fn test_lambda_no_params() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Lambda with no params should still work (ignores element)
 }
@@ -1206,10 +1206,10 @@ async fn test_lambda_block_body() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Block body lambda should work
 }
@@ -1231,10 +1231,10 @@ async fn test_lambda_with_conditionals() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
     // Lambda with if/else should work
 }

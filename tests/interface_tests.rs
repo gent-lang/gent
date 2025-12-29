@@ -302,9 +302,9 @@ async fn test_interface_definition_registered() {
         println("ok")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Interface evaluation failed: {:?}", result.err());
 }

@@ -7,10 +7,10 @@ async fn test_create_knowledge_base() {
         println("created")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -18,10 +18,10 @@ async fn test_create_knowledge_base() {
 async fn test_knowledge_base_no_args_error() {
     let source = r#"let kb = KnowledgeBase()"#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_err(), "Expected error for no arguments");
     let err = result.unwrap_err().to_string();
     assert!(
@@ -35,10 +35,10 @@ async fn test_knowledge_base_no_args_error() {
 async fn test_knowledge_base_too_many_args_error() {
     let source = r#"let kb = KnowledgeBase("./a", "./b")"#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_err(), "Expected error for too many arguments");
 }
 
@@ -46,10 +46,10 @@ async fn test_knowledge_base_too_many_args_error() {
 async fn test_knowledge_base_wrong_type_error() {
     let source = r#"let kb = KnowledgeBase(42)"#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_err(), "Expected error for wrong argument type");
     let err = result.unwrap_err().to_string();
     assert!(
@@ -83,10 +83,10 @@ async fn test_knowledge_base_index_and_search() {
     );
 
     let program = gent::parser::parse(&source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
 
     // Cleanup
     std::fs::remove_dir_all(&temp_dir).ok();
@@ -109,10 +109,10 @@ async fn test_knowledge_base_search_before_index_error() {
         temp_dir.display().to_string().replace("\\", "/")
     );
     let program = gent::parser::parse(&source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
 
     // Cleanup
     std::fs::remove_dir_all(&temp_dir).ok();
@@ -145,10 +145,10 @@ async fn test_knowledge_base_is_indexed() {
     );
 
     let program = gent::parser::parse(&source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
 
     // Cleanup
     std::fs::remove_dir_all(&temp_dir).ok();
@@ -178,10 +178,10 @@ async fn test_knowledge_base_search_with_limit() {
     );
 
     let program = gent::parser::parse(&source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
 
     // Cleanup
     std::fs::remove_dir_all(&temp_dir).ok();
@@ -203,10 +203,10 @@ async fn test_knowledge_base_unknown_method_error() {
     );
 
     let program = gent::parser::parse(&source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
 
     // Cleanup
     std::fs::remove_dir_all(&temp_dir).ok();
@@ -290,10 +290,10 @@ async fn test_agent_with_knowledge_base_tool() {
     );
 
     let program = gent::parser::parse(&source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
 
     // Cleanup
     std::fs::remove_dir_all(&temp_dir).ok();
