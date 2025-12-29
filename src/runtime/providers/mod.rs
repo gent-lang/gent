@@ -1,7 +1,9 @@
 //! LLM provider implementations
 
+mod anthropic;
 mod openai;
 
+pub use anthropic::AnthropicClient;
 pub use openai::OpenAIClient;
 
 use crate::errors::GentError;
