@@ -192,3 +192,82 @@ enum AnthropicResponseBlock {
         input: JsonValue,
     },
 }
+
+#[async_trait]
+impl LLMClient for AnthropicClient {
+    async fn chat(
+        &self,
+        messages: Vec<Message>,
+        tools: Vec<ToolDefinition>,
+        model: Option<&str>,
+        _json_mode: bool, // Anthropic doesn't have json_mode, handled via prompting
+    ) -> GentResult<LLMResponse> {
+        let url = format!("{}/v1/messages", self.base_url);
+        let model_to_use = model.unwrap_or(&self.model);
+
+        let (system, non_system_messages) = self.extract_system(&messages);
+        let anthropic_messages = self.to_anthropic_messages(&non_system_messages);
+        let anthropic_tools = self.to_anthropic_tools(&tools);
+
+        let request = AnthropicRequest {
+            model: model_to_use.to_string(),
+            max_tokens: 4096,
+            system,
+            messages: anthropic_messages,
+            tools: anthropic_tools,
+        };
+
+        let response = self
+            .client
+            .post(&url)
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", "2023-06-01")
+            .header("Content-Type", "application/json")
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| GentError::ApiError {
+                message: format!("Request failed: {}", e),
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let text = response.text().await.unwrap_or_default();
+            return Err(GentError::ApiError {
+                message: format!("Anthropic API error ({}): {}", status, text),
+            });
+        }
+
+        let api_response: AnthropicResponse =
+            response.json().await.map_err(|e| GentError::ApiError {
+                message: format!("Failed to parse Anthropic response: {}", e),
+            })?;
+
+        // Extract text content and tool calls from response
+        let mut text_parts = Vec::new();
+        let mut tool_calls = Vec::new();
+
+        for block in api_response.content {
+            match block {
+                AnthropicResponseBlock::Text { text } => {
+                    text_parts.push(text);
+                }
+                AnthropicResponseBlock::ToolUse { id, name, input } => {
+                    tool_calls.push(ToolCall {
+                        id,
+                        name,
+                        arguments: input,
+                    });
+                }
+            }
+        }
+
+        let content = if text_parts.is_empty() {
+            None
+        } else {
+            Some(text_parts.join(""))
+        };
+
+        Ok(LLMResponse { content, tool_calls })
+    }
+}
