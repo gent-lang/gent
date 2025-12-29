@@ -84,4 +84,13 @@ impl Config {
                 provider: "OPENAI".to_string(),
             })
     }
+
+    /// Get Anthropic API key or return error
+    pub fn require_anthropic_key(&self) -> Result<&str, crate::errors::GentError> {
+        self.anthropic_api_key
+            .as_deref()
+            .ok_or_else(|| crate::errors::GentError::MissingApiKey {
+                provider: "ANTHROPIC".to_string(),
+            })
+    }
 }
