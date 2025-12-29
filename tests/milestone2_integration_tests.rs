@@ -1,7 +1,7 @@
 use gent::interpreter::evaluate;
 use gent::logging::NullLogger;
 use gent::parser::parse;
-use gent::runtime::{MockLLMClient, ToolRegistry};
+use gent::runtime::{ProviderFactory, ToolRegistry};
 
 #[tokio::test]
 async fn test_agent_with_tools_parses() {
@@ -14,11 +14,11 @@ async fn test_agent_with_tools_parses() {
         let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
     let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -33,11 +33,11 @@ async fn test_agent_with_max_steps() {
         let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
     let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -51,11 +51,11 @@ async fn test_agent_with_model() {
         let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
     let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -71,11 +71,11 @@ async fn test_full_researcher_example() {
         let result = Researcher.userPrompt("Tell me about Rust").run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Rust is a systems programming language.");
+    let factory = ProviderFactory::mock_with_response("Rust is a systems programming language.");
     let mut tools = ToolRegistry::with_builtins();
     let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -96,11 +96,11 @@ async fn test_multiple_agents_with_different_tools() {
         let r2 = Writer.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
     let logger = NullLogger;
 
-    let result = evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 

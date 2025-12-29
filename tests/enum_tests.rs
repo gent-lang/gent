@@ -54,10 +54,10 @@ async fn test_enum_definition_registered() {
         println("ok")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -77,10 +77,10 @@ async fn test_enum_construct_unit_variant() {
         test()
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -96,10 +96,10 @@ async fn test_enum_construct_with_data() {
         test()
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -115,10 +115,10 @@ async fn test_enum_construct_with_multiple_fields() {
         test()
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -133,10 +133,10 @@ async fn test_enum_invalid_variant() {
         test()
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     // Should fail because Unknown is not a valid variant
     assert!(result.is_err());
 }
@@ -152,10 +152,10 @@ async fn test_enum_wrong_arg_count() {
         test()
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     // Should fail because Ok expects 1 argument but got 2
     assert!(result.is_err());
 }
@@ -200,10 +200,10 @@ async fn test_enum_is_method_true() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -221,10 +221,10 @@ async fn test_enum_is_method_false() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -248,10 +248,10 @@ async fn test_match_unit_variant() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -270,10 +270,10 @@ async fn test_match_with_binding() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -292,10 +292,10 @@ async fn test_match_wildcard() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -315,10 +315,10 @@ async fn test_enum_data_method() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok());
 }
 
@@ -334,10 +334,10 @@ async fn test_enum_data_out_of_bounds() {
         println("{test()}")
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok()); // Returns null for out of bounds
 }
 
@@ -356,10 +356,10 @@ async fn test_enum_unknown_variant_error() {
         test()
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_err());
 }
 
@@ -377,9 +377,9 @@ async fn test_match_non_exhaustive() {
         test()
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_err()); // Non-exhaustive match error
 }

@@ -1,7 +1,7 @@
 use gent::interpreter::evaluate_with_output;
 use gent::logging::NullLogger;
 use gent::parser::parse;
-use gent::runtime::{MockLLMClient, ToolRegistry};
+use gent::runtime::{ProviderFactory, ToolRegistry};
 
 // ============================================
 // Basic Evaluation Tests
@@ -10,9 +10,9 @@ use gent::runtime::{MockLLMClient, ToolRegistry};
 #[tokio::test]
 async fn test_evaluate_empty_program() {
     let program = parse("").unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty());
 }
@@ -21,9 +21,9 @@ async fn test_evaluate_empty_program() {
 async fn test_evaluate_agent_declaration() {
     let program =
         parse(r#"agent Hello { systemPrompt: "You are friendly." model: "gpt-4o-mini" }"#).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty()); // No output from just declaring
 }
@@ -35,9 +35,9 @@ async fn test_evaluate_run_statement() {
         let result = Hello.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Hello there!");
+    let factory = ProviderFactory::mock_with_response("Hello there!");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 1);
@@ -51,9 +51,9 @@ async fn test_evaluate_run_with_input() {
         let result = Greeter.userPrompt("Hi!").run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Hello! Nice to meet you!");
+    let factory = ProviderFactory::mock_with_response("Hello! Nice to meet you!");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap()[0], "Hello! Nice to meet you!");
 }
@@ -67,9 +67,9 @@ async fn test_evaluate_hello_world() {
     let source = r#"agent Hello { systemPrompt: "You are friendly." model: "gpt-4o-mini" }
 let result = Hello.run()"#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 1);
@@ -84,9 +84,9 @@ let result = Hello.run()"#;
 async fn test_evaluate_undefined_agent() {
     let source = "let result = NonExistent.run()";
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.to_string().contains("Undefined"));
@@ -100,9 +100,9 @@ async fn test_evaluate_missing_model() {
         let result = Empty.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.to_string().contains("model"));
@@ -121,9 +121,9 @@ async fn test_evaluate_multiple_agents() {
         let r2 = Second.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Response");
+    let factory = ProviderFactory::mock_with_response("Response");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
@@ -136,9 +136,9 @@ async fn test_evaluate_same_agent_twice() {
         let r2 = Bot.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Help!");
+    let factory = ProviderFactory::mock_with_response("Help!");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     let outputs = result.unwrap();
     assert_eq!(outputs.len(), 2);
@@ -156,9 +156,9 @@ async fn test_evaluate_number_field() {
         let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("OK");
+    let factory = ProviderFactory::mock_with_response("OK");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     // Should succeed - extra fields are ignored
     assert!(result.is_ok());
 }
@@ -170,9 +170,9 @@ async fn test_evaluate_boolean_field() {
         let result = Bot.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("OK");
+    let factory = ProviderFactory::mock_with_response("OK");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }
 
@@ -189,9 +189,9 @@ async fn test_evaluate_complex_program() {
         let r2 = Writer.userPrompt("Write about programming").run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Done!");
+    let factory = ProviderFactory::mock_with_response("Done!");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
@@ -205,9 +205,9 @@ async fn test_evaluate_with_comments() {
         let result = Helper.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Helping!");
+    let factory = ProviderFactory::mock_with_response("Helping!");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap()[0], "Helping!");
 }
@@ -223,9 +223,9 @@ async fn test_evaluate_empty_prompt() {
         let result = Empty.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("Response");
+    let factory = ProviderFactory::mock_with_response("Response");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }
 
@@ -237,9 +237,9 @@ async fn test_evaluate_long_prompt() {
         long_text
     );
     let program = parse(&source).unwrap();
-    let llm = MockLLMClient::with_response("OK");
+    let factory = ProviderFactory::mock_with_response("OK");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }
 
@@ -250,9 +250,9 @@ async fn test_evaluate_special_characters_in_prompt() {
         let result = Special.run()
     "#;
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::with_response("OK");
+    let factory = ProviderFactory::mock_with_response("OK");
     let mut tools = ToolRegistry::new();
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }
 
@@ -277,10 +277,10 @@ async fn test_tool_declaration_registers() {
     "#;
 
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
 
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }
 
@@ -305,9 +305,9 @@ async fn test_multiple_tool_declarations() {
     "#;
 
     let program = parse(source).unwrap();
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
 
-    let result = evaluate_with_output(&program, &llm, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok());
 }

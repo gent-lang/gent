@@ -74,10 +74,10 @@ async fn test_println_in_tool() {
         }
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed to evaluate: {:?}", result.err());
 
     // Execute the tool to verify println works
@@ -97,10 +97,10 @@ async fn test_print_multiple_args_in_tool() {
         }
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed to evaluate: {:?}", result.err());
 
     // Execute the tool to verify print with multiple args works
@@ -119,10 +119,10 @@ async fn test_print_number_in_tool() {
         }
     "#;
     let program = gent::parser::parse(source).unwrap();
-    let llm = gent::runtime::llm::MockLLMClient::new();
+    let factory = gent::runtime::ProviderFactory::mock();
     let mut tools = gent::runtime::ToolRegistry::new();
     let logger = gent::logging::NullLogger;
-    let result = gent::interpreter::evaluate(&program, &llm, &mut tools, &logger).await;
+    let result = gent::interpreter::evaluate(&program, &factory, &mut tools, &logger).await;
     assert!(result.is_ok(), "Failed to evaluate: {:?}", result.err());
 
     // Execute the tool - println(42) should auto-convert to "42"

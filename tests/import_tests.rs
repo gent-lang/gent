@@ -103,7 +103,7 @@ async fn test_import_and_use() {
 async fn test_evaluate_with_imports() {
     use gent::interpreter::evaluate_with_imports;
     use gent::logging::NullLogger;
-    use gent::runtime::{MockLLMClient, ToolRegistry};
+    use gent::runtime::{ProviderFactory, ToolRegistry};
 
     let dir = tempdir().unwrap();
 
@@ -134,11 +134,11 @@ async fn test_evaluate_with_imports() {
     let program = parse(&source).unwrap();
 
     // Evaluate with imports
-    let llm = MockLLMClient::new();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
     let logger = NullLogger;
 
-    let result = evaluate_with_imports(&program, Some(&main_path), &llm, &mut tools, &logger).await;
+    let result = evaluate_with_imports(&program, Some(&main_path), &factory, &mut tools, &logger).await;
 
     // Should succeed without errors
     assert!(result.is_ok(), "Evaluation failed: {:?}", result.err());
