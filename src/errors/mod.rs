@@ -74,6 +74,10 @@ pub enum GentError {
     #[error("Missing API key for {provider}. Set {provider}_API_KEY environment variable.")]
     MissingApiKey { provider: String },
 
+    /// Unknown model provider
+    #[error("Unknown model provider for '{model}'. Use claude-* for Anthropic or gpt-*/o1-*/o3-* for OpenAI.")]
+    UnknownProvider { model: String },
+
     /// Agent exceeded maximum steps
     #[error("Agent exceeded maximum steps ({limit})")]
     MaxStepsExceeded { limit: u32 },
@@ -175,6 +179,7 @@ impl GentError {
             GentError::FileReadError { .. } => None,
             GentError::ApiError { .. } => None,
             GentError::MissingApiKey { .. } => None,
+            GentError::UnknownProvider { .. } => None,
             GentError::MaxStepsExceeded { .. } => None,
             GentError::ParallelTimeout { .. } => None,
             GentError::ToolError { .. } => None,
