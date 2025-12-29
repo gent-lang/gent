@@ -1,0 +1,11 @@
+// Example using Claude Code provider
+// Requires: claude login (Claude Code CLI authenticated)
+
+agent Researcher {
+    model: "claude-sonnet-4"
+    provider: "claude-code"
+    systemPrompt: "You are a research assistant. Help the user find information."
+}
+
+let result = Researcher.run("What is the capital of France?")
+print(result)
