@@ -596,6 +596,7 @@ fn evaluate_agent_decl(
     let mut user_prompt: Option<String> = None;
     let mut max_steps: Option<u32> = None;
     let mut model: Option<String> = None;
+    let mut provider: Option<String> = None;
     let mut output_retries: Option<u32> = None;
 
     // Extract fields
@@ -638,6 +639,32 @@ fn evaluate_agent_decl(
                 let value = evaluate_expr(&field.value, env)?;
                 model = Some(match value {
                     Value::String(s) => s,
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "String".to_string(),
+                            got: value.type_name().to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                });
+            }
+            "provider" => {
+                let value = evaluate_expr(&field.value, env)?;
+                provider = Some(match value {
+                    Value::String(s) => {
+                        // Validate provider name
+                        match s.as_str() {
+                            "openai" | "claude-code" => s,
+                            _ => {
+                                return Err(GentError::ProviderError {
+                                    message: format!(
+                                        "Unknown provider '{}'. Supported: openai, claude-code",
+                                        s
+                                    ),
+                                })
+                            }
+                        }
+                    }
                     _ => {
                         return Err(GentError::TypeError {
                             expected: "String".to_string(),
@@ -842,6 +869,11 @@ fn evaluate_agent_decl(
     // Set user_prompt if present
     if let Some(up) = user_prompt {
         agent = agent.with_user_prompt(up);
+    }
+
+    // Set provider if present
+    if let Some(p) = provider {
+        agent = agent.with_provider(p);
     }
 
     // Convert output type to schema if present
