@@ -151,6 +151,10 @@ pub enum GentError {
         expected: String,
         got: String,
     },
+
+    /// Provider-specific error (e.g., CLI not found, authentication failed)
+    #[error("Provider error: {message}")]
+    ProviderError { message: String },
 }
 
 impl GentError {
@@ -179,6 +183,7 @@ impl GentError {
             GentError::ParallelTimeout { .. } => None,
             GentError::ToolError { .. } => None,
             GentError::OutputValidationError { .. } => None,
+            GentError::ProviderError { .. } => None,
         }
     }
 }
