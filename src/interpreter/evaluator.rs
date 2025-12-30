@@ -1,8 +1,7 @@
 //! Program evaluation for GENT
 
-use crate::config::Config;
 use crate::errors::{GentError, GentResult};
-use crate::interpreter::block_eval::evaluate_block_with_config;
+use crate::interpreter::block_eval::evaluate_block_with_provider_factory;
 use crate::interpreter::builtins::{call_builtin, is_builtin};
 use crate::interpreter::expr_eval::evaluate_expr;
 use crate::interpreter::imports::collect_imports;
@@ -10,7 +9,7 @@ use crate::interpreter::string_methods::call_string_method;
 use crate::interpreter::{parse_index_options, AgentValue, Environment, FnValue, KnowledgeConfig, OutputSchema, ParallelValue, UserToolValue, Value};
 use crate::logging::{LogLevel, Logger};
 use crate::parser::{AgentDecl, Expression, Program, Statement, StringPart, StructField, ToolDecl};
-use crate::runtime::{run_agent_with_tools, ToolRegistry, UserToolWrapper};
+use crate::runtime::{run_agent_with_tools, ProviderFactory, ToolRegistry, UserToolWrapper};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -19,7 +18,7 @@ use std::sync::Arc;
 ///
 /// # Arguments
 /// * `program` - The parsed AST
-/// * `config` - The configuration for agent execution
+/// * `provider_factory` - The provider factory for creating LLM clients
 /// * `tools` - The tool registry for agent execution
 /// * `logger` - The logger for debug output
 ///
@@ -27,7 +26,7 @@ use std::sync::Arc;
 /// Ok(()) on success, Err on failure
 pub async fn evaluate(
     program: &Program,
-    config: &Config,
+    provider_factory: &ProviderFactory,
     tools: &mut ToolRegistry,
     logger: &dyn Logger,
 ) -> GentResult<()> {
@@ -103,7 +102,7 @@ pub async fn evaluate(
 
     // Second pass: evaluate statements
     for statement in &program.statements {
-        evaluate_statement(statement, &mut env, config, tools, logger, &structs).await?;
+        evaluate_statement(statement, &mut env, provider_factory, tools, logger, &structs).await?;
     }
 
     Ok(())
@@ -112,7 +111,7 @@ pub async fn evaluate(
 /// Evaluate a GENT program and capture output (uses null logger)
 pub async fn evaluate_with_output(
     program: &Program,
-    config: &Config,
+    provider_factory: &ProviderFactory,
     tools: &mut ToolRegistry,
     logger: &dyn Logger,
 ) -> GentResult<Vec<String>> {
@@ -190,7 +189,7 @@ pub async fn evaluate_with_output(
     // Second pass: evaluate statements
     for statement in &program.statements {
         if let Some(output) =
-            evaluate_statement_with_output(statement, &mut env, config, tools, logger, &structs)
+            evaluate_statement_with_output(statement, &mut env, provider_factory, tools, logger, &structs)
                 .await?
         {
             outputs.push(output);
@@ -204,7 +203,7 @@ pub async fn evaluate_with_output(
 pub async fn evaluate_with_imports(
     program: &Program,
     source_file: Option<&Path>,
-    config: &Config,
+    provider_factory: &ProviderFactory,
     tools: &mut ToolRegistry,
     logger: &dyn Logger,
 ) -> GentResult<()> {
@@ -319,7 +318,7 @@ pub async fn evaluate_with_imports(
 
     // Second pass: evaluate statements
     for statement in &program.statements {
-        evaluate_statement(statement, &mut env, config, tools, logger, &structs).await?;
+        evaluate_statement(statement, &mut env, provider_factory, tools, logger, &structs).await?;
     }
 
     Ok(())
@@ -328,7 +327,7 @@ pub async fn evaluate_with_imports(
 async fn evaluate_statement(
     statement: &Statement,
     env: &mut Environment,
-    config: &Config,
+    provider_factory: &ProviderFactory,
     tools: &mut ToolRegistry,
     logger: &dyn Logger,
     structs: &HashMap<String, Vec<StructField>>,
@@ -394,14 +393,14 @@ async fn evaluate_statement(
                 "eval",
                 &format!("Evaluating let '{}'", stmt.name),
             );
-            let value = evaluate_expr_with_env(&stmt.value, env, config, tools, logger).await?;
+            let value = evaluate_expr_with_env(&stmt.value, env, provider_factory, tools, logger).await?;
             env.define(&stmt.name, value);
         }
         Statement::TopLevelCall(call) => {
             // Evaluate arguments
             let mut arg_values = Vec::new();
             for arg in &call.args {
-                let val = evaluate_expr_with_env(arg, env, config, tools, logger).await?;
+                let val = evaluate_expr_with_env(arg, env, provider_factory, tools, logger).await?;
                 arg_values.push(val);
             }
 
@@ -435,8 +434,8 @@ async fn evaluate_statement(
                     fn_env.define(&param.name, arg_val.clone());
                 }
 
-                // Evaluate function body with Config support for agent calls
-                evaluate_block_with_config(&fn_val.body, &mut fn_env, tools, config, logger).await?;
+                // Evaluate function body with provider factory support for agent calls
+                evaluate_block_with_provider_factory(&fn_val.body, &mut fn_env, tools, provider_factory, logger).await?;
                 return Ok(());
             }
 
@@ -452,7 +451,7 @@ async fn evaluate_statement(
 async fn evaluate_statement_with_output(
     statement: &Statement,
     env: &mut Environment,
-    config: &Config,
+    provider_factory: &ProviderFactory,
     tools: &mut ToolRegistry,
     logger: &dyn Logger,
     structs: &HashMap<String, Vec<StructField>>,
@@ -526,7 +525,7 @@ async fn evaluate_statement_with_output(
                 "eval",
                 &format!("Evaluating let '{}'", stmt.name),
             );
-            let value = evaluate_expr_with_env(&stmt.value, env, config, tools, logger).await?;
+            let value = evaluate_expr_with_env(&stmt.value, env, provider_factory, tools, logger).await?;
             // Capture string outputs (e.g., from agent invocations)
             let output = if let Value::String(s) = &value {
                 Some(s.clone())
@@ -540,7 +539,7 @@ async fn evaluate_statement_with_output(
             // Evaluate arguments
             let mut arg_values = Vec::new();
             for arg in &call.args {
-                let val = evaluate_expr_with_env(arg, env, config, tools, logger).await?;
+                let val = evaluate_expr_with_env(arg, env, provider_factory, tools, logger).await?;
                 arg_values.push(val);
             }
 
@@ -574,8 +573,8 @@ async fn evaluate_statement_with_output(
                     fn_env.define(&param.name, arg_val.clone());
                 }
 
-                // Evaluate function body with Config support for agent calls
-                evaluate_block_with_config(&fn_val.body, &mut fn_env, tools, config, logger).await?;
+                // Evaluate function body with provider factory support for agent calls
+                evaluate_block_with_provider_factory(&fn_val.body, &mut fn_env, tools, provider_factory, logger).await?;
                 return Ok(None);
             }
 
@@ -597,6 +596,7 @@ fn evaluate_agent_decl(
     let mut user_prompt: Option<String> = None;
     let mut max_steps: Option<u32> = None;
     let mut model: Option<String> = None;
+    let mut provider: Option<String> = None;
     let mut output_retries: Option<u32> = None;
 
     // Extract fields
@@ -639,6 +639,32 @@ fn evaluate_agent_decl(
                 let value = evaluate_expr(&field.value, env)?;
                 model = Some(match value {
                     Value::String(s) => s,
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "String".to_string(),
+                            got: value.type_name().to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                });
+            }
+            "provider" => {
+                let value = evaluate_expr(&field.value, env)?;
+                provider = Some(match value {
+                    Value::String(s) => {
+                        // Validate provider name
+                        match s.as_str() {
+                            "openai" | "claude-code" => s,
+                            _ => {
+                                return Err(GentError::ProviderError {
+                                    message: format!(
+                                        "Unknown provider '{}'. Supported: openai, claude-code",
+                                        s
+                                    ),
+                                })
+                            }
+                        }
+                    }
                     _ => {
                         return Err(GentError::TypeError {
                             expected: "String".to_string(),
@@ -845,6 +871,11 @@ fn evaluate_agent_decl(
         agent = agent.with_user_prompt(up);
     }
 
+    // Set provider if present
+    if let Some(p) = provider {
+        agent = agent.with_provider(p);
+    }
+
     // Convert output type to schema if present
     if let Some(output_type) = &decl.output {
         let schema = OutputSchema::from_output_type(output_type, structs).map_err(|msg| {
@@ -888,7 +919,7 @@ fn evaluate_tool_decl(
 fn evaluate_expr_with_env<'a>(
     expr: &'a Expression,
     env: &'a Environment,
-    config: &'a Config,
+    provider_factory: &'a ProviderFactory,
     tools: &'a ToolRegistry,
     logger: &'a dyn Logger,
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = GentResult<Value>> + 'a>> {
@@ -901,7 +932,7 @@ fn evaluate_expr_with_env<'a>(
                     match part {
                         StringPart::Literal(s) => result.push_str(s),
                         StringPart::Expr(expr) => {
-                            let value = evaluate_expr_with_env(expr, env, config, tools, logger).await?;
+                            let value = evaluate_expr_with_env(expr, env, provider_factory, tools, logger).await?;
                             result.push_str(&value.to_string());
                         }
                     }
@@ -922,14 +953,14 @@ fn evaluate_expr_with_env<'a>(
                 // Check if this is a method call (callee is Member expression)
                 if let Expression::Member(obj, method, _) = callee.as_ref() {
                     // Evaluate the object
-                    let obj_value = evaluate_expr_with_env(obj, env, config, tools, logger).await?;
+                    let obj_value = evaluate_expr_with_env(obj, env, provider_factory, tools, logger).await?;
 
                     match obj_value {
                         Value::Agent(mut agent) => {
                             match method.as_str() {
                                 "run" => {
                                     // Execute the agent
-                                    let result = run_agent_with_tools(&agent, None, config, tools, logger).await?;
+                                    let result = run_agent_with_tools(&agent, None, provider_factory, tools, logger).await?;
                                     return Ok(Value::String(result));
                                 }
                                 "userPrompt" => {
@@ -940,7 +971,7 @@ fn evaluate_expr_with_env<'a>(
                                             span: span.clone(),
                                         });
                                     }
-                                    let arg = evaluate_expr_with_env(&args[0], env, config, tools, logger).await?;
+                                    let arg = evaluate_expr_with_env(&args[0], env, provider_factory, tools, logger).await?;
                                     let prompt = match arg {
                                         Value::String(s) => s,
                                         other => format!("{}", other),
@@ -956,7 +987,7 @@ fn evaluate_expr_with_env<'a>(
                                             span: span.clone(),
                                         });
                                     }
-                                    let arg = evaluate_expr_with_env(&args[0], env, config, tools, logger).await?;
+                                    let arg = evaluate_expr_with_env(&args[0], env, provider_factory, tools, logger).await?;
                                     let prompt = match arg {
                                         Value::String(s) => s,
                                         other => format!("{}", other),
@@ -976,7 +1007,7 @@ fn evaluate_expr_with_env<'a>(
                             // String method call - evaluate arguments and dispatch
                             let mut arg_values = Vec::new();
                             for arg in args {
-                                let val = evaluate_expr_with_env(arg, env, config, tools, logger).await?;
+                                let val = evaluate_expr_with_env(arg, env, provider_factory, tools, logger).await?;
                                 arg_values.push(val);
                             }
                             return call_string_method(&s, method, &arg_values);
@@ -985,7 +1016,7 @@ fn evaluate_expr_with_env<'a>(
                             // Array method call - evaluate arguments and dispatch
                             let mut arg_values = Vec::new();
                             for arg in args {
-                                let val = evaluate_expr_with_env(arg, env, config, tools, logger).await?;
+                                let val = evaluate_expr_with_env(arg, env, provider_factory, tools, logger).await?;
                                 arg_values.push(val);
                             }
 
@@ -1020,7 +1051,7 @@ fn evaluate_expr_with_env<'a>(
                                         span: span.clone(),
                                     });
                                 }
-                                return run_parallel(&parallel, env, config, tools, logger).await;
+                                return run_parallel(&parallel, env, provider_factory, tools, logger).await;
                             } else {
                                 return Err(GentError::SyntaxError {
                                     message: format!("Unknown parallel method: {}", method),
@@ -1035,7 +1066,7 @@ fn evaluate_expr_with_env<'a>(
                                     let options = if args.is_empty() {
                                         crate::runtime::rag::IndexOptions::default()
                                     } else {
-                                        let arg = evaluate_expr_with_env(&args[0], env, config, tools, logger).await?;
+                                        let arg = evaluate_expr_with_env(&args[0], env, provider_factory, tools, logger).await?;
                                         parse_index_options(&arg)?
                                     };
 
@@ -1053,7 +1084,7 @@ fn evaluate_expr_with_env<'a>(
                                         });
                                     }
 
-                                    let query_arg = evaluate_expr_with_env(&args[0], env, config, tools, logger).await?;
+                                    let query_arg = evaluate_expr_with_env(&args[0], env, provider_factory, tools, logger).await?;
                                     let query = match query_arg {
                                         Value::String(s) => s,
                                         other => return Err(GentError::TypeError {
@@ -1064,7 +1095,7 @@ fn evaluate_expr_with_env<'a>(
                                     };
 
                                     let limit = if args.len() > 1 {
-                                        let options_arg = evaluate_expr_with_env(&args[1], env, config, tools, logger).await?;
+                                        let options_arg = evaluate_expr_with_env(&args[1], env, provider_factory, tools, logger).await?;
                                         if let Value::Object(o) = options_arg {
                                             o.get("limit")
                                                 .and_then(|v| if let Value::Number(n) = v { Some(*n as usize) } else { None })
@@ -1122,7 +1153,7 @@ fn evaluate_expr_with_env<'a>(
                     if let Some(Value::Agent(agent)) = env.get(name) {
                         // This is an agent call - execute it
                         let input = if !args.is_empty() {
-                            let arg_value = evaluate_expr_with_env(&args[0], env, config, tools, logger).await?;
+                            let arg_value = evaluate_expr_with_env(&args[0], env, provider_factory, tools, logger).await?;
                             match arg_value {
                                 Value::String(s) => Some(s),
                                 other => Some(format!("{}", other)),
@@ -1130,7 +1161,7 @@ fn evaluate_expr_with_env<'a>(
                         } else {
                             None
                         };
-                        let output = run_agent_with_tools(agent, input, config, tools, logger).await?;
+                        let output = run_agent_with_tools(agent, input, provider_factory, tools, logger).await?;
                         return Ok(Value::String(output));
                     }
 
@@ -1142,7 +1173,7 @@ fn evaluate_expr_with_env<'a>(
                         // Evaluate arguments
                         let mut arg_values = Vec::new();
                         for arg in args {
-                            let val = evaluate_expr_with_env(arg, env, config, tools, logger).await?;
+                            let val = evaluate_expr_with_env(arg, env, provider_factory, tools, logger).await?;
                             arg_values.push(val);
                         }
 
@@ -1168,8 +1199,8 @@ fn evaluate_expr_with_env<'a>(
                             fn_env.define(&param.name, arg_val.clone());
                         }
 
-                        // Evaluate the function body with Config support for agent calls
-                        let result = crate::interpreter::evaluate_block_with_config(&fn_val.body, &mut fn_env, tools, config, logger).await?;
+                        // Evaluate the function body with provider factory support for agent calls
+                        let result = crate::interpreter::evaluate_block_with_provider_factory(&fn_val.body, &mut fn_env, tools, provider_factory, logger).await?;
                         return Ok(result);
                     }
 
@@ -1181,7 +1212,7 @@ fn evaluate_expr_with_env<'a>(
                                 span: span.clone(),
                             });
                         }
-                        let arg = evaluate_expr_with_env(&args[0], env, config, tools, logger).await?;
+                        let arg = evaluate_expr_with_env(&args[0], env, provider_factory, tools, logger).await?;
                         let path = match arg {
                             Value::String(s) => s,
                             _ => {
@@ -1194,8 +1225,9 @@ fn evaluate_expr_with_env<'a>(
                         };
 
                         // Use OpenAI embeddings if API key is available, otherwise mock
-                        let kb = if let Some(ref api_key) = config.openai_api_key {
-                            crate::runtime::rag::KnowledgeBase::with_openai(path, api_key.clone())
+                        let config = crate::config::Config::load();
+                        let kb = if let Some(api_key) = config.openai_api_key {
+                            crate::runtime::rag::KnowledgeBase::with_openai(path, api_key)
                         } else {
                             crate::runtime::rag::KnowledgeBase::new(path)
                         };
@@ -1210,14 +1242,14 @@ fn evaluate_expr_with_env<'a>(
             }
             // Binary operations - need async evaluation for operands that might contain calls
             Expression::Binary(op, left, right, span) => {
-                let left_val = evaluate_expr_with_env(left, env, config, tools, logger).await?;
-                let right_val = evaluate_expr_with_env(right, env, config, tools, logger).await?;
+                let left_val = evaluate_expr_with_env(left, env, provider_factory, tools, logger).await?;
+                let right_val = evaluate_expr_with_env(right, env, provider_factory, tools, logger).await?;
                 crate::interpreter::expr_eval::evaluate_binary_op_public(op, left_val, right_val, span)
             }
 
             // Unary operations - need async evaluation for operand
             Expression::Unary(op, operand, span) => {
-                let val = evaluate_expr_with_env(operand, env, config, tools, logger).await?;
+                let val = evaluate_expr_with_env(operand, env, provider_factory, tools, logger).await?;
                 crate::interpreter::expr_eval::evaluate_unary_op_public(op, val, span)
             }
 
@@ -1225,7 +1257,7 @@ fn evaluate_expr_with_env<'a>(
             Expression::Array(elements, _) => {
                 let mut values = Vec::new();
                 for elem in elements {
-                    values.push(evaluate_expr_with_env(elem, env, config, tools, logger).await?);
+                    values.push(evaluate_expr_with_env(elem, env, provider_factory, tools, logger).await?);
                 }
                 Ok(Value::Array(values))
             }
@@ -1234,7 +1266,7 @@ fn evaluate_expr_with_env<'a>(
             Expression::Object(fields, _) => {
                 let mut map = std::collections::HashMap::new();
                 for (key, value_expr) in fields {
-                    let value = evaluate_expr_with_env(value_expr, env, config, tools, logger).await?;
+                    let value = evaluate_expr_with_env(value_expr, env, provider_factory, tools, logger).await?;
                     map.insert(key.clone(), value);
                 }
                 Ok(Value::Object(map))
@@ -1271,7 +1303,7 @@ fn evaluate_expr_with_env<'a>(
                     }
                 }
 
-                let object = evaluate_expr_with_env(object_expr, env, config, tools, logger).await?;
+                let object = evaluate_expr_with_env(object_expr, env, provider_factory, tools, logger).await?;
                 match object {
                     Value::Object(map) => {
                         map.get(property)
@@ -1292,8 +1324,8 @@ fn evaluate_expr_with_env<'a>(
 
             // Index access - need async evaluation for target and index
             Expression::Index(target_expr, index_expr, span) => {
-                let target = evaluate_expr_with_env(target_expr, env, config, tools, logger).await?;
-                let index = evaluate_expr_with_env(index_expr, env, config, tools, logger).await?;
+                let target = evaluate_expr_with_env(target_expr, env, provider_factory, tools, logger).await?;
+                let index = evaluate_expr_with_env(index_expr, env, provider_factory, tools, logger).await?;
 
                 match target {
                     Value::Array(ref items) => {
@@ -1347,7 +1379,7 @@ fn evaluate_expr_with_env<'a>(
 async fn run_parallel(
     parallel: &ParallelValue,
     env: &Environment,
-    config: &Config,
+    provider_factory: &ProviderFactory,
     tools: &ToolRegistry,
     logger: &dyn Logger,
 ) -> GentResult<Value> {
@@ -1359,7 +1391,7 @@ async fn run_parallel(
     let mut agent_values = Vec::new();
     for expr in &parallel.agents {
         // Evaluate the expression to get the configured agent
-        let agent_val = evaluate_expr_with_env(expr, env, config, tools, logger).await?;
+        let agent_val = evaluate_expr_with_env(expr, env, provider_factory, tools, logger).await?;
 
         let agent = agent_val.as_agent().ok_or_else(|| GentError::TypeError {
             expected: "agent".to_string(),
@@ -1373,7 +1405,7 @@ async fn run_parallel(
     // Create futures for all agents
     let futures: Vec<_> = agent_values
         .iter()
-        .map(|agent| run_agent_with_tools(agent, None, config, tools, logger))
+        .map(|agent| run_agent_with_tools(agent, None, provider_factory, tools, logger))
         .collect();
 
     // Wait for all with timeout

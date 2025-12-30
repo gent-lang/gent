@@ -4,15 +4,15 @@ use gent::config::Config;
 use gent::interpreter::evaluate;
 use gent::logging::NullLogger;
 use gent::parser::parse;
-use gent::runtime::ToolRegistry;
+use gent::runtime::{ProviderFactory, ToolRegistry};
 
 // Helper to run a program and check success
 async fn run_program(source: &str) -> Result<(), String> {
     let program = parse(source).map_err(|e| e.to_string())?;
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
     let logger = NullLogger;
-    evaluate(&program, &config, &mut tools, &logger)
+    evaluate(&program, &factory, &mut tools, &logger)
         .await
         .map_err(|e| e.to_string())
 }

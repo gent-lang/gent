@@ -16,15 +16,15 @@ use gent::interpreter::evaluate;
 use gent::interpreter::evaluate_with_output;
 use gent::logging::NullLogger;
 use gent::parser::parse;
-use gent::runtime::ToolRegistry;
+use gent::runtime::{ProviderFactory, ToolRegistry};
 
 /// Helper to run a program and check success
 async fn run_program(source: &str) -> Result<(), String> {
     let program = parse(source).map_err(|e| e.to_string())?;
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
     let logger = NullLogger;
-    evaluate(&program, &config, &mut tools, &logger)
+    evaluate(&program, &factory, &mut tools, &logger)
         .await
         .map_err(|e| e.to_string())
 }
@@ -33,10 +33,10 @@ async fn run_program(source: &str) -> Result<(), String> {
 #[allow(dead_code)]
 async fn run_program_with_output(source: &str) -> Result<Vec<String>, String> {
     let program = parse(source).map_err(|e| e.to_string())?;
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::new();
     let logger = NullLogger;
-    evaluate_with_output(&program, &config, &mut tools, &logger)
+    evaluate_with_output(&program, &factory, &mut tools, &logger)
         .await
         .map_err(|e| e.to_string())
 }

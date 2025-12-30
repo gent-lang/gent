@@ -4,7 +4,7 @@ use gent::config::Config;
 use gent::interpreter::evaluate_with_output;
 use gent::logging::NullLogger;
 use gent::parser::parse;
-use gent::runtime::ToolRegistry;
+use gent::runtime::{ProviderFactory, ToolRegistry};
 
 #[tokio::test]
 async fn test_agent_with_inline_structured_output() {
@@ -18,10 +18,10 @@ async fn test_agent_with_inline_structured_output() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(r#"{"category": "test", "confidence": 0.95}"#);
+    let factory = ProviderFactory::mock_with_response(r#"{"category": "test", "confidence": 0.95}"#);
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &config, &mut tools, &NullLogger)
+    let outputs = evaluate_with_output(&program, &factory, &mut tools, &NullLogger)
         .await
         .unwrap();
     assert_eq!(outputs.len(), 1);
@@ -48,10 +48,10 @@ async fn test_agent_with_named_struct_output() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(r#"{"category": "billing", "confidence": 0.87}"#);
+    let factory = ProviderFactory::mock_with_response(r#"{"category": "billing", "confidence": 0.87}"#);
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &config, &mut tools, &NullLogger)
+    let outputs = evaluate_with_output(&program, &factory, &mut tools, &NullLogger)
         .await
         .unwrap();
     assert_eq!(outputs.len(), 1);
@@ -73,10 +73,10 @@ async fn test_agent_without_output_schema() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response("Hello! How can I help you?");
+    let factory = ProviderFactory::mock_with_response("Hello! How can I help you?");
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &config, &mut tools, &NullLogger)
+    let outputs = evaluate_with_output(&program, &factory, &mut tools, &NullLogger)
         .await
         .unwrap();
     assert_eq!(outputs.len(), 1);
@@ -105,12 +105,12 @@ async fn test_struct_with_nested_output() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(
+    let factory = ProviderFactory::mock_with_response(
         r#"{"name": "test", "metadata": {"created": "2024-01-01", "updated": "2024-01-02"}}"#,
     );
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &config, &mut tools, &NullLogger)
+    let outputs = evaluate_with_output(&program, &factory, &mut tools, &NullLogger)
         .await
         .unwrap();
     let json: serde_json::Value = serde_json::from_str(&outputs[0]).unwrap();
@@ -136,10 +136,10 @@ async fn test_struct_with_array_output() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(r#"{"tags": ["rust", "gent", "ai"], "count": 3}"#);
+    let factory = ProviderFactory::mock_with_response(r#"{"tags": ["rust", "gent", "ai"], "count": 3}"#);
     let mut tools = ToolRegistry::new();
 
-    let outputs = evaluate_with_output(&program, &config, &mut tools, &NullLogger)
+    let outputs = evaluate_with_output(&program, &factory, &mut tools, &NullLogger)
         .await
         .unwrap();
     let json: serde_json::Value = serde_json::from_str(&outputs[0]).unwrap();
@@ -186,10 +186,10 @@ async fn test_agent_with_structured_output_called_from_function() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(r#"{"ideas": ["puzzle1", "puzzle2"], "count": 2}"#);
+    let factory = ProviderFactory::mock_with_response(r#"{"ideas": ["puzzle1", "puzzle2"], "count": 2}"#);
     let mut tools = ToolRegistry::new();
 
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -216,10 +216,10 @@ async fn test_agent_with_structured_output_interpolation_in_function() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(r#"{"value": "processed"}"#);
+    let factory = ProviderFactory::mock_with_response(r#"{"value": "processed"}"#);
     let mut tools = ToolRegistry::new();
 
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -248,10 +248,10 @@ async fn test_agent_run_result_can_be_iterated() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(r#"{"ideas": ["idea1", "idea2", "idea3"]}"#);
+    let factory = ProviderFactory::mock_with_response(r#"{"ideas": ["idea1", "idea2", "idea3"]}"#);
     let mut tools = ToolRegistry::new();
 
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -289,12 +289,12 @@ async fn test_nested_object_property_access_in_loop() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(
+    let factory = ProviderFactory::mock_with_response(
         r#"{"ideas": [{"title": "Puzzle Quest", "coreMechanic": "Match tiles"}, {"title": "Logic Land", "coreMechanic": "Solve equations"}]}"#,
     );
     let mut tools = ToolRegistry::new();
 
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -331,12 +331,12 @@ async fn test_nested_struct_with_wrong_property_names_should_fail_validation() {
 
     let program = parse(source).unwrap();
     // LLM returns snake_case instead of camelCase - validation should catch this
-    let config = Config::mock_with_response(
+    let factory = ProviderFactory::mock_with_response(
         r#"{"ideas": [{"title": "Puzzle Quest", "core_mechanic": "Match tiles"}]}"#,
     );
     let mut tools = ToolRegistry::new();
 
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     // This should fail because the property names don't match
     // Currently this passes validation (bug!) and fails at runtime with UndefinedProperty
     assert!(result.is_err(), "Should have failed validation due to wrong property names");
@@ -382,12 +382,12 @@ async fn test_array_length_in_if_condition() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(
+    let factory = ProviderFactory::mock_with_response(
         r#"{"ideas": [{"title": "Puzzle Quest"}, {"title": "Logic Land"}]}"#,
     );
     let mut tools = ToolRegistry::new();
 
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }
 
@@ -431,11 +431,11 @@ async fn test_array_length_in_if_condition_with_ideas_variable() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response(
+    let factory = ProviderFactory::mock_with_response(
         r#"{"ideas": [{"title": "Puzzle Quest", "coreMechanic": "Match tiles"}, {"title": "Logic Land", "coreMechanic": "Solve equations"}]}"#,
     );
     let mut tools = ToolRegistry::new();
 
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
     assert!(result.is_ok(), "Failed: {:?}", result.err());
 }

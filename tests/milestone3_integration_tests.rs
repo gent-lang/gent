@@ -5,7 +5,7 @@ use gent::config::Config;
 use gent::interpreter::evaluate_with_output;
 use gent::logging::NullLogger;
 use gent::parser::parse;
-use gent::runtime::{MockLLMClient, ToolRegistry};
+use gent::runtime::{ProviderFactory, ToolRegistry};
 
 // ============================================
 // Basic Tool Tests
@@ -27,9 +27,9 @@ async fn test_simple_user_tool() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -53,9 +53,9 @@ async fn test_tool_with_arithmetic() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -83,9 +83,9 @@ async fn test_tool_with_conditional() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -110,9 +110,9 @@ async fn test_tool_with_let_binding() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -144,9 +144,9 @@ async fn test_multiple_tools() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -178,9 +178,9 @@ async fn test_parse_full_expression() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -210,9 +210,9 @@ async fn test_tool_with_agent_fields() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -236,9 +236,9 @@ async fn test_tool_with_run_input() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -274,9 +274,9 @@ async fn test_tool_nested_conditionals() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -303,9 +303,9 @@ async fn test_tool_multiple_let_bindings() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -334,9 +334,9 @@ async fn test_tool_all_arithmetic_operators() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -368,9 +368,9 @@ async fn test_tool_comparison_operators() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -396,9 +396,9 @@ async fn test_tool_string_concatenation() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -426,9 +426,9 @@ async fn test_tool_no_return_type() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -452,9 +452,9 @@ async fn test_tool_no_parameters() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -484,9 +484,9 @@ async fn test_multiple_agents_with_tools() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock();
+    let factory = ProviderFactory::mock();
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),
@@ -530,9 +530,9 @@ async fn test_full_milestone3_program() {
     "#;
 
     let program = parse(source).unwrap();
-    let config = Config::mock_with_response("I'll help you calculate your savings!");
+    let factory = ProviderFactory::mock_with_response("I'll help you calculate your savings!");
     let mut tools = ToolRegistry::with_builtins();
-    let result = evaluate_with_output(&program, &config, &mut tools, &NullLogger).await;
+    let result = evaluate_with_output(&program, &factory, &mut tools, &NullLogger).await;
 
     assert!(
         result.is_ok(),

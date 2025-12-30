@@ -1,46 +1,39 @@
 //! Agent execution for GENT
 
-use crate::config::Config;
 use crate::errors::{GentError, GentResult};
 use crate::interpreter::{AgentValue, OutputSchema};
 use crate::logging::{LogLevel, Logger, NullLogger};
-use crate::runtime::client_factory::create_llm_client;
 use crate::runtime::validation::validate_output;
-use crate::runtime::{LLMClient, LLMResponse, Message, ToolDefinition, ToolRegistry, ToolResult};
+use crate::runtime::{LLMClient, LLMResponse, Message, ProviderFactory, ToolDefinition, ToolRegistry, ToolResult};
 
 const DEFAULT_MAX_STEPS: u32 = 10;
-
-/// Default model when none specified
-const DEFAULT_MODEL: &str = "gpt-4o-mini";
 
 /// Run an agent with the given input (simple, no tools)
 pub async fn run_agent(
     agent: &AgentValue,
     input: Option<String>,
-    config: &Config,
+    provider_factory: &ProviderFactory,
 ) -> GentResult<String> {
     let registry = ToolRegistry::new();
     let logger = NullLogger;
-    run_agent_with_tools(agent, input, config, &registry, &logger).await
+    run_agent_with_tools(agent, input, provider_factory, &registry, &logger).await
 }
 
 /// Run an agent with tools
 pub async fn run_agent_with_tools(
     agent: &AgentValue,
     input: Option<String>,
-    config: &Config,
+    provider_factory: &ProviderFactory,
     tools: &ToolRegistry,
     logger: &dyn Logger,
 ) -> GentResult<String> {
-    // Get the model from agent or use default
-    let model_name = agent.model.as_deref().unwrap_or(DEFAULT_MODEL);
-
-    // Create the LLM client based on the model
-    let llm = create_llm_client(model_name, config)?;
+    // Create LLM client from factory using agent's provider setting
+    let llm = provider_factory.create(agent.provider.as_deref())?;
+    let llm = llm.as_ref();
 
     let max_steps = agent.max_steps.unwrap_or(DEFAULT_MAX_STEPS);
     let tool_defs = tools.definitions_for(&agent.tools);
-    let model = Some(model_name);
+    let model = agent.model.as_deref();
     let json_mode = agent.output_schema.is_some();
 
     logger.log(
@@ -218,7 +211,7 @@ pub async fn run_agent_with_tools(
             // Validate output if schema exists
             if let Some(schema) = &agent.output_schema {
                 return validate_and_retry_output(
-                    &content, schema, agent, &messages, llm.as_ref(), &tool_defs, model, logger,
+                    &content, schema, agent, &messages, llm, &tool_defs, model, logger,
                 )
                 .await;
             }
@@ -298,13 +291,11 @@ pub async fn run_agent_with_tools(
 pub async fn run_agent_full(
     agent: &AgentValue,
     input: Option<String>,
-    config: &Config,
+    provider_factory: &ProviderFactory,
 ) -> GentResult<LLMResponse> {
-    // Get the model from agent or use default
-    let model_name = agent.model.as_deref().unwrap_or(DEFAULT_MODEL);
-
-    // Create the LLM client based on the model
-    let llm = create_llm_client(model_name, config)?;
+    // Create LLM client from factory using agent's provider setting
+    let llm = provider_factory.create(agent.provider.as_deref())?;
+    let llm = llm.as_ref();
 
     // Build messages based on which prompts are present
     let mut messages = Vec::new();
@@ -329,7 +320,7 @@ pub async fn run_agent_full(
         });
     }
 
-    let model = Some(model_name);
+    let model = agent.model.as_deref();
     llm.chat(messages, vec![], model, false).await
 }
 
