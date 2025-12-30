@@ -140,9 +140,16 @@ pub async fn run_agent_with_tools(
         None
     };
 
-    // Add system message if prompt is not empty
-    if !agent.system_prompt.is_empty() {
-        let mut system_prompt = if let Some(schema) = &agent.output_schema {
+    // Build system message from: system_prompt + output_schema + RAG context
+    let has_system_content = !agent.system_prompt.is_empty()
+        || agent.output_schema.is_some()
+        || rag_context.is_some();
+
+    if has_system_content {
+        let mut system_prompt = agent.system_prompt.clone();
+
+        // Add output schema instructions if present
+        if let Some(schema) = &agent.output_schema {
             logger.log(
                 LogLevel::Debug,
                 "agent",
@@ -153,16 +160,16 @@ pub async fn run_agent_with_tools(
                 .output_instructions
                 .as_deref()
                 .unwrap_or(default_instructions);
-            format!(
-                "{}\n\n{}\n{}",
-                agent.system_prompt,
+            if !system_prompt.is_empty() {
+                system_prompt.push_str("\n\n");
+            }
+            system_prompt.push_str(&format!(
+                "{}\n{}",
                 instructions,
                 serde_json::to_string_pretty(&schema.to_json_schema())
                     .unwrap_or_else(|_| "<schema>".to_string())
-            )
-        } else {
-            agent.system_prompt.clone()
-        };
+            ));
+        }
 
         // Append RAG context if available
         if let Some(context) = rag_context {
