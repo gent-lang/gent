@@ -328,6 +328,8 @@ pub struct AgentValue {
     pub output_instructions: Option<String>,
     /// Custom prompt for validation retries (None = default)
     pub retry_prompt: Option<String>,
+    /// Skip permission prompts for claude-code provider (dangerous!)
+    pub dangerously_skip_permissions: bool,
 }
 
 impl AgentValue {
@@ -346,6 +348,7 @@ impl AgentValue {
             output_retries: 1, // default: retry once
             output_instructions: None,
             retry_prompt: None,
+            dangerously_skip_permissions: false,
         }
     }
 

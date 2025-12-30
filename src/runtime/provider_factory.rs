@@ -55,6 +55,15 @@ impl ProviderFactory {
 
     /// Create an LLM client for the given provider
     pub fn create(&self, provider: Option<&str>) -> GentResult<Box<dyn LLMClient>> {
+        self.create_with_options(provider, false)
+    }
+
+    /// Create an LLM client with additional options
+    pub fn create_with_options(
+        &self,
+        provider: Option<&str>,
+        dangerously_skip_permissions: bool,
+    ) -> GentResult<Box<dyn LLMClient>> {
         if self.use_mock {
             return Ok(Box::new(if let Some(ref tool_calls) = self.mock_tool_calls {
                 MockLLMClient::with_tool_calls(tool_calls.clone())
@@ -70,7 +79,13 @@ impl ProviderFactory {
                 let api_key = self.config.require_openai_key()?;
                 Ok(Box::new(OpenAIClient::new(api_key.to_string())))
             }
-            "claude-code" => Ok(Box::new(ClaudeCodeClient::new()?)),
+            "claude-code" => {
+                let mut client = ClaudeCodeClient::new()?;
+                if dangerously_skip_permissions {
+                    client = client.with_skip_permissions(true);
+                }
+                Ok(Box::new(client))
+            }
             other => Err(GentError::ProviderError {
                 message: format!("Unknown provider '{}'. Supported: openai, claude-code", other),
             }),

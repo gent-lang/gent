@@ -598,6 +598,7 @@ fn evaluate_agent_decl(
     let mut model: Option<String> = None;
     let mut provider: Option<String> = None;
     let mut output_retries: Option<u32> = None;
+    let mut dangerously_skip_permissions: bool = false;
 
     // Extract fields
     for field in &decl.fields {
@@ -699,6 +700,19 @@ fn evaluate_agent_decl(
             }
             "retry_prompt" | "retryPrompt" => {
                 // Ignore for now - will be implemented later
+            }
+            "dangerouslySkipPermissions" => {
+                let value = evaluate_expr(&field.value, env)?;
+                dangerously_skip_permissions = match value {
+                    Value::Boolean(b) => b,
+                    _ => {
+                        return Err(GentError::TypeError {
+                            expected: "Boolean".to_string(),
+                            got: value.type_name().to_string(),
+                            span: field.span.clone(),
+                        })
+                    }
+                };
             }
             "userPrompt" => {
                 let value = evaluate_expr(&field.value, env)?;
@@ -875,6 +889,9 @@ fn evaluate_agent_decl(
     if let Some(p) = provider {
         agent = agent.with_provider(p);
     }
+
+    // Set dangerously_skip_permissions
+    agent.dangerously_skip_permissions = dangerously_skip_permissions;
 
     // Convert output type to schema if present
     if let Some(output_type) = &decl.output {
@@ -1227,8 +1244,10 @@ fn evaluate_expr_with_env<'a>(
                         // Use OpenAI embeddings if API key is available, otherwise mock
                         let config = crate::config::Config::load();
                         let kb = if let Some(api_key) = config.openai_api_key {
+                            eprintln!("DEBUG: KnowledgeBase using OpenAI embeddings");
                             crate::runtime::rag::KnowledgeBase::with_openai(path, api_key)
                         } else {
+                            eprintln!("DEBUG: KnowledgeBase using MOCK embeddings (no OPENAI_API_KEY)");
                             crate::runtime::rag::KnowledgeBase::new(path)
                         };
                         return Ok(Value::KnowledgeBase(Arc::new(tokio::sync::RwLock::new(kb))));

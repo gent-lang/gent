@@ -21,6 +21,7 @@ pub struct ClaudeCodeClient {
     model: Option<String>,
     #[allow(dead_code)]
     cli_path: String,
+    skip_permissions: bool,
 }
 
 impl ClaudeCodeClient {
@@ -29,12 +30,19 @@ impl ClaudeCodeClient {
         Ok(Self {
             model: None,
             cli_path: "claude".to_string(),
+            skip_permissions: false,
         })
     }
 
     /// Set the model to use
     pub fn with_model(mut self, model: &str) -> Self {
         self.model = Some(model.to_string());
+        self
+    }
+
+    /// Set whether to skip permission prompts (dangerous!)
+    pub fn with_skip_permissions(mut self, skip: bool) -> Self {
+        self.skip_permissions = skip;
         self
     }
 
@@ -156,6 +164,11 @@ impl LLMClient for ClaudeCodeClient {
         // Build CLI args
         let mut args = vec!["--print", "--output-format", "json"];
 
+        // Add --dangerously-skip-permissions if enabled (allows unattended execution)
+        if self.skip_permissions {
+            args.push("--dangerously-skip-permissions");
+        }
+
         let model_to_use = model.or(self.model.as_deref());
         let model_string;
         if let Some(m) = model_to_use {
@@ -181,22 +194,16 @@ impl LLMClient for ClaudeCodeClient {
         }
         args.push(&user_prompt);
 
-        // Spawn CLI process
-        let output = tokio::time::timeout(
-            std::time::Duration::from_secs(300), // 5 minute timeout
-            Command::new(&self.cli_path)
-                .args(&args)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output(),
-        )
-        .await
-        .map_err(|_| GentError::ProviderError {
-            message: "Claude CLI timed out after 5 minutes".to_string(),
-        })?
-        .map_err(|e| GentError::ProviderError {
-            message: format!("Failed to run Claude CLI: {}", e),
-        })?;
+        // Spawn CLI process (no timeout - let Claude Code run as long as needed)
+        let output = Command::new(&self.cli_path)
+            .args(&args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GentError::ProviderError {
+                message: format!("Failed to run Claude CLI: {}", e),
+            })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);

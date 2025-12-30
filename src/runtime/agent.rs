@@ -28,7 +28,10 @@ pub async fn run_agent_with_tools(
     logger: &dyn Logger,
 ) -> GentResult<String> {
     // Create LLM client from factory using agent's provider setting
-    let llm = provider_factory.create(agent.provider.as_deref())?;
+    let llm = provider_factory.create_with_options(
+        agent.provider.as_deref(),
+        agent.dangerously_skip_permissions,
+    )?;
     let llm = llm.as_ref();
 
     let max_steps = agent.max_steps.unwrap_or(DEFAULT_MAX_STEPS);
@@ -87,6 +90,24 @@ pub async fn run_agent_with_tools(
             let kb = knowledge_config.source.read().await;
             match kb.search(query, knowledge_config.chunk_limit).await {
                 Ok(results) => {
+                    // Log raw results before filtering
+                    logger.log(
+                        LogLevel::Debug,
+                        "agent",
+                        &format!(
+                            "RAG search returned {} results (threshold: {})",
+                            results.len(),
+                            knowledge_config.score_threshold
+                        ),
+                    );
+                    for (i, r) in results.iter().enumerate() {
+                        logger.log(
+                            LogLevel::Trace,
+                            "agent",
+                            &format!("  Result {}: score={:.4}, source={}", i, r.score, r.metadata.source),
+                        );
+                    }
+
                     // Filter by score threshold
                     let filtered: Vec<_> = results
                         .into_iter()
@@ -97,7 +118,7 @@ pub async fn run_agent_with_tools(
                         logger.log(
                             LogLevel::Debug,
                             "agent",
-                            "No relevant context found above threshold",
+                            &format!("No relevant context found above threshold ({})", knowledge_config.score_threshold),
                         );
                         None
                     } else {
@@ -301,7 +322,10 @@ pub async fn run_agent_full(
     provider_factory: &ProviderFactory,
 ) -> GentResult<LLMResponse> {
     // Create LLM client from factory using agent's provider setting
-    let llm = provider_factory.create(agent.provider.as_deref())?;
+    let llm = provider_factory.create_with_options(
+        agent.provider.as_deref(),
+        agent.dangerously_skip_permissions,
+    )?;
     let llm = llm.as_ref();
 
     // Build messages based on which prompts are present
