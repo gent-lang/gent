@@ -13,6 +13,6 @@ pub use llm::{
     LLMClient, LLMResponse, Message, MockLLMClient, Role, ToolCall, ToolDefinition, ToolResult,
 };
 pub use provider_factory::ProviderFactory;
-pub use providers::{ClaudeCodeClient, OpenAIClient};
+pub use providers::{AnthropicClient, ClaudeCodeClient, OpenAIClient};
 pub use tools::{Tool, ToolRegistry, UserToolWrapper};
 pub use validation::validate_output;

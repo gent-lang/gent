@@ -1,8 +1,10 @@
 //! LLM provider implementations
 
+mod anthropic;
 mod claude_code;
 mod openai;
 
+pub use anthropic::AnthropicClient;
 pub use claude_code::ClaudeCodeClient;
 pub use openai::OpenAIClient;
 

@@ -138,6 +138,7 @@ mod tests {
         let client = ClaudeCodeClient {
             model: None,
             cli_path: "nonexistent-claude-binary".to_string(),
+            skip_permissions: false,
         };
         let result = client.ensure_available().await;
         assert!(result.is_err());

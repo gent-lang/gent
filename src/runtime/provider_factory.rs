@@ -2,7 +2,7 @@
 
 use crate::config::Config;
 use crate::errors::{GentError, GentResult};
-use crate::runtime::{ClaudeCodeClient, LLMClient, MockLLMClient, OpenAIClient, ToolCall};
+use crate::runtime::{AnthropicClient, ClaudeCodeClient, LLMClient, MockLLMClient, OpenAIClient, ToolCall};
 
 /// Factory for creating LLM clients based on provider name
 pub struct ProviderFactory {
@@ -86,8 +86,12 @@ impl ProviderFactory {
                 }
                 Ok(Box::new(client))
             }
+            "anthropic" => {
+                let api_key = self.config.require_anthropic_key()?;
+                Ok(Box::new(AnthropicClient::new(api_key.to_string())))
+            }
             other => Err(GentError::ProviderError {
-                message: format!("Unknown provider '{}'. Supported: openai, claude-code", other),
+                message: format!("Unknown provider '{}'. Supported: openai, anthropic, claude-code", other),
             }),
         }
     }
