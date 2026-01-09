@@ -1,0 +1,38 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Run tests with coverage
+        id: coverage
+        run: |
+          cargo tarpaulin --out json --output-dir ./coverage
+          COVERAGE=$(cat ./coverage/tarpaulin-report.json | jq '.coverage_percentage')
+          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+
+      - name: Generate coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: ozankasikci/rust-test-coverage-badge@v1
+        with:
+          coverage: ${{ steps.coverage.outputs.percentage }}
+          output: assets/coverage.svg
+          commit: true
+          commit-message: "Update coverage badge"

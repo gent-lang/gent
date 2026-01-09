@@ -9,6 +9,7 @@
 [![Crates.io](https://img.shields.io/crates/v/gent-lang.svg)](https://crates.io/crates/gent-lang)
 [![Downloads](https://img.shields.io/crates/d/gent-lang.svg)](https://crates.io/crates/gent-lang)
 [![License](https://img.shields.io/crates/l/gent-lang.svg)](LICENSE)
+[![Coverage](assets/coverage.svg)](assets/coverage.svg)
 
 > Write agents in minutes, not hours. Type-safe. Parallel. Observable.
 
