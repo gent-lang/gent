@@ -86,21 +86,17 @@ let insight = DataAnalyst.userPrompt("Analyze this: [1,2,3,4,5]").run()
 Type-safe tool definitions that agents can use:
 
 ```typescript
-tool Calculator {
-    description: "Perform math calculations"
+tool add(a: number, b: number) -> number {
+    return a + b
+}
 
-    fn add(a: number, b: number) -> number {
-        return a + b
-    }
-
-    fn multiply(a: number, b: number) -> number {
-        return a * b
-    }
+tool multiply(a: number, b: number) -> number {
+    return a * b
 }
 
 agent MathTutor {
     systemPrompt: "Help with math problems."
-    tools: [Calculator]
+    tools: [add, multiply]
     model: "gpt-4o-mini"
 }
 ```
@@ -355,9 +351,10 @@ gent --mock examples/hello.gnt
 agent Name {
     systemPrompt: "Instructions for the agent"
     model: "gpt-4o-mini"          // Required: LLM model
-    tools: [Tool1, Tool2]         // Optional: available tools
+    tools: [tool1, tool2]         // Optional: available tools
     output: StructName            // Optional: structured output type
     outputRetries: 3              // Optional: retry on parse failure
+    maxSteps: 5                   // Optional: max tool call iterations
     knowledge: {                  // Optional: auto-RAG configuration
         source: knowledgeBase,
         chunkLimit: 5,
@@ -369,12 +366,8 @@ agent Name {
 ### Tool Declaration
 
 ```typescript
-tool ToolName {
-    description: "What this tool does"
-
-    fn methodName(param: type) -> returnType {
-        return value
-    }
+tool name(param: type, ...) -> returnType {
+    return value
 }
 ```
 
