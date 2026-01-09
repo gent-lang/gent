@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.svg" width="80" height="80" alt="Gent logo">
+</p>
+
 # GENT
 
 **A programming language for AI agents**

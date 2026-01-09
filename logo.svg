@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Minimal G: arc + horizontal bar -->
+
+  <!-- C-shaped arc -->
+  <path
+    d="M 70 20 A 35 35 0 1 0 70 80"
+    fill="none"
+    stroke="#10b981"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
+
+  <!-- Horizontal bar (makes it a G) -->
+  <line
+    x1="50" y1="50"
+    x2="70" y2="50"
+    stroke="#10b981"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
+</svg>
