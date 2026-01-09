@@ -8,7 +8,7 @@
 
 > Write agents in minutes, not hours. Type-safe. Parallel. Observable.
 
-```gent
+```typescript
 agent Researcher {
     systemPrompt: "You research topics thoroughly and cite sources."
     model: "gpt-4o-mini"
@@ -49,7 +49,7 @@ prompt = ChatPromptTemplate.from_messages([...])
 
 ### The Solution
 
-```gent
+```typescript
 // GENT: Just describe what you want
 agent Helper {
     systemPrompt: "You help users with their questions."
@@ -67,7 +67,7 @@ let answer = Helper.userPrompt("What is 2+2?").run()
 
 Declarative agent definitions with all configuration in one place:
 
-```gent
+```typescript
 agent DataAnalyst {
     systemPrompt: "You analyze data and provide insights."
     model: "gpt-4o-mini"
@@ -80,7 +80,7 @@ let insight = DataAnalyst.userPrompt("Analyze this: [1,2,3,4,5]").run()
 
 Type-safe tool definitions that agents can use:
 
-```gent
+```typescript
 tool Calculator {
     description: "Perform math calculations"
 
@@ -104,7 +104,7 @@ agent MathTutor {
 
 First-class knowledge base support with automatic context injection:
 
-```gent
+```typescript
 // Create and index a knowledge base
 let docs = KnowledgeBase("./docs")
 docs.index({
@@ -130,7 +130,7 @@ let answer = DocHelper.userPrompt("How do I configure tools?").run()
 
 Get typed responses from agents with compile-time validation:
 
-```gent
+```typescript
 struct Analysis {
     sentiment: string
     confidence: number
@@ -152,7 +152,7 @@ let result = Analyzer.userPrompt("I love this product!").run()
 
 Run multiple agents concurrently with built-in timeout:
 
-```gent
+```typescript
 agent WebSearcher { systemPrompt: "Search the web." model: "gpt-4o-mini" }
 agent NewsAnalyst { systemPrompt: "Analyze news." model: "gpt-4o-mini" }
 agent AcademicSearcher { systemPrompt: "Find papers." model: "gpt-4o-mini" }
@@ -173,7 +173,7 @@ let results = research.run()  // Returns array of all results
 
 Define enums with optional data and match on them:
 
-```gent
+```typescript
 enum Status {
     Pending
     Active
@@ -200,7 +200,7 @@ if status.is(Status.Failed) {
 
 Define reusable functions with typed parameters:
 
-```gent
+```typescript
 fn formatName(first: string, last: string) -> string {
     return "{first} {last}"
 }
@@ -216,7 +216,7 @@ let name = formatName("John", "Doe")
 
 Full suite of functional array operations:
 
-```gent
+```typescript
 let numbers = [1, 2, 3, 4, 5]
 
 // Transform with map
@@ -244,7 +244,7 @@ let result = numbers
 
 Built-in string manipulation:
 
-```gent
+```typescript
 let text = "  Hello, World!  "
 
 text.trim()              // "Hello, World!"
@@ -261,7 +261,7 @@ text.length()            // 17
 
 Graceful error handling with context:
 
-```gent
+```typescript
 try {
     let result = RiskyAgent.run()
     println("Success: {result}")
@@ -290,7 +290,7 @@ brew tap gent-lang/tap && brew install gent
 
 1. **Create a file** `hello.gnt`:
 
-```gent
+```typescript
 agent Greeter {
     systemPrompt: "You are friendly and cheerful."
     model: "gpt-4o-mini"
@@ -346,7 +346,7 @@ gent --mock examples/hello.gnt
 
 ### Agent Declaration
 
-```gent
+```typescript
 agent Name {
     systemPrompt: "Instructions for the agent"
     model: "gpt-4o-mini"          // Required: LLM model
@@ -363,7 +363,7 @@ agent Name {
 
 ### Tool Declaration
 
-```gent
+```typescript
 tool ToolName {
     description: "What this tool does"
 
@@ -375,7 +375,7 @@ tool ToolName {
 
 ### Function Declaration
 
-```gent
+```typescript
 fn name(param: type, ...) -> returnType {
     return value
 }
@@ -383,7 +383,7 @@ fn name(param: type, ...) -> returnType {
 
 ### Enum Declaration
 
-```gent
+```typescript
 enum Name {
     Variant1
     Variant2(field)
@@ -393,7 +393,7 @@ enum Name {
 
 ### Parallel Block
 
-```gent
+```typescript
 parallel name {
     agents: [Agent1.userPrompt("..."), Agent2.userPrompt("...")]
     timeout: 30s    // Required: 30s, 2m, 500ms
@@ -404,7 +404,7 @@ let results = name.run()  // Array of results
 
 ### Struct Declaration
 
-```gent
+```typescript
 struct Name {
     field1: string
     field2: number
@@ -414,7 +414,7 @@ struct Name {
 
 ### Control Flow
 
-```gent
+```typescript
 // Conditionals
 if condition {
     // ...
