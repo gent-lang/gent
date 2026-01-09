@@ -25,7 +25,7 @@ jobs:
         id: coverage
         run: |
           cargo tarpaulin --out json --output-dir ./coverage
-          COVERAGE=$(cat ./coverage/tarpaulin-report.json | jq '.coverage_percentage')
+          COVERAGE=$(cat ./coverage/tarpaulin-report.json | jq '.coverage')
           echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
 
       - name: Generate coverage badge
